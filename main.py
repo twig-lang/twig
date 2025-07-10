@@ -4,7 +4,7 @@
 
 from lexer import lexer
 
-text = 'function example return 0;'
+text = 'function bool example return true { { && } false };'
 lx = lexer(text)
 
 for token in lx:
