@@ -25,6 +25,7 @@ KEYWORDS = {
   'with',
   'module',
   'type',
+  'newtype',
   'record',
   'union',
   'variant',
@@ -33,6 +34,8 @@ KEYWORDS = {
   'case',
   'let',
   'in',
+  'var',
+  'cast',
 }
 
 # 1-char long symbols.
@@ -45,6 +48,8 @@ SYM1 = {
   '%',
   ';',
   '.',
+  ',',
+  ':',
   '^',
   '~',
   '=',
@@ -114,8 +119,28 @@ def lexer(text):
           yield ('id', word)
         continue
 
+      if h == "'":
+        h = next(head)
+        word = h
+        h = next(head)
+        assert(h=="'")
+        yield('chr', word)
+        continue
+
+      if h == '"':
+        h = next(head)
+
+        while h != '"':
+          word += h
+          h = next(head)
+
+        assert(h == '"')
+        h = next(head)
+        yield('str',word)
+        continue
+
       if h in SYM1:
-        yield (';',)
+        yield (h,)
         h = next(head)
         continue
 

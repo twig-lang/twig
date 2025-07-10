@@ -3,8 +3,9 @@
 # Token: ( tag, data... )
 
 from lexer import lexer
+from sys import argv
 
-text = 'function bool example return true { { && } false };'
+text = open(argv[1]).read()
 lx = lexer(text)
 
 for token in lx:
