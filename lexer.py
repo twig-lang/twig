@@ -1,3 +1,5 @@
+from iter import peekable
+
 def _is_id_head(c):
   return c.isalpha() or c == '_'
 
@@ -34,7 +36,6 @@ KEYWORDS = {
   'case',
   'let',
   'in',
-  'var',
   'cast',
 }
 
@@ -70,92 +71,88 @@ SYM2 = {
 }
 
 def lexer(text):
-  text = text + '  '
-  head = iter(text)
+  text = text + ' '
+  head = peekable(iter(text))
 
   try:
-    h = next(head)
-
     while True:
-      word = ''
-
-      if h == '{':
+      if head.peek() == '{':
+        head.next()
         nesting = 1
-        h = next(head)
 
         while nesting > 0:
-          if h == '{':
+          if head.peek() == '{':
             nesting += 1
 
-          if h == '}':
+          if head.peek() == '}':
             nesting -= 1
 
-          h = next(head)
+          head.next()
 
         continue
 
-      if h.isspace():
-        while h.isspace():
-          h = next(head)
+      if head.peek().isspace():
+        while head.peek().isspace():
+          head.next()
 
         continue
 
-      if h.isdigit():
-        while h.isdigit():
-          word += h
-          h = next(head)
+      if head.peek().isdigit():
+        number = ''
 
-        yield ('int', int(word))
+        while head.peek().isdigit():
+          number += head.next()
+
+        yield ('int', int(number))
         continue
 
-      if _is_id_head(h):
-        while _is_id_tail(h):
-          word += h
-          h = next(head)
+      if _is_id_head(head.peek()):
+        ident = ''
+        ident += head.next()
 
-        if word in KEYWORDS:
-          yield (word,)
+        while _is_id_tail(head.peek()):
+          ident += head.next()
+
+        if ident in KEYWORDS:
+          yield (ident,)
         else:
-          yield ('id', word)
+          yield ('id', ident)
+
         continue
 
-      if h == "'":
-        h = next(head)
-        word = h
-        h = next(head)
-        assert(h=="'")
-        yield('chr', word)
+      if head.peek() == "'":
+        head.next()
+
+        chr = head.next()
+
+        assert(head.next() == "'")
+        yield('chr', chr)
         continue
 
-      if h == '"':
-        h = next(head)
+      if head.peek() == '"':
+        str = ''
+        head.next()
 
-        while h != '"':
-          word += h
-          h = next(head)
+        while head.peek() != '"':
+          str += head.next()
 
-        assert(h == '"')
-        h = next(head)
-        yield('str',word)
+        assert(head.next() == '"')
+        yield('str', str)
         continue
 
-      if h in SYM1:
-        yield (h,)
-        h = next(head)
+      if head.peek() in SYM1:
+        yield (head.next(),)
         continue
 
-      if h in SYM2:
-        word = h
-        h = next(head)
+      if head.peek() in SYM2:
+        sym = head.next()
 
-        if h in SYM2[word]:
-         word += h
+        if head.peek() in SYM2[word]:
+         sym += head.next()
 
-        yield (word,)
-        h = next(head)
+        yield (sym,)
         continue
 
-      h = next(head)
-      yield ('unknown', h)
+      yield ('unknown', head.next())
   except StopIteration:
     pass
