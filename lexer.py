@@ -188,9 +188,12 @@ class Lexer:
     return m
 
   def expect(self, tag):
+    got = self.peek()
+
     if not self.match(tag):
-      got = self.peek()[0]
-      raise 'expected ' + str(tag) + ', got ' + got
+      raise Exception(f'expected `{str(tag)}`, got `{got[0]}`')
+
+    return got
 
   def __next__(self):
     return self.head.next()
