@@ -9,13 +9,16 @@ class Peek:
 
     return self.peeked
 
+  def next(self):
+    return self.__next__()
+
   def __next__(self):
     temp = self.peek()
     self.peeked = None
     return temp
 
-  def next(self):
-    return self.__next__()
+  def __iter__(self):
+    return self
 
 def peekable(iter):
   return Peek(iter)

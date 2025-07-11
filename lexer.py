@@ -1,4 +1,4 @@
-from iter import peekable
+from iter import peekable, Peek
 
 def _is_id_head(c):
   return c.isalpha() or c == '_'
@@ -70,7 +70,7 @@ SYM2 = {
   '|': ['|'],
 }
 
-def lexer(text):
+def tokenize(text):
   text = text + ' '
   head = peekable(iter(text))
 
@@ -156,3 +156,47 @@ def lexer(text):
       yield ('unknown', head.next())
   except StopIteration:
     pass
+
+class Lexer:
+  def __init__(self, text):
+    self.head = peekable(tokenize(text))
+
+  def next(self):
+    return self.__next__()
+
+  def peek(self):
+    return self.head.peek()
+
+  def at(self, tag):
+    if type(tag) is list:
+      for t in tag:
+        if self.at(t):
+          return true
+
+      return false
+
+    m = self.peek()[0] == tag
+
+    return m
+
+  def match(self, tag):
+    m = self.at(tag)
+
+    if m:
+      self.next()
+
+    return m
+
+  def expect(self, tag):
+    if not self.match(tag):
+      got = self.peek()[0]
+      raise 'expected ' + str(tag) + ', got ' + got
+
+  def __next__(self):
+    return self.head.next()
+
+  def __iter__(self):
+    return self
+
+def lexer(text):
+  return Lexer(text)
