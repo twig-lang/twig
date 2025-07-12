@@ -1,4 +1,21 @@
+from dataclasses import dataclass
+
 from iter import peekable, Peek
+
+@dataclass
+class Point:
+  line: int   = 0
+  column: int = 0
+
+  def step(self, chr):
+    self.column += 1
+
+    if chr == '\n':
+      self.line += 1
+      self.column = 0
+
+  def __repr__(self):
+    return f'({self.line}:{self.column})'
 
 def _is_id_head(c):
   return c.isalpha() or c == '_'
@@ -75,6 +92,8 @@ def tokenize(text):
 
   try:
     while True:
+      point = head.get_point()
+
       if head.peek() == '{':
         head.next()
         nesting = 1
@@ -102,7 +121,7 @@ def tokenize(text):
         while head.peek().isdigit():
           number += head.next()
 
-        yield ('int', int(number))
+        yield ('int', point, int(number))
         continue
 
       if _is_id_head(head.peek()):
@@ -113,9 +132,9 @@ def tokenize(text):
           ident += head.next()
 
         if ident in KEYWORDS:
-          yield (ident,)
+          yield (ident, point)
         else:
-          yield ('id', ident)
+          yield ('id', point, ident)
 
         continue
 
@@ -125,7 +144,7 @@ def tokenize(text):
         chr = head.next()
 
         assert(head.next() == "'")
-        yield('chr', chr)
+        yield('chr', point, chr)
         continue
 
       if head.peek() == '"':
@@ -136,11 +155,11 @@ def tokenize(text):
           str += head.next()
 
         assert(head.next() == '"')
-        yield('str', str)
+        yield('str', point, str)
         continue
 
       if head.peek() in SYM1:
-        yield (head.next(),)
+        yield (head.next(), point)
         continue
 
       if head.peek() in SYM2:
@@ -149,10 +168,10 @@ def tokenize(text):
         if head.peek() in SYM2[sym]:
          sym += head.next()
 
-        yield (sym,)
+        yield (sym, point)
         continue
 
-      yield ('unknown', head.next())
+      yield ('unknown', point, head.next())
   except StopIteration:
     pass
 
@@ -190,7 +209,7 @@ class Lexer:
     got = self.peek()
 
     if not self.match(tag):
-      raise Exception(f'expected `{str(tag)}`, got `{got[0]}`')
+      raise Exception(f'at {got[1]} expected `{str(tag)}`, got `{got[0]}`')
 
     return got
 
