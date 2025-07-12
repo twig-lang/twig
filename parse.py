@@ -1,38 +1,41 @@
+from lexer import Lexer
+import syntax
+
 def p_literal(lexer):
   if lexer.at('id'):
     id = lexer.expect('id')
 
-    return {
-      'tag': 'variable',
-      'name': id[1]
-    }
+    return syntax.Variable(name = id[1])
 
   if lexer.at('str'):
     str = lexer.expect('str')
 
-    return {
-      'tag': 'string',
-      'value': str[1]
-    }
+    return syntax.StringLiteral(value = str[1])
 
   if lexer.at('int'):
     int = lexer.expect('int')
 
-    return {
-      'tag': 'int',
-      'value': int[1]
-    }
+    return syntax.IntegerLiteral(value = int[1])
 
   lexer.expect(['id', 'str', 'int'])
 
 # literal
 # '(' expression ')'
 def p_primary(lexer):
+  if lexer.match('('):
+    inner = p_expression(lexer)
+    lexer.expect(')')
+
+    return inner
+
   return p_literal(lexer)
 
-# expressino
+# expression
 def p_argument(lexer):
-  return p_expression(lexer)
+  mode = p_mode(lexer)
+  value = p_expression(lexer)
+
+  return syntax.Argument(mode = mode, value = value)
 
 # argument
 # argument ',' arguments
@@ -50,10 +53,7 @@ def p_arguments(lexer, end):
 
   lexer.expect(end)
 
-  return {
-    'tag': 'arguments',
-    'value': args
-  }
+  return syntax.ArgumentList(arguments = args)
 
 # inner expression '(' arguments ')'
 # inner expression '[' arguments ']'
@@ -62,15 +62,14 @@ def p_factor(lexer):
 
   while True:
     if lexer.match('('):
-      args = p_arguments(lexer, ')')
-      inner = {
-        'tag': 'expr_fncall',
-        'callee': inner,
-        'arguments': args
-      }
+      arguments = p_arguments(lexer, ')')
+      inner = syntax.ExpressionFunctionCall(
+        callee = inner,
+        arguments = arguments
+      )
 
     elif lexer.match('['):
-      args = p_arguments(lexer, ']')
+      arguments = p_arguments(lexer, ']')
       inner = {
         'tag': 'expr_subcall',
         'callee': inner,
@@ -200,42 +199,29 @@ def p_stmt(lexer):
   if lexer.match('let'):
     return p_let(lexer)
 
-  expr = p_expression(lexer)
+  expression = p_expression(lexer)
   lexer.expect(';')
 
-  return {
-    'tag': 'stmt_expr',
-    'value': expr,
-  }
+  return syntax.StatementExpression(expression)
 
 # '=' expr ';'
-# ';'
 # statement
 def p_function_body(lexer):
-  if lexer.match(';'):
-    return {
-      'tag': 'body_declaration',
-    }
-
   if lexer.match('='):
     body = p_expression(lexer)
     lexer.expect(';')
 
-    return {
-      'tag': 'body_expr',
-      'body': body,
-    }
+    return syntax.FunctionBodyExpression(body)
 
   body = p_stmt(lexer)
-  return {
-    'tag': 'body_stmt',
-    'body': body,
-  }
+
+  return syntax.FunctionBodyStatement(body)
 
 # uhhhh
 # name
 def p_type(lexer):
   name = lexer.expect('id')[1]
+
   return {
     'tag': 'type_named',
     'name': name
@@ -243,20 +229,15 @@ def p_type(lexer):
 
 # [ '&' ] [ 'mut' ]
 def p_mode(lexer):
-  mutable = False
-  reference = False
+  mode = syntax.Mode(0)
 
   if lexer.match('&'):
-    reference = True
+    mode |= syntax.Mode.REFERENCE
 
   if lexer.match('mut'):
-    mutable = True
+    mode |= syntax.Mode.MUTABLE
 
-  return {
-    'tag': 'mode',
-    'reference': reference,
-    'mutable': mutable,
-  }
+  return mode
 
 # [ mode ] name ':' type
 def p_param(lexer):
@@ -268,51 +249,49 @@ def p_param(lexer):
 
   ty = p_type(lexer)
 
-  return {
-    'tag': 'argument',
-    'mode': mode,
-    'name': name,
-    'type': ty,
-  }
+  return syntax.Parameter(
+    mode = mode,
+    name = name,
+    type = ty
+  )
 
 # '(' . [ argument { ',' argument } ] ')'
 def p_param_list(lexer):
-  args = []
+  params = []
 
-  while True:
-    arg = p_param(lexer)
-    args.append(arg)
+  if lexer.match('('):
+    while True:
+      par = p_param(lexer)
+      params.append(arg)
 
-    if lexer.match(')'):
-      break
+      if lexer.match(')'):
+        break
 
-    lexer.expect(',')
+      lexer.expect(',')
 
-  return args
+  return syntax.ParameterList(
+    parameters = params
+  )
 
 # 'function' . name [ argument list ] [ ':' type ] <function body>
 def p_function(lexer):
   name = lexer.expect('id')[1]
 
-  arg_list = None
-  if lexer.match('('):
-    arg_list = p_param_list(lexer)
+  parameters = p_param_list(lexer)
 
-  arg_list = arg_list or []
+  return_type = None
 
-  ty = None
   if lexer.match(':'):
-    ty = p_type(lexer)
+    return_type = p_type(lexer)
 
   body = p_function_body(lexer)
 
-  return {
-    'tag': 'function_definition',
-    'name': name,
-    'arguments': arg_list,
-    'returns': ty,
-    'body': body,
-  }
+  return syntax.FunctionDefinition(
+    name,
+    parameters,
+    return_type,
+    body
+  )
 
 # identifier [ '.' with-path ]
 # '(' [ with-path { ',' with-path } ] ')'
