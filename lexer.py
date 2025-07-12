@@ -52,8 +52,6 @@ SYM1 = {
   ',',
   ':',
   '^',
-  '~',
-  '=',
   '(',
   ')',
   '[',
@@ -63,11 +61,12 @@ SYM1 = {
 
 # 2-char long symbols.
 SYM2 = {
-  '>': ['>', '='],
-  '<': ['<', '='],
+  '>': ['>'],
+  '<': ['<'],
   '!': ['='],
   '&': ['&'],
   '|': ['|'],
+  '=': ['<', '>'],
 }
 
 def tokenize(text):
@@ -147,7 +146,7 @@ def tokenize(text):
       if head.peek() in SYM2:
         sym = head.next()
 
-        if head.peek() in SYM2[word]:
+        if head.peek() in SYM2[sym]:
          sym += head.next()
 
         yield (sym,)
@@ -171,9 +170,9 @@ class Lexer:
     if type(tag) is list:
       for t in tag:
         if self.at(t):
-          return true
+          return True
 
-      return false
+      return False
 
     m = self.peek()[0] == tag
 

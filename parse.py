@@ -15,7 +15,15 @@ def p_literal(lexer):
       'value': str[1]
     }
 
-  lexer.expect(['id', 'str'])
+  if lexer.at('int'):
+    int = lexer.expect('int')
+
+    return {
+      'tag': 'int',
+      'value': int[1]
+    }
+
+  lexer.expect(['id', 'str', 'int'])
 
 # literal
 # '(' expression ')'
@@ -49,7 +57,7 @@ def p_arguments(lexer, end):
 
 # inner expression '(' arguments ')'
 # inner expression '[' arguments ']'
-def p_expression(lexer):
+def p_factor(lexer):
   inner = p_primary(lexer)
 
   while True:
@@ -74,12 +82,121 @@ def p_expression(lexer):
 
   return inner
 
+PRECEDENCES = {
+  '/': 9,
+  '*': 9,
+  '%': 9,
+
+  '+': 8,
+  '-': 8,
+
+  '>>': 7,
+  '<<': 7,
+
+  '&': 6,
+
+  '^': 5,
+
+  '|': 4,
+
+  '<': 3,
+  '>': 3,
+  '=': 3,
+  '!=': 3,
+  '=<': 3,
+  '=>': 3,
+
+  '&&': 2,
+  '||': 1,
+}
+
+def precedence(operator):
+  prec = PRECEDENCES[operator]
+  return prec * 100
+
+def p_bin_rhs(lexer, prec, lhs):
+  while True:
+    op = lexer.peek()[0]
+
+    if op not in PRECEDENCES:
+      return lhs
+
+    oprec = PRECEDENCES[op]
+
+    if oprec < prec:
+      return lhs
+
+    lexer.next()
+
+    rhs = p_factor(lexer)
+
+    nextop = lexer.peek()[0]
+
+    if nextop in PRECEDENCES:
+      nextprec = PRECEDENCES[nextop]
+
+      if nextprec > prec:
+        rhs = p_bin_rhs(prec+1,rhs)
+
+    lhs = {
+      'tag': 'binary_expr',
+      'lhs': lhs,
+      'rhs': rhs,
+    }
+
+def p_expression(lexer):
+  lhs = p_factor(lexer)
+
+  return p_bin_rhs(lexer, 0, lhs)
+
+def p_begin(lexer):
+  children = []
+
+  while True:
+    if lexer.match('end'):
+      break
+
+    child = p_stmt(lexer)
+    children.append(child)
+
+  return {
+    'tag': 'stmt_begin',
+    'children': children
+  }
+
+# 'let' . name [ ':' type ] '=' expression ';'
+def p_let(lexer):
+  name = lexer.expect('id')[1]
+
+  ty = None
+  if lexer.match(':'):
+    ty = p_type(lexer)
+
+  lexer.expect('=')
+
+  value = p_expression(lexer)
+
+  lexer.expect(';')
+
+  return {
+    'tag': 'stmt_let',
+    'name': name,
+    'type': ty,
+    'value': value,
+  }
+
 # 'return' expression ';'
 # 'if' expression 'then' statement [ 'else' statement ]
 # 'while' expression 'do' statement
 # 'loop' statement
 # expression
 def p_stmt(lexer):
+  if lexer.match('begin'):
+    return p_begin(lexer)
+
+  if lexer.match('let'):
+    return p_let(lexer)
+
   expr = p_expression(lexer)
   lexer.expect(';')
 
@@ -98,7 +215,7 @@ def p_function_body(lexer):
     }
 
   if lexer.match('='):
-    body = p_expr(lexer)
+    body = p_expression(lexer)
     lexer.expect(';')
 
     return {
@@ -112,13 +229,71 @@ def p_function_body(lexer):
     'body': body,
   }
 
+# uhhhh
+# name
+def p_type(lexer):
+  name = lexer.expect('id')[1]
+  return {
+    'tag': 'type_named',
+    'name': name
+  }
+
+# [ '&' ] [ 'mut' ]
+def p_mode(lexer):
+  mutable = False
+  reference = False
+
+  if lexer.match('&'):
+    reference = True
+
+  if lexer.match('mut'):
+    mutable = True
+
+  return {
+    'tag': 'mode',
+    'reference': reference,
+    'mutable': mutable,
+  }
+
+# [ mode ] name ':' type
+def p_param(lexer):
+  mode = p_mode(lexer)
+
+  name = lexer.expect('id')[1]
+
+  lexer.expect(':')
+
+  ty = p_type(lexer)
+
+  return {
+    'tag': 'argument',
+    'mode': mode,
+    'name': name,
+    'type': ty,
+  }
+
+# '(' . [ argument { ',' argument } ] ')'
+def p_param_list(lexer):
+  args = []
+
+  while True:
+    arg = p_param(lexer)
+    args.append(arg)
+
+    if lexer.match(')'):
+      break
+
+    lexer.expect(',')
+
+  return args
+
 # 'function' . name [ argument list ] [ ':' type ] <function body>
 def p_function(lexer):
   name = lexer.expect('id')[1]
 
   arg_list = None
   if lexer.match('('):
-    arg_list = p_argument_list(lexer)
+    arg_list = p_param_list(lexer)
 
   arg_list = arg_list or []
 
