@@ -164,8 +164,10 @@ def p_begin(lexer):
     'children': children
   }
 
-# 'let' . name [ ':' type ] '=' expression ';'
+# 'let' . [ mode ] name [ ':' type ] '=' expression ';'
 def p_let(lexer):
+  mode = p_mode(lexer)
+
   name = lexer.expect('id')[1]
 
   ty = None
@@ -181,6 +183,7 @@ def p_let(lexer):
   return {
     'tag': 'stmt_let',
     'name': name,
+    'mode': mode,
     'type': ty,
     'value': value,
   }
