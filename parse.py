@@ -315,8 +315,6 @@ def p_stmt(lexer):
 
   return syntax.StatementExpression(expression)
 
-# '=' expr ';'
-# statement
 def p_function_body(lexer):
   if lexer.match('='):
     body = p_expression(lexer)
@@ -406,21 +404,23 @@ def p_function(lexer):
     body
   )
 
+def p_path(lexer):
+  name = p_variable(lexer)
+  path = syntax.PathNamed(name)
+
+  while lexer.match('.'):
+    child = p_with_path(lexer)
+
+    path = syntax.PathSub(
+      parent = path,
+      child = child
+    )
+
+  return path
+
 def p_with_path(lexer):
   if lexer.at('id'):
-    name = p_variable(lexer)
-
-    path = syntax.PathNamed(name)
-
-    while lexer.match('.'):
-      child = p_with_path(lexer)
-
-      path = syntax.PathSub(
-        parent = path,
-        child = child
-      )
-
-    return path
+    return p_path(lexer)
 
   lexer.expect('(')
 
@@ -456,6 +456,13 @@ def p_with(lexer):
     path
   )
 
+def p_import(lexer):
+  path = p_path(lexer)
+
+  lexer.expect(';')
+
+  return syntax.Import(path)
+
 def p_subscript(lexer):
   mode = p_mode(lexer)
 
@@ -478,6 +485,17 @@ def p_subscript(lexer):
     body
   )
 
+def p_typedef(lexer):
+  name = p_variable(lexer)
+
+  lexer.expect('=')
+
+  type = p_type(lexer)
+
+  lexer.expect(';')
+
+  return syntax.TypeDefinition(name, type)
+
 def p_toplevel(lexer):
   if lexer.match('function'):
     return p_function(lexer)
@@ -487,6 +505,12 @@ def p_toplevel(lexer):
 
   if lexer.match('with'):
     return p_with(lexer)
+
+  if lexer.match('import'):
+    return p_import(lexer)
+
+  if lexer.match('type'):
+    return p_typedef(lexer)
 
   return lexer.next()
 

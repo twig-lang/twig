@@ -175,3 +175,12 @@ class SubscriptDefinition(Node):
 class StatementYield(Statement):
   mode: Mode
   value: Expression
+
+@dataclass
+class Import(Node):
+  path: Path
+
+@dataclass
+class TypeDefinition(Node):
+  name: Variable
+  type: Type
