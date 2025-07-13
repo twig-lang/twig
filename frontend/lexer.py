@@ -1,4 +1,5 @@
 from frontend.iter import peekable, Peek
+from frontend.error import Error
 
 
 def _is_id_head(c):
@@ -165,7 +166,8 @@ def tokenize(text):
 
 
 class Lexer:
-    def __init__(self, text):
+    def __init__(self, path, text):
+        self.path = path
         self.head = peekable(tokenize(text))
 
     def next(self):
@@ -196,9 +198,12 @@ class Lexer:
 
     def expect(self, tag):
         got = self.peek()
+        self.next()
 
-        if not self.match(tag):
-            raise Exception(f"at {got[1]} expected `{str(tag)}`, got `{got[0]}`")
+        if got[0] != tag or got[0] not in tag:
+            e = self.peek()[1]
+            b = got[1]
+            raise Error(message=f"expected `{str(tag)}`, got `{got[0]}`", span=(b, e))
 
         return got
 
@@ -209,5 +214,5 @@ class Lexer:
         return self
 
 
-def lexer(text):
-    return Lexer(text)
+def lexer(path, text):
+    return Lexer(path, text)

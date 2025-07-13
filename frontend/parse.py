@@ -1,7 +1,8 @@
 from typing import Optional
 
 from frontend.lexer import Lexer
-from frontend import syntax
+from frontend.sourcemap import KNOWN_FILES
+from frontend import syntax, error
 
 
 def p_name(lexer):
@@ -507,9 +508,17 @@ def parse(lexer):
     file = []
 
     try:
-        while True:
-            top = p_toplevel(lexer)
-            file.append(top)
+        try:
+            with error.span_errors((0, 0)):
+                while True:
+                    top = p_toplevel(lexer)
+                    file.append(top)
+        except error.Error as err:
+            path = lexer.path
+            l, c = err.span
+            k = err.kind
+            print(f"{k.name}: {err.message}")
+            KNOWN_FILES[path].report(l, c)
     except StopIteration:
         pass
 
