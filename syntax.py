@@ -84,11 +84,15 @@ class ExpressionFunctionCall(Expression):
   arguments: ArgumentList
 
 @dataclass
-class StatementLet(Statement):
+class LetBinding(Node):
   mode: Mode
   name: Variable
   type: Optional[Type]
   value: Expression
+
+@dataclass
+class StatementLet(Statement):
+  bindings: list[LetBinding]
 
 @dataclass
 class StatementBegin(Statement):
@@ -110,10 +114,14 @@ class StatementWhile(Statement):
   body: Statement
 
 @dataclass
-class StatementSet(Statement):
-  binding: Variable
+class SetBinding(Node):
+  lvalue: Variable
   operator: Optional[Operator]
-  value: Expression
+  rvalue: Expression
+
+@dataclass
+class StatementSet(Statement):
+  bindings: list[SetBinding]
 
 @dataclass
 class StatementReturn(Statement):

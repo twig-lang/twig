@@ -182,8 +182,7 @@ def p_begin(lexer):
 
   return syntax.StatementBegin(children)
 
-# 'let' . [ mode ] name [ ':' type ] '=' expression ';'
-def p_let(lexer):
+def p_let_binding(lexer):
   mode = p_mode(lexer)
 
   name = p_variable(lexer)
@@ -198,11 +197,29 @@ def p_let(lexer):
 
   lexer.expect(';')
 
-  return syntax.StatementLet(
+  return syntax.LetBinding(
     mode,
     name,
     type,
     value
+  )
+
+# 'let' . [ mode ] name [ ':' type ] '=' expression ';'
+def p_let(lexer):
+  if lexer.match('begin'):
+    bindings = []
+
+    while not lexer.match('end'):
+      binding = p_let_binding(lexer)
+      bindings.append(binding)
+
+    return syntax.StatementLet(bindings)
+
+
+  binding = p_let_binding(lexer)
+
+  return syntax.StatementLet(
+    bindings = [binding]
   )
 
 def p_while(lexer):
@@ -214,9 +231,8 @@ def p_while(lexer):
 
   return syntax.StatementWhile(condition, body)
 
-# 'set' . name [ operator ] '=' expression ';'
-def p_set(lexer):
-  binding = p_variable(lexer)
+def p_set_binding(lexer):
+  lvalue = p_variable(lexer)
 
   operator = None
 
@@ -229,11 +245,28 @@ def p_set(lexer):
 
   lexer.expect('=')
 
-  value = p_expression(lexer)
+  rvalue = p_expression(lexer)
 
   lexer.expect(';')
 
-  return syntax.StatementSet(binding, operator, value)
+  return syntax.SetBinding(lvalue, operator, rvalue)
+
+# 'set' . name [ operator ] '=' expression ';'
+def p_set(lexer):
+  if lexer.match('begin'):
+    bindings = []
+
+    while not lexer.match('end'):
+      binding = p_set_binding(lexer)
+      bindings.append(binding)
+
+    return syntax.StatementSet(bindings)
+
+  binding = p_set_binding(lexer)
+
+  return syntax.StatementSet(
+    bindings = [binding]
+  )
 
 def p_return(lexer):
   value = None
