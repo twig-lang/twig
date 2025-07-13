@@ -1,21 +1,4 @@
-from dataclasses import dataclass
-
 from iter import peekable, Peek
-
-@dataclass
-class Point:
-  line: int   = 0
-  column: int = 0
-
-  def step(self, chr):
-    self.column += 1
-
-    if chr == '\n':
-      self.line += 1
-      self.column = 0
-
-  def __repr__(self):
-    return f'({self.line}:{self.column})'
 
 def _is_id_head(c):
   return c.isalpha() or c == '_'
@@ -54,6 +37,7 @@ KEYWORDS = {
   'let',
   'in',
   'cast',
+  'set',
 }
 
 # 1-char long symbols.

@@ -4,16 +4,18 @@ from dataclasses import dataclass
 class Point:
   line: int   = 0
   column: int = 0
+  offset: int = 0
 
   def step(self, chr):
     self.column += 1
+    self.offset += 1
 
     if chr == '\n':
       self.line += 1
       self.column = 0
 
   def __repr__(self):
-    return f'({self.line}:{self.column})'
+    return f'({self.line}:{self.column}@{self.offset})'
 
 class Peek:
   def __init__(self, gen):

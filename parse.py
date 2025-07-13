@@ -228,6 +228,29 @@ def p_set(lexer):
 
   return syntax.StatementSet(binding, operator, value)
 
+def p_return(lexer):
+  value = None
+
+  if not lexer.at(';'):
+    value = p_expression(lexer)
+
+  lexer.expect(';')
+
+  return syntax.StatementReturn(value)
+
+def p_if(lexer):
+  condition = p_expression(lexer)
+
+  lexer.expect('then')
+
+  taken = p_stmt(lexer)
+  not_taken = None
+
+  if lexer.match('else'):
+    not_taken = p_stmt(lexer)
+
+  return syntax.StatementIf(condition, taken, not_taken)
+
 # 'return' expression ';'
 # 'if' expression 'then' statement [ 'else' statement ]
 # 'while' expression 'do' statement
@@ -245,6 +268,12 @@ def p_stmt(lexer):
 
   if lexer.match('set'):
     return p_set(lexer)
+
+  if lexer.match('return'):
+    return p_return(lexer)
+
+  if lexer.match('if'):
+    return p_if(lexer)
 
   expression = p_expression(lexer)
   lexer.expect(';')
@@ -269,10 +298,7 @@ def p_function_body(lexer):
 def p_type(lexer):
   name = p_variable(lexer)
 
-  return {
-    'tag': 'type_named',
-    'name': name
-  }
+  return syntax.TypeNamed(name)
 
 # [ '&' ] [ 'mut' ]
 def p_mode(lexer):
@@ -345,43 +371,37 @@ def p_function(lexer):
 def p_with_path(lexer):
   if lexer.at('id'):
     name = p_variable(lexer)
-    path = {
-      'tag': 'path_name',
-      'name': name,
-    }
+
+    path = syntax.PathNamed(name)
 
     while lexer.match('.'):
-      sub = p_with_path(lexer)
+      child = p_with_path(lexer)
 
-      path = {
-        'tag': 'path_sub',
-        'parent': path,
-        'child': sub
-      }
+      path = syntax.PathSub(
+        parent = path,
+        child = child
+      )
 
     return path
 
   lexer.expect('(')
 
-  children = []
+  members = []
 
   if lexer.at('id'):
-    child = p_with_path(lexer)
-    children.append(child)
+    member = p_with_path(lexer)
+    members.append(member)
 
   while lexer.match(','):
     if lexer.at('id'):
-      child = p_with_path(lexer)
-      children.append(child)
+      member = p_with_path(lexer)
+      members.append(member)
     else:
       lexer.expect('id')
 
   lexer.expect(')')
 
-  return {
-    'tag': 'with_members',
-    'members': children
-  }
+  return syntax.WithPathMembers(members)
 
 # 'with' with-path ';'
 # 'with' 'import' with-path ';'
@@ -395,11 +415,10 @@ def p_with(lexer):
 
   lexer.expect(';')
 
-  return {
-    'tag': 'with',
-    'imports': imports,
-    'path': path,
-  }
+  return syntax.StatementWith(
+    imports,
+    path
+  )
 
 def p_toplevel(lexer):
   if lexer.match('function'):

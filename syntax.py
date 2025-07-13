@@ -111,3 +111,38 @@ class StatementSet(Statement):
   binding: Variable
   operator: Optional[Operator]
   value: Expression
+
+@dataclass
+class StatementReturn(Statement):
+  value: Optional[Expression]
+
+@dataclass
+class StatementIf(Statement):
+  condition: Expression
+  taken: Statement
+  not_taken: Optional[Statement]
+
+@dataclass
+class TypeNamed(Type):
+  name: Variable
+
+class Path(Node): pass
+class WithPath(Path): pass
+
+@dataclass
+class PathNamed(Path):
+  name: Variable
+
+@dataclass
+class WithPathMembers(WithPath):
+  members: list[WithPath]
+
+@dataclass
+class PathSub(Path):
+  parent: Path
+  child: Path
+
+@dataclass
+class StatementWith(Statement):
+  imports: bool
+  path: WithPath
