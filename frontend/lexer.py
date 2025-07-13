@@ -201,9 +201,12 @@ class Lexer:
         self.next()
 
         if got[0] != tag or got[0] not in tag:
-            e = self.peek()[1]
-            b = got[1]
-            raise Error(message=f"expected `{str(tag)}`, got `{got[0]}`", span=(b, e))
+            begin = got[1]
+            end = self.peek()[1]
+
+            raise Error(
+                message=f"expected `{str(tag)}`, got `{got[0]}`", span=(begin, end)
+            )
 
         return got
 

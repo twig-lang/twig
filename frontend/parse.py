@@ -330,6 +330,18 @@ def p_function_body(lexer):
 
 
 def p_type(lexer):
+    if lexer.match("("):
+        ty = None
+
+        if not lexer.at(")"):
+            ty = p_type(lexer)
+        else:
+            ty = syntax.TypeUnit()
+
+        lexer.expect(")")
+
+        return ty
+
     name = p_name(lexer)
 
     return syntax.TypeNamed(name)
@@ -474,15 +486,22 @@ def p_subscript(lexer):
 
 
 def p_typedef(lexer):
-    name = p_name(lexer)
+    try:
+        name = p_name(lexer)
 
-    lexer.expect("=")
+        lexer.expect("=")
 
-    type = p_type(lexer)
+        type = p_type(lexer)
 
-    lexer.expect(";")
+        lexer.expect(";")
 
-    return syntax.TypeDefinition(name, type)
+        return syntax.TypeDefinition(name, type)
+    except error.Error as err:
+        while not lexer.at(";"):
+            lexer.next()
+
+        lexer.next()
+        raise err
 
 
 def p_toplevel(lexer):
@@ -508,17 +527,16 @@ def parse(lexer):
     file = []
 
     try:
-        try:
-            with error.span_errors((0, 0)):
-                while True:
-                    top = p_toplevel(lexer)
-                    file.append(top)
-        except error.Error as err:
-            path = lexer.path
-            l, c = err.span
-            k = err.kind
-            print(f"{k.name}: {err.message}")
-            KNOWN_FILES[path].report(l, c)
+        while True:
+            try:
+                top = p_toplevel(lexer)
+                file.append(top)
+            except error.Error as err:
+                path = lexer.path
+                l, c = err.span
+                k = err.kind
+                print(f"{k.name}: {err.message}")
+                KNOWN_FILES[path].report(l, c)
     except StopIteration:
         pass
 

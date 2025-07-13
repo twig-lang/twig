@@ -237,3 +237,7 @@ class Import(Node):
 class TypeDefinition(Node):
     name: Name
     type: Type
+
+
+class TypeUnit(Type):
+    pass
