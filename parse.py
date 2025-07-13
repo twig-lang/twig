@@ -27,8 +27,6 @@ def p_literal(lexer):
 
   lexer.expect(['id', 'str', 'int'])
 
-# literal
-# '(' expression ')'
 def p_primary(lexer):
   if lexer.match('('):
     inner = p_expression(lexer)
@@ -38,7 +36,6 @@ def p_primary(lexer):
 
   return p_literal(lexer)
 
-# expression
 def p_argument(lexer):
   mode = p_mode(lexer)
   key = None
@@ -52,8 +49,6 @@ def p_argument(lexer):
 
   return syntax.Argument(mode, key, value)
 
-# argument
-# argument ',' arguments
 def p_arguments(lexer, end):
   args = []
 
@@ -70,8 +65,6 @@ def p_arguments(lexer, end):
 
   return syntax.ArgumentList(arguments = args)
 
-# inner expression '(' arguments ')'
-# inner expression '[' arguments ']'
 def p_factor(lexer):
   inner = p_primary(lexer)
 
@@ -85,11 +78,10 @@ def p_factor(lexer):
 
     elif lexer.match('['):
       arguments = p_arguments(lexer, ']')
-      inner = {
-        'tag': 'expr_subcall',
-        'callee': inner,
-        'arguments': args
-      }
+      inner = syntax.ExpressionSubscriptCall(
+        callee = inner,
+        arguments = arguments
+      )
 
     else:
       break
@@ -204,7 +196,6 @@ def p_let_binding(lexer):
     value
   )
 
-# 'let' . [ mode ] name [ ':' type ] '=' expression ';'
 def p_let(lexer):
   if lexer.match('begin'):
     bindings = []
@@ -251,7 +242,6 @@ def p_set_binding(lexer):
 
   return syntax.SetBinding(lvalue, operator, rvalue)
 
-# 'set' . name [ operator ] '=' expression ';'
 def p_set(lexer):
   if lexer.match('begin'):
     bindings = []
@@ -278,6 +268,13 @@ def p_return(lexer):
 
   return syntax.StatementReturn(value)
 
+def p_yield(lexer):
+  mode = p_mode(lexer)
+  value = p_expression(lexer)
+  lexer.expect(';')
+
+  return syntax.StatementYield(mode, value)
+
 def p_if(lexer):
   condition = p_expression(lexer)
 
@@ -291,11 +288,6 @@ def p_if(lexer):
 
   return syntax.StatementIf(condition, taken, not_taken)
 
-# 'return' expression ';'
-# 'if' expression 'then' statement [ 'else' statement ]
-# 'while' expression 'do' statement
-# 'loop' statement
-# expression
 def p_stmt(lexer):
   if lexer.match('begin'):
     return p_begin(lexer)
@@ -315,6 +307,9 @@ def p_stmt(lexer):
   if lexer.match('if'):
     return p_if(lexer)
 
+  if lexer.match('yield'):
+    return p_yield(lexer)
+
   expression = p_expression(lexer)
   lexer.expect(';')
 
@@ -333,14 +328,11 @@ def p_function_body(lexer):
 
   return syntax.FunctionBodyStatement(body)
 
-# uhhhh
-# name
 def p_type(lexer):
   name = p_variable(lexer)
 
   return syntax.TypeNamed(name)
 
-# [ '&' ] [ 'mut' ]
 def p_mode(lexer):
   mode = syntax.Mode(0)
 
@@ -352,7 +344,6 @@ def p_mode(lexer):
 
   return mode
 
-# [ mode ] name ':' type
 def p_param(lexer):
   mode = p_mode(lexer)
 
@@ -379,16 +370,15 @@ def p_param(lexer):
     default
   )
 
-# '(' . [ argument { ',' argument } ] ')'
-def p_param_list(lexer):
+def p_param_list(lexer, begin, end):
   params = []
 
-  if lexer.match('('):
+  if lexer.match(begin):
     while True:
       par = p_param(lexer)
       params.append(par)
 
-      if lexer.match(')'):
+      if lexer.match(end):
         break
 
       lexer.expect(',')
@@ -397,11 +387,10 @@ def p_param_list(lexer):
     parameters = params
   )
 
-# 'function' . name [ argument list ] [ ':' type ] <function body>
 def p_function(lexer):
   name = p_variable(lexer)
 
-  parameters = p_param_list(lexer)
+  parameters = p_param_list(lexer, '(', ')')
 
   return_type = None
 
@@ -417,8 +406,6 @@ def p_function(lexer):
     body
   )
 
-# identifier [ '.' with-path ]
-# '(' [ with-path { ',' with-path } ] ')'
 def p_with_path(lexer):
   if lexer.at('id'):
     name = p_variable(lexer)
@@ -454,8 +441,6 @@ def p_with_path(lexer):
 
   return syntax.WithPathMembers(members)
 
-# 'with' with-path ';'
-# 'with' 'import' with-path ';'
 def p_with(lexer):
   imports = False
 
@@ -471,9 +456,34 @@ def p_with(lexer):
     path
   )
 
+def p_subscript(lexer):
+  mode = p_mode(lexer)
+
+  name = p_variable(lexer)
+
+  parameters = p_param_list(lexer, '[', ']')
+
+  return_type = None
+
+  if lexer.match(':'):
+    return_type = p_type(lexer)
+
+  body = p_function_body(lexer)
+
+  return syntax.SubscriptDefinition(
+    name,
+    mode,
+    parameters,
+    return_type,
+    body
+  )
+
 def p_toplevel(lexer):
   if lexer.match('function'):
     return p_function(lexer)
+
+  if lexer.match('subscript'):
+    return p_subscript(lexer)
 
   if lexer.match('with'):
     return p_with(lexer)

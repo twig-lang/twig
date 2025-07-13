@@ -157,3 +157,21 @@ class PathSub(Path):
 class StatementWith(Statement):
   imports: bool
   path: WithPath
+
+@dataclass
+class ExpressionSubscriptCall(Expression):
+  callee: Expression
+  arguments: ArgumentList
+
+@dataclass
+class SubscriptDefinition(Node):
+  name: str
+  mode: Mode
+  parameters: ParameterList
+  return_type: Type
+  body: FunctionBody
+
+@dataclass
+class StatementYield(Statement):
+  mode: Mode
+  value: Expression
