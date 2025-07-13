@@ -41,9 +41,16 @@ def p_primary(lexer):
 # expression
 def p_argument(lexer):
   mode = p_mode(lexer)
+  key = None
+
   value = p_expression(lexer)
 
-  return syntax.Argument(mode = mode, value = value)
+  if lexer.match(':'):
+    assert(type(value) is syntax.Variable)
+    key = value
+    value = p_expression(lexer)
+
+  return syntax.Argument(mode, key, value)
 
 # argument
 # argument ',' arguments
@@ -317,15 +324,26 @@ def p_param(lexer):
   mode = p_mode(lexer)
 
   name = p_variable(lexer)
+  key = None
+
+  if lexer.at('id'):
+    key = p_variable(lexer)
 
   lexer.expect(':')
 
-  ty = p_type(lexer)
+  type = p_type(lexer)
+
+  default = None
+  if key is not None:
+    lexer.expect('=')
+    default = p_expression(lexer)
 
   return syntax.Parameter(
-    mode = mode,
-    name = name,
-    type = ty
+    mode,
+    name,
+    key,
+    type,
+    default
   )
 
 # '(' . [ argument { ',' argument } ] ')'

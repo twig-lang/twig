@@ -40,6 +40,7 @@ class Mode(Flag):
 @dataclass
 class Argument(Node):
   mode: Mode
+  key: Optional[Variable]
   value: Expression
 
 @dataclass
@@ -50,7 +51,9 @@ class ArgumentList(Node):
 class Parameter(Node):
   mode: Mode
   name: Variable
+  key: Optional[Variable]
   type: Type
+  default: Optional[Expression]
 
 @dataclass
 class ParameterList(Node):
