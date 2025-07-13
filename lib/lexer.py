@@ -1,4 +1,4 @@
-from iter import peekable, Peek
+from lib.iter import peekable, Peek
 
 def _is_id_head(c):
   return c.isalpha() or c == '_'

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from lexer import Lexer
-import syntax
+from lib.lexer import Lexer
+from lib import syntax
 
 def p_variable(lexer):
   name = lexer.expect('id')[2]
