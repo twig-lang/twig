@@ -5,10 +5,11 @@ from frontend.lexer import Lexer
 from frontend.sourcemap import KNOWN_FILES
 from frontend import syntax, message as msg
 from frontend.message import Message
+from frontend.token import *
 
 
 def p_name(lexer):
-    name = lexer.expect("id")[2]
+    name = lexer.expect(Tag.Identifier).data
     return syntax.Name(name)
 
 

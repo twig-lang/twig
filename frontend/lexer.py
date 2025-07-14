@@ -1,6 +1,7 @@
 from frontend.iter import peekable, Peek
 from frontend.message import Message
 import frontend.message as msg
+from frontend.token import *
 
 
 def _is_id_head(c):
@@ -13,71 +14,6 @@ def _is_id_tail(c):
 
 class Error(Exception):
     pass
-
-
-KEYWORDS = {
-    "function",
-    "begin",
-    "end",
-    "loop",
-    "while",
-    "do",
-    "if",
-    "then",
-    "else",
-    "yield",
-    "break",
-    "continue",
-    "return",
-    "mut",
-    "subscript",
-    "defer",
-    "import",
-    "with",
-    "module",
-    "type",
-    "newtype",
-    "record",
-    "union",
-    "variant",
-    "enum",
-    "match",
-    "case",
-    "let",
-    "in",
-    "cast",
-    "set",
-}
-
-# 1-char long symbols.
-# {} are reserved for comments.
-SYM1 = {
-    "+",
-    "-",
-    "/",
-    "*",
-    "%",
-    ";",
-    ".",
-    ",",
-    ":",
-    "^",
-    "(",
-    ")",
-    "[",
-    "]",
-    "#",
-}
-
-# 2-char long symbols.
-SYM2 = {
-    ">": [">"],
-    "<": ["<"],
-    "!": ["="],
-    "&": ["&"],
-    "|": ["|"],
-    "=": ["<", ">"],
-}
 
 
 def tokenize(text):
@@ -115,7 +51,8 @@ def tokenize(text):
                 while head.peek().isdigit():
                     number += head.next()
 
-                yield ("int", point, int(number))
+                span = (point, head.get_point())
+                yield Token(Tag.Int, span, data=int(number))
                 continue
 
             if _is_id_head(head.peek()):
@@ -125,10 +62,13 @@ def tokenize(text):
                 while _is_id_tail(head.peek()):
                     ident += head.next()
 
-                if ident in KEYWORDS:
-                    yield (ident, point)
-                else:
-                    yield ("id", point, ident)
+                span = (point, head.get_point())
+
+                try:
+                    tag = KEYWORDS[ident]
+                    yield Token(tag, span)
+                except:
+                    yield Token(Tag.Identifier, span, data=ident)
 
                 continue
 
@@ -138,7 +78,9 @@ def tokenize(text):
                 chr = head.next()
 
                 assert head.next() == "'"
-                yield ("chr", point, chr)
+
+                span = (point, head.get_point())
+                yield Token(Tag.Char, span, data=chr)
                 continue
 
             if head.peek() == '"':
@@ -149,20 +91,25 @@ def tokenize(text):
                     str += head.next()
 
                 assert head.next() == '"'
-                yield ("str", point, str)
+
+                span = (point, head.get_point())
+                yield Token(Tag.String, span, str)
                 continue
 
-            if head.peek() in SYM1:
-                yield (head.next(), point)
+            if head.peek() in SYM_1:
+                tag = SYM_1[head.next()]
+                span = (point, head.get_point())
+                yield Token(tag, span)
                 continue
 
-            if head.peek() in SYM2:
-                sym = head.next()
+            if head.peek() in SYM_2:
+                tag, peekmap = SYM_2[head.next()]
 
-                if head.peek() in SYM2[sym]:
-                    sym += head.next()
+                if head.peek() in peekmap:
+                    tag = peekmap[head.next()]
 
-                yield (sym, point)
+                span = (point, head.get_point())
+                yield Token(tag, span)
                 continue
 
             yield ("unknown", point, head.next())
@@ -189,7 +136,7 @@ class Lexer:
 
             return False
 
-        m = self.peek()[0] == tag
+        m = self.peek().tag == tag
 
         return m
 
@@ -205,15 +152,12 @@ class Lexer:
         got = self.peek()
         self.next()
 
-        if got[0] != tag or got[0] not in tag:
-            begin = got[1]
-            end = self.peek()[1]
-
+        if got.tag != tag or got.tag not in tag:
             msg.send(
                 Message(
-                    message=f"expected `{str(tag)}`, got `{got[0]}`",
+                    message=f"expected `{tag}`, got `{got.tag.value}`",
                     path=self.path,
-                    span=(begin, end),
+                    span=got.span,
                 )
             )
 
