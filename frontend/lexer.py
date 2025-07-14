@@ -152,10 +152,29 @@ class Lexer:
         got = self.peek()
         self.next()
 
-        if got.tag != tag or got.tag not in tag:
+        if isinstance(tag, list):
+            if got.tag not in tag:
+                values = list(map(lambda x: x.value, tag))
+
+                if len(values) > 1:
+                    values[-1] = "or " + values[-1]
+
+                tags = ", ".join(values)
+
+                msg.send(
+                    Message(
+                        message=f"expected one of {tags}, got {got.tag.value}",
+                        path=self.path,
+                        span=got.span,
+                    )
+                )
+
+                raise Error()
+
+        elif got.tag != tag:
             msg.send(
                 Message(
-                    message=f"expected `{tag}`, got `{got.tag.value}`",
+                    message=f"expected {tag}, got {got.tag.value}",
                     path=self.path,
                     span=got.span,
                 )

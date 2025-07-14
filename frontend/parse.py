@@ -14,26 +14,26 @@ def p_name(lexer):
 
 
 def p_lit_str(lexer):
-    str = lexer.expect("str")
+    str = lexer.expect(Tag.String)
     return syntax.StringLiteral(value=str[2])
 
 
 def p_lit_int(lexer):
-    int = lexer.expect("int")
+    int = lexer.expect(Tag.Int)
     return syntax.IntegerLiteral(value=int[2])
 
 
 def p_literal(lexer):
-    if lexer.at("id"):
+    if lexer.at(Tag.Identifier):
         return p_name(lexer)
 
-    if lexer.at("str"):
+    if lexer.at(Tag.String):
         return p_lit_str(lexer)
 
-    if lexer.at("int"):
+    if lexer.at(Tag.Int):
         return p_lit_int(lexer)
 
-    lexer.expect(["id", "str", "int"])
+    lexer.expect([Tag.Identifier, Tag.String, Tag.Int])
 
 
 def p_primary(lexer):
@@ -418,7 +418,7 @@ def p_path(lexer):
     name = p_name(lexer)
     path = syntax.PathNamed(name)
 
-    while lexer.match("."):
+    while lexer.match(Tag.PDot):
         child = p_with_path(lexer)
 
         path = syntax.PathSub(parent=path, child=child)
@@ -427,25 +427,25 @@ def p_path(lexer):
 
 
 def p_with_path(lexer):
-    if lexer.at("id"):
+    if lexer.at(Tag.Identifier):
         return p_path(lexer)
 
-    lexer.expect("(")
+    lexer.expect(Tag.PLParen)
 
     members = []
 
-    if lexer.at("id"):
+    if lexer.at(Tag.Identifier):
         member = p_with_path(lexer)
         members.append(member)
 
-    while lexer.match(","):
-        if lexer.at("id"):
+    while lexer.match(Tag.PComma):
+        if lexer.at(Tag.Identifier):
             member = p_with_path(lexer)
             members.append(member)
         else:
-            lexer.expect("id")
+            lexer.expect(Tag.Identifier)
 
-    lexer.expect(")")
+    lexer.expect(Tag.PRParen)
 
     return syntax.WithPathMembers(members)
 
@@ -453,12 +453,12 @@ def p_with_path(lexer):
 def p_with(lexer):
     imports = False
 
-    if lexer.match("import"):
+    if lexer.match(Tag.KwImport):
         imports = True
 
     path = p_with_path(lexer)
 
-    lexer.expect(";")
+    lexer.expect(Tag.PSemicolon)
 
     return syntax.StatementWith(imports, path)
 
@@ -513,7 +513,7 @@ def p_toplevel(lexer):
     if lexer.match("subscript"):
         return p_subscript(lexer)
 
-    if lexer.match("with"):
+    if lexer.match(Tag.KwWith):
         return p_with(lexer)
 
     if lexer.match("import"):
