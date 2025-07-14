@@ -1,8 +1,10 @@
 from typing import Optional
 
+from frontend.lexer import Error as LexerError
 from frontend.lexer import Lexer
 from frontend.sourcemap import KNOWN_FILES
-from frontend import syntax, error
+from frontend import syntax, message as msg
+from frontend.message import Message
 
 
 def p_name(lexer):
@@ -496,12 +498,11 @@ def p_typedef(lexer):
         lexer.expect(";")
 
         return syntax.TypeDefinition(name, type)
-    except error.Error as err:
+    except LexerError:
         while not lexer.at(";"):
             lexer.next()
 
         lexer.next()
-        raise err
 
 
 def p_toplevel(lexer):
@@ -528,16 +529,11 @@ def parse(lexer):
 
     try:
         while True:
-            try:
-                top = p_toplevel(lexer)
-                file.append(top)
-            except error.Error as err:
-                path = lexer.path
-                l, c = err.span
-                k = err.kind
-                print(f"{k.name}: {err.message}")
-                KNOWN_FILES[path].report(l, c)
+            top = p_toplevel(lexer)
+            file.append(top)
     except StopIteration:
+        pass
+    finally:
         pass
 
     return file

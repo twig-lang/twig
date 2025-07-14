@@ -12,6 +12,10 @@ class Node:
     pass
 
 
+class Error(Node):
+    pass
+
+
 class FunctionBody(Node):
     pass
 

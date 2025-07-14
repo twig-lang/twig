@@ -1,5 +1,6 @@
 from frontend.iter import peekable, Peek
-from frontend.error import Error
+from frontend.message import Message
+import frontend.message as msg
 
 
 def _is_id_head(c):
@@ -8,6 +9,10 @@ def _is_id_head(c):
 
 def _is_id_tail(c):
     return c.isalnum() or c == "_"
+
+
+class Error(Exception):
+    pass
 
 
 KEYWORDS = {
@@ -204,9 +209,15 @@ class Lexer:
             begin = got[1]
             end = self.peek()[1]
 
-            raise Error(
-                message=f"expected `{str(tag)}`, got `{got[0]}`", span=(begin, end)
+            msg.send(
+                Message(
+                    message=f"expected `{str(tag)}`, got `{got[0]}`",
+                    path=self.path,
+                    span=(begin, end),
+                )
             )
+
+            raise Error()
 
         return got
 
