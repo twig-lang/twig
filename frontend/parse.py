@@ -14,13 +14,13 @@ def p_name(lexer):
 
 
 def p_lit_str(lexer):
-    str = lexer.expect(Tag.String)
-    return syntax.StringLiteral(value=str[2])
+    value = lexer.expect(Tag.String).data
+    return syntax.StringLiteral(value)
 
 
 def p_lit_int(lexer):
-    int = lexer.expect(Tag.Int)
-    return syntax.IntegerLiteral(value=int[2])
+    value = lexer.expect(Tag.Int).data
+    return syntax.IntegerLiteral(value)
 
 
 def p_literal(lexer):
@@ -37,9 +37,9 @@ def p_literal(lexer):
 
 
 def p_primary(lexer):
-    if lexer.match("("):
+    if lexer.match(Tag.PLParen):
         inner = p_expression(lexer)
-        lexer.expect(")")
+        lexer.expect(Tag.PRParen)
 
         return inner
 
@@ -52,7 +52,7 @@ def p_argument(lexer):
 
     value = p_expression(lexer)
 
-    if lexer.match(":"):
+    if lexer.match(Tag.PColon):
         assert type(value) is syntax.Name
         key = value
         value = p_expression(lexer)
@@ -70,7 +70,7 @@ def p_arguments(lexer, end):
         if lexer.at(end):
             break
 
-        lexer.expect(",")
+        lexer.expect(Tag.PComma)
 
     lexer.expect(end)
 
@@ -81,12 +81,12 @@ def p_factor(lexer):
     inner = p_primary(lexer)
 
     while True:
-        if lexer.match("("):
-            arguments = p_arguments(lexer, ")")
+        if lexer.match(Tag.PLParen):
+            arguments = p_arguments(lexer, Tag.PRParen)
             inner = syntax.ExpressionFunctionCall(callee=inner, arguments=arguments)
 
-        elif lexer.match("["):
-            arguments = p_arguments(lexer, "]")
+        elif lexer.match(Tag.PLBracket):
+            arguments = p_arguments(lexer, Tag.PRBracket)
             inner = syntax.ExpressionSubscriptCall(callee=inner, arguments=arguments)
 
         else:
@@ -96,24 +96,24 @@ def p_factor(lexer):
 
 
 PRECEDENCES = {
-    "/": 9,
-    "*": 9,
-    "%": 9,
-    "+": 8,
-    "-": 8,
-    ">>": 7,
-    "<<": 7,
-    "&": 6,
-    "^": 5,
-    "|": 4,
-    "<": 3,
-    ">": 3,
-    "=": 3,
-    "!=": 3,
-    "=<": 3,
-    "=>": 3,
-    "&&": 2,
-    "||": 1,
+    Tag.OpDiv: 9,
+    Tag.OpMul: 9,
+    Tag.OpMod: 9,
+    Tag.OpAdd: 8,
+    Tag.OpSub: 8,
+    Tag.OpShr: 7,
+    Tag.OpShl: 7,
+    Tag.OpAnd: 6,
+    Tag.OpXor: 5,
+    Tag.OpOr: 4,
+    Tag.OpLt: 3,
+    Tag.OpGt: 3,
+    Tag.OpEq: 3,
+    Tag.OpNotEq: 3,
+    Tag.OpEqLt: 3,
+    Tag.OpEqGt: 3,
+    Tag.OpAndthen: 2,
+    Tag.OpOrelse: 1,
 }
 
 
@@ -123,7 +123,7 @@ def precedence(operator):
 
 
 def p_operator(lexer) -> Optional[tuple[syntax.Operator, int]]:
-    operator = lexer.peek()[0]
+    operator = lexer.peek().tag
 
     if operator not in PRECEDENCES:
         return None
@@ -171,7 +171,7 @@ def p_begin(lexer):
     children = []
 
     while True:
-        if lexer.match("end"):
+        if lexer.match(Tag.KwEnd):
             break
 
         child = p_stmt(lexer)
@@ -186,23 +186,23 @@ def p_let_binding(lexer):
     name = p_name(lexer)
 
     type = None
-    if lexer.match(":"):
+    if lexer.match(Tag.PColon):
         type = p_type(lexer)
 
-    lexer.expect("=")
+    lexer.expect(Tag.OpEq)
 
     value = p_expression(lexer)
 
-    lexer.expect(";")
+    lexer.expect(Tag.PSemicolon)
 
     return syntax.LetBinding(mode, name, type, value)
 
 
 def p_let(lexer):
-    if lexer.match("begin"):
+    if lexer.match(Tag.KwBegin):
         bindings = []
 
-        while not lexer.match("end"):
+        while not lexer.match(Tag.KwEnd):
             binding = p_let_binding(lexer)
             bindings.append(binding)
 
@@ -216,7 +216,7 @@ def p_let(lexer):
 def p_while(lexer):
     condition = p_expression(lexer)
 
-    lexer.expect("do")
+    lexer.expect(Tag.KwDo)
 
     body = p_stmt(lexer)
 
@@ -228,27 +228,27 @@ def p_set_binding(lexer):
 
     operator = None
 
-    if not lexer.at("="):
+    if not lexer.at(Tag.OpEq):
         operator = p_operator(lexer)
 
         if operator:
             lexer.next()
             operator, _ = operator
 
-    lexer.expect("=")
+    lexer.expect(Tag.OpEq)
 
     rvalue = p_expression(lexer)
 
-    lexer.expect(";")
+    lexer.expect(Tag.PSemicolon)
 
     return syntax.SetBinding(lvalue, operator, rvalue)
 
 
 def p_set(lexer):
-    if lexer.match("begin"):
+    if lexer.match(Tag.KwBegin):
         bindings = []
 
-        while not lexer.match("end"):
+        while not lexer.match(Tag.KwEnd):
             binding = p_set_binding(lexer)
             bindings.append(binding)
 
@@ -262,10 +262,10 @@ def p_set(lexer):
 def p_return(lexer):
     value = None
 
-    if not lexer.at(";"):
+    if not lexer.at(Tag.PSemicolon):
         value = p_expression(lexer)
 
-    lexer.expect(";")
+    lexer.expect(Tag.PSemicolon)
 
     return syntax.StatementReturn(value)
 
@@ -273,7 +273,7 @@ def p_return(lexer):
 def p_yield(lexer):
     mode = p_mode(lexer)
     value = p_expression(lexer)
-    lexer.expect(";")
+    lexer.expect(Tag.PSemicolon)
 
     return syntax.StatementYield(mode, value)
 
@@ -281,49 +281,49 @@ def p_yield(lexer):
 def p_if(lexer):
     condition = p_expression(lexer)
 
-    lexer.expect("then")
+    lexer.expect(Tag.KwThen)
 
     taken = p_stmt(lexer)
     not_taken = None
 
-    if lexer.match("else"):
+    if lexer.match(Tag.KwElse):
         not_taken = p_stmt(lexer)
 
     return syntax.StatementIf(condition, taken, not_taken)
 
 
 def p_stmt(lexer):
-    if lexer.match("begin"):
+    if lexer.match(Tag.KwBegin):
         return p_begin(lexer)
 
-    if lexer.match("let"):
+    if lexer.match(Tag.KwLet):
         return p_let(lexer)
 
-    if lexer.match("while"):
+    if lexer.match(Tag.KwWhile):
         return p_while(lexer)
 
-    if lexer.match("set"):
+    if lexer.match(Tag.KwSet):
         return p_set(lexer)
 
-    if lexer.match("return"):
+    if lexer.match(Tag.KwReturn):
         return p_return(lexer)
 
-    if lexer.match("if"):
+    if lexer.match(Tag.KwIf):
         return p_if(lexer)
 
-    if lexer.match("yield"):
+    if lexer.match(Tag.KwYield):
         return p_yield(lexer)
 
     expression = p_expression(lexer)
-    lexer.expect(";")
+    lexer.expect(Tag.PSemicolon)
 
     return syntax.StatementExpression(expression)
 
 
 def p_function_body(lexer):
-    if lexer.match("="):
+    if lexer.match(Tag.OpEq):
         body = p_expression(lexer)
-        lexer.expect(";")
+        lexer.expect(Tag.PSemicolon)
 
         return syntax.FunctionBodyExpression(body)
 
@@ -333,15 +333,15 @@ def p_function_body(lexer):
 
 
 def p_type(lexer):
-    if lexer.match("("):
+    if lexer.match(Tag.PLParen):
         ty = None
 
-        if not lexer.at(")"):
+        if not lexer.at(Tag.PRParen):
             ty = p_type(lexer)
         else:
             ty = syntax.TypeUnit()
 
-        lexer.expect(")")
+        lexer.expect(Tag.PRParen)
 
         return ty
 
@@ -353,10 +353,10 @@ def p_type(lexer):
 def p_mode(lexer):
     mode = syntax.Mode(0)
 
-    if lexer.match("&"):
+    if lexer.match(Tag.OpAnd):
         mode |= syntax.Mode.REFERENCE
 
-    if lexer.match("mut"):
+    if lexer.match(Tag.KwMut):
         mode |= syntax.Mode.MUTABLE
 
     return mode
@@ -368,16 +368,16 @@ def p_param(lexer):
     name = p_name(lexer)
     key = None
 
-    if lexer.at("id"):
+    if lexer.at(Tag.Identifier):
         key = p_name(lexer)
 
-    lexer.expect(":")
+    lexer.expect(Tag.PColon)
 
     type = p_type(lexer)
 
     default = None
     if key is not None:
-        lexer.expect("=")
+        lexer.expect(Tag.OpEq)
         default = p_expression(lexer)
 
     return syntax.Parameter(mode, name, key, type, default)
@@ -394,7 +394,7 @@ def p_param_list(lexer, begin, end):
             if lexer.match(end):
                 break
 
-            lexer.expect(",")
+            lexer.expect(Tag.PComma)
 
     return syntax.ParameterList(parameters=params)
 
@@ -402,11 +402,11 @@ def p_param_list(lexer, begin, end):
 def p_function(lexer):
     name = p_name(lexer)
 
-    parameters = p_param_list(lexer, "(", ")")
+    parameters = p_param_list(lexer, Tag.PLParen, Tag.PRParen)
 
     return_type = None
 
-    if lexer.match(":"):
+    if lexer.match(Tag.PColon):
         return_type = p_type(lexer)
 
     body = p_function_body(lexer)
@@ -466,7 +466,7 @@ def p_with(lexer):
 def p_import(lexer):
     path = p_path(lexer)
 
-    lexer.expect(";")
+    lexer.expect(Tag.PSemicolon)
 
     return syntax.Import(path)
 
@@ -476,11 +476,11 @@ def p_subscript(lexer):
 
     name = p_name(lexer)
 
-    parameters = p_param_list(lexer, "[", "]")
+    parameters = p_param_list(lexer, Tag.PLBracket, Tag.PRBracket)
 
     return_type = None
 
-    if lexer.match(":"):
+    if lexer.match(Tag.PColon):
         return_type = p_type(lexer)
 
     body = p_function_body(lexer)
@@ -492,34 +492,34 @@ def p_typedef(lexer):
     try:
         name = p_name(lexer)
 
-        lexer.expect("=")
+        lexer.expect(Tag.OpEq)
 
         type = p_type(lexer)
 
-        lexer.expect(";")
+        lexer.expect(Tag.PSemicolon)
 
         return syntax.TypeDefinition(name, type)
     except LexerError:
-        while not lexer.at(";"):
+        while not lexer.at(Tag.PSemicolon):
             lexer.next()
 
         lexer.next()
 
 
 def p_toplevel(lexer):
-    if lexer.match("function"):
+    if lexer.match(Tag.KwFunction):
         return p_function(lexer)
 
-    if lexer.match("subscript"):
+    if lexer.match(Tag.KwSubscript):
         return p_subscript(lexer)
 
     if lexer.match(Tag.KwWith):
         return p_with(lexer)
 
-    if lexer.match("import"):
+    if lexer.match(Tag.KwImport):
         return p_import(lexer)
 
-    if lexer.match("type"):
+    if lexer.match(Tag.KwType):
         return p_typedef(lexer)
 
     return lexer.next()
