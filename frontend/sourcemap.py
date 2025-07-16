@@ -34,10 +34,10 @@ class Sourcemap:
             print(f"{line+1 : 5} | {self.lines[line]}")
 
             if beg_line == end_line:
-              length = end_col - beg_col
-              pointer = (' ' * beg_col) + ('^' * length)
+                length = end_col - beg_col
+                pointer = (" " * beg_col) + ("^" * length)
 
-              print(f"      | {pointer}")
+                print(f"      | {pointer}")
 
 
 KNOWN_FILES: dict[Path, Sourcemap] = {}

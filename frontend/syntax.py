@@ -260,3 +260,47 @@ class ModuleArgument(Node):
 class PathCall(Path):
     callee: Path
     arguments: list[ModuleArgument]
+
+
+# name ':' type
+@dataclass
+class Member(Node):
+    name: Name
+    type: Type
+
+
+# 'record' { member },
+@dataclass
+class TypeRecord(Type):
+    members: list[Member]
+
+
+# 'union' { member },
+@dataclass
+class TypeUnion(Type):
+    members: list[Member]
+
+
+# '(' type { ',' type } ')'
+@dataclass
+class TypeTuple(Type):
+    members: list[Type]
+
+
+# 'enum' { name },
+@dataclass
+class TypeEnum(Type):
+    names: list[Name]
+
+
+# name [ '(' { type }, ')' ]
+@dataclass
+class Variant(Node):
+    name: Name
+    arguments: list[Type]
+
+
+# 'variant' { variant },
+@dataclass
+class TypeVariant(Type):
+    cases: list[Variant]

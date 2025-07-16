@@ -12,7 +12,7 @@ type IntAndUnit = record
   i: int,
   u: unit;
 
-type AlsoIntAndUnit = (int, unit)
+type AlsoIntAndUnit = (int, unit);
 
 type Bit = enum
   Set,

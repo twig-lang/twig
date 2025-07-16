@@ -332,20 +332,134 @@ def p_function_body(lexer):
     return syntax.FunctionBodyStatement(body)
 
 
-def p_type(lexer):
-    if lexer.match(Tag.PLParen):
-        ty = None
+def p_member(lexer):
+    name = p_name(lexer)
+    lexer.expect(Tag.PColon)
+    type = p_type(lexer)
+    return syntax.Member(name, type)
 
+
+def p_record(lexer):
+    members = []
+
+    if lexer.at(Tag.PSemicolon):
+        return syntax.TypeRecord([])
+
+    mem = p_member(lexer)
+    members.append(mem)
+
+    while lexer.match(Tag.PComma):
+        mem = p_member(lexer)
+        members.append(mem)
+
+    return syntax.TypeRecord(members)
+
+
+def p_union(lexer):
+    members = []
+
+    if lexer.at(Tag.PSemicolon):
+        return syntax.TypeRecord([])
+
+    mem = p_member(lexer)
+    members.append(mem)
+
+    while lexer.match(Tag.PComma):
+        mem = p_member(lexer)
+        members.append(mem)
+
+    return syntax.TypeUnion(members)
+
+
+def p_enum(lexer):
+    names = []
+
+    if lexer.at(Tag.PSemicolon):
+        return syntax.TypeEnum([])
+
+    n = p_name(lexer)
+    names.append(n)
+
+    while lexer.match(Tag.PComma):
+        n = p_name(lexer)
+        names.append(n)
+
+    return syntax.TypeEnum(names)
+
+
+def p_tuple(lexer):
+    members = []
+
+    if not lexer.at(Tag.PRParen):
+        ty = p_type(lexer)
+        members.append(ty)
+    else:
+        members.append(syntax.TypeUnit())
+
+    while lexer.match(Tag.PComma):
+        ty = p_type(lexer)
+        members.append(ty)
+
+    lexer.expect(Tag.PRParen)
+
+    if len(members) == 1:
+        return members[0]
+    else:
+        return syntax.TypeTuple(members)
+
+
+def p_varcase(lexer):
+    name = p_name(lexer)
+    arguments = []
+
+    if lexer.match(Tag.PLParen):
         if not lexer.at(Tag.PRParen):
-            ty = p_type(lexer)
-        else:
-            ty = syntax.TypeUnit()
+            arg = p_type(lexer)
+            arguments.append(arg)
+
+            while lexer.match(Tag.PComma):
+                arg = p_type(lexer)
+                arguments.append(arg)
 
         lexer.expect(Tag.PRParen)
 
-        return ty
+    return syntax.Variant(name, arguments)
 
-    name = p_name(lexer)
+
+def p_variant(lexer):
+    members = []
+
+    if lexer.at(Tag.PSemicolon):
+        return syntax.TypeVariant(members)
+
+    mem = p_varcase(lexer)
+    members.append(mem)
+
+    while lexer.match(Tag.PComma):
+        mem = p_varcase(lexer)
+        members.append(mem)
+
+    return syntax.TypeVariant(members)
+
+
+def p_type(lexer, on_def=False):
+    if lexer.match(Tag.PLParen):
+        return p_tuple(lexer)
+
+    if on_def:
+        if lexer.match(Tag.KwRecord):
+            return p_record(lexer)
+
+        if lexer.match(Tag.KwUnion):
+            return p_union(lexer)
+
+        if lexer.match(Tag.KwEnum):
+            return p_enum(lexer)
+
+        if lexer.match(Tag.KwVariant):
+            return p_variant(lexer)
+
+    name = p_path(lexer)
 
     return syntax.TypeNamed(name)
 
@@ -424,7 +538,7 @@ def p_path_arg(lexer):
         value = p_path(lexer)
     else:
         name = syntax.PathNamed(name)
-        value = p_path(lexer, path=name)
+        value = p_path(lexer, lhs=name)
 
     return syntax.ModuleArgument(key, value)
 
@@ -467,7 +581,7 @@ def p_path(lexer, as_with=False, lhs=None):
     if lexer.match(Tag.PLParen):
         arguments = p_path_args(lexer)
         path = syntax.PathCall(callee=path, arguments=arguments)
-        return p_path(lexer, as_with=as_with, path=path)
+        return p_path(lexer, as_with=as_with, lhs=path)
 
     return path
 
@@ -540,7 +654,7 @@ def p_typedef(lexer):
 
         lexer.expect(Tag.OpEq)
 
-        type = p_type(lexer)
+        type = p_type(lexer, on_def=True)
 
         lexer.expect(Tag.PSemicolon)
 
