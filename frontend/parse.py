@@ -201,6 +201,7 @@ def p_begin(lexer):
     return syntax.StatementBegin(children)
 
 
+@recovers_on(Tag.PSemicolon, consumes=True)
 def p_let_binding(lexer):
     mode = p_mode(lexer)
 
@@ -218,20 +219,56 @@ def p_let_binding(lexer):
 
     return syntax.LetBinding(mode, name, type, value)
 
+@recovers_on(Tag.PSemicolon, Tag.KwIn)
+def p_top_let_binding(lexer):
+    mode = p_mode(lexer)
+
+    name = p_name(lexer)
+
+    type = None
+    if lexer.match(Tag.PColon):
+        type = p_type(lexer)
+
+    lexer.expect(Tag.OpEq)
+
+    value = p_expression(lexer)
+
+    return syntax.LetBinding(mode, name, type, value)
+
 
 def p_let(lexer):
+    kind = syntax.LetKind.VALUE
+
+    if lexer.match(Tag.KwIf):
+        kind = syntax.LetKind.IF
+
+    if lexer.match(Tag.KwWhile):
+        kind = syntax.LetKind.WHILE
+
+    bindings = []
+
     if lexer.match(Tag.KwBegin):
         bindings = []
 
         while not lexer.match(Tag.KwEnd):
             binding = p_let_binding(lexer)
             bindings.append(binding)
+    else:
+        binding = p_top_let_binding(lexer)
+        bindings.append(binding)
 
-        return syntax.StatementLet(bindings)
+    body = None
 
-    binding = p_let_binding(lexer)
+    if kind == syntax.LetKind.VALUE:
+        if lexer.match(Tag.KwIn):
+            body = p_statement(lexer)
+        else:
+            lexer.expect(Tag.PSemicolon)
+    else:
+        lexer.expect(Tag.KwIn)
+        body = p_statement(lexer)
 
-    return syntax.StatementLet(bindings=[binding])
+    return syntax.StatementLet(kind, bindings, body)
 
 
 def p_while(lexer):

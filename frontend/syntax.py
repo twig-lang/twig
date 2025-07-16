@@ -124,9 +124,21 @@ class LetBinding(Node):
     value: Expression
 
 
+# '' | 'while' | 'if'
+class LetKind(Enum):
+    VALUE = "value"
+    IF = "if"
+    WHILE = "while"
+
+
+# 'let' [ 'while' | 'if' ] bindings [ 'in' statement ]
+# NOTE: the 'in' is required for let-if and let-while bindings,
+# and optional for "regular" bindings.
 @dataclass
 class StatementLet(Statement):
+    kind: LetKind
     bindings: list[LetBinding]
+    body: Optional[Statement]
 
 
 @dataclass

@@ -9,7 +9,7 @@ subscript if unwrap(opt: MaybeInt): i64
     an error. }
 
   if let Some(x) = opt then
-    yield x
+    yield x;
 
   { not yielding is an option here! }
 
