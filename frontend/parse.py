@@ -649,38 +649,47 @@ def p_subscript(lexer):
 
 
 def p_typedef(lexer):
-    try:
-        name = p_name(lexer)
+    name = p_name(lexer)
 
-        lexer.expect(Tag.OpEq)
+    lexer.expect(Tag.OpEq)
 
-        type = p_type(lexer, on_def=True)
+    type = p_type(lexer, on_def=True)
 
-        lexer.expect(Tag.PSemicolon)
+    lexer.expect(Tag.PSemicolon)
 
-        return syntax.TypeDefinition(name, type)
-    except LexerError:
-        while not lexer.at(Tag.PSemicolon):
-            lexer.next()
+    return syntax.TypeDefinition(name, type)
 
-        lexer.next()
+
+TOPLEVEL_TOKENS = [
+    Tag.KwFunction,
+    Tag.KwSubscript,
+    Tag.KwWith,
+    Tag.KwImport,
+    Tag.KwType,
+]
 
 
 def p_toplevel(lexer):
-    if lexer.match(Tag.KwFunction):
-        return p_function(lexer)
+    try:
+        if lexer.match(Tag.KwFunction):
+            return p_function(lexer)
 
-    if lexer.match(Tag.KwSubscript):
-        return p_subscript(lexer)
+        if lexer.match(Tag.KwSubscript):
+            return p_subscript(lexer)
 
-    if lexer.match(Tag.KwWith):
-        return p_with(lexer)
+        if lexer.match(Tag.KwWith):
+            return p_with(lexer)
 
-    if lexer.match(Tag.KwImport):
-        return p_import(lexer)
+        if lexer.match(Tag.KwImport):
+            return p_import(lexer)
 
-    if lexer.match(Tag.KwType):
-        return p_typedef(lexer)
+        if lexer.match(Tag.KwType):
+            return p_typedef(lexer)
+    except LexerError:
+        while not lexer.at(TOPLEVEL_TOKENS):
+            lexer.next()
+
+        return None
 
     return lexer.next()
 

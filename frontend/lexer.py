@@ -174,7 +174,7 @@ class Lexer:
         elif got.tag != tag:
             msg.send(
                 Message(
-                    message=f"expected {tag}, got {got.tag.value}",
+                    message=f"expected {tag.value}, got {got.tag.value}",
                     path=self.path,
                     span=got.span,
                 )
