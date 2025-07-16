@@ -25,7 +25,7 @@ def p_lit_int(lexer):
 
 def p_literal(lexer):
     if lexer.at(Tag.Identifier):
-        return p_name(lexer)
+        return p_path(lexer)
 
     if lexer.at(Tag.String):
         return p_lit_str(lexer)
@@ -414,21 +414,67 @@ def p_function(lexer):
     return syntax.FunctionDefinition(name, parameters, return_type, body)
 
 
-def p_path(lexer):
+def p_path_arg(lexer):
+    key = None
     name = p_name(lexer)
-    path = syntax.PathNamed(name)
+    value = None
+
+    if lexer.match(Tag.PColon):
+        key = name
+        value = p_path(lexer)
+    else:
+        name = syntax.PathNamed(name)
+        value = p_path(lexer, path=name)
+
+    return syntax.ModuleArgument(key, value)
+
+
+def p_path_args(lexer):
+    args = []
+
+    while True:
+        if lexer.at(Tag.PRParen):
+            break
+
+        arg = p_path_arg(lexer)
+        args.append(arg)
+
+        if not lexer.at(Tag.PRParen):
+            lexer.expect(Tag.PComma)
+
+    lexer.expect(Tag.PRParen)
+
+    return args
+
+
+def p_path(lexer, as_with=False, lhs=None):
+    path = lhs
+
+    if not path:
+        name = p_name(lexer)
+        path = syntax.PathNamed(name)
 
     while lexer.match(Tag.PDot):
-        child = p_with_path(lexer)
+        child = None
+
+        if as_with and lexer.at(Tag.LParen):
+            child = p_with_path(lexer)
+        else:
+            child = p_path(lexer)
 
         path = syntax.PathSub(parent=path, child=child)
+
+    if lexer.match(Tag.PLParen):
+        arguments = p_path_args(lexer)
+        path = syntax.PathCall(callee=path, arguments=arguments)
+        return p_path(lexer, as_with=as_with, path=path)
 
     return path
 
 
 def p_with_path(lexer):
     if lexer.at(Tag.Identifier):
-        return p_path(lexer)
+        return p_path(lexer, as_with=True)
 
     lexer.expect(Tag.PLParen)
 

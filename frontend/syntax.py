@@ -244,4 +244,19 @@ class TypeDefinition(Node):
 
 
 class TypeUnit(Type):
-    pass
+    def __repr__(self):
+        return "TypeUnit"
+
+
+# [ name ':' ] path
+@dataclass
+class ModuleArgument(Node):
+    key: Optional[Name]
+    value: Path
+
+
+# path '(' { <module argument> }, ')'
+@dataclass
+class PathCall(Path):
+    callee: Path
+    arguments: list[ModuleArgument]
