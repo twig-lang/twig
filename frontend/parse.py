@@ -8,6 +8,26 @@ from frontend.message import Message
 from frontend.token import *
 
 
+# function jumps to a known token, and then it may consume it or not.
+def recovers_on(tokens, consumes=False):
+    def deco(function):
+        def wrapper(lexer, *args, **kwargs):
+            try:
+                return function(lexer, *args, **kwargs)
+            except LexerError:
+                while not lexer.at(tokens):
+                    lexer.next()
+
+                if consumes:
+                    lexer.next()
+
+                return None
+
+        return wrapper
+
+    return deco
+
+
 def p_name(lexer):
     name = lexer.expect(Tag.Identifier).data
     return syntax.Name(name)
@@ -167,6 +187,7 @@ def p_expression(lexer):
     return p_bin_rhs(lexer, 0, lhs)
 
 
+@recovers_on(Tag.KwEnd, consumes=True)
 def p_begin(lexer):
     children = []
 
@@ -259,6 +280,7 @@ def p_set(lexer):
     return syntax.StatementSet(bindings=[binding])
 
 
+@recovers_on(Tag.PSemicolon, consumes=True)
 def p_return(lexer):
     value = None
 
@@ -270,6 +292,7 @@ def p_return(lexer):
     return syntax.StatementReturn(value)
 
 
+@recovers_on(Tag.PSemicolon, consumes=True)
 def p_yield(lexer):
     mode = p_mode(lexer)
     value = p_expression(lexer)
@@ -332,6 +355,7 @@ def p_function_body(lexer):
     return syntax.FunctionBodyStatement(body)
 
 
+@recovers_on([Tag.PComma, Tag.PSemicolon])
 def p_member(lexer):
     name = p_name(lexer)
     lexer.expect(Tag.PColon)
@@ -339,6 +363,7 @@ def p_member(lexer):
     return syntax.Member(name, type)
 
 
+@recovers_on(Tag.PSemicolon)
 def p_record(lexer):
     members = []
 
@@ -355,6 +380,7 @@ def p_record(lexer):
     return syntax.TypeRecord(members)
 
 
+@recovers_on(Tag.PSemicolon)
 def p_union(lexer):
     members = []
 
@@ -371,6 +397,7 @@ def p_union(lexer):
     return syntax.TypeUnion(members)
 
 
+@recovers_on(Tag.PSemicolon)
 def p_enum(lexer):
     names = []
 
@@ -408,6 +435,7 @@ def p_tuple(lexer):
         return syntax.TypeTuple(members)
 
 
+@recovers_on([Tag.PComma, Tag.PSemicolon])
 def p_varcase(lexer):
     name = p_name(lexer)
     arguments = []
@@ -426,6 +454,7 @@ def p_varcase(lexer):
     return syntax.Variant(name, arguments)
 
 
+@recovers_on(Tag.PSemicolon)
 def p_variant(lexer):
     members = []
 
@@ -610,6 +639,7 @@ def p_with_path(lexer):
     return syntax.WithPathMembers(members)
 
 
+@recovers_on(Tag.PSemicolon, consumes=True)
 def p_with(lexer):
     imports = False
 
@@ -623,6 +653,7 @@ def p_with(lexer):
     return syntax.StatementWith(imports, path)
 
 
+@recovers_on(Tag.PSemicolon, consumes=True)
 def p_import(lexer):
     path = p_path(lexer)
 
@@ -648,6 +679,7 @@ def p_subscript(lexer):
     return syntax.SubscriptDefinition(name, mode, parameters, return_type, body)
 
 
+@recovers_on(Tag.PSemicolon, consumes=True)
 def p_typedef(lexer):
     name = p_name(lexer)
 
@@ -669,27 +701,22 @@ TOPLEVEL_TOKENS = [
 ]
 
 
+@recovers_on(TOPLEVEL_TOKENS)
 def p_toplevel(lexer):
-    try:
-        if lexer.match(Tag.KwFunction):
-            return p_function(lexer)
+    if lexer.match(Tag.KwFunction):
+        return p_function(lexer)
 
-        if lexer.match(Tag.KwSubscript):
-            return p_subscript(lexer)
+    if lexer.match(Tag.KwSubscript):
+        return p_subscript(lexer)
 
-        if lexer.match(Tag.KwWith):
-            return p_with(lexer)
+    if lexer.match(Tag.KwWith):
+        return p_with(lexer)
 
-        if lexer.match(Tag.KwImport):
-            return p_import(lexer)
+    if lexer.match(Tag.KwImport):
+        return p_import(lexer)
 
-        if lexer.match(Tag.KwType):
-            return p_typedef(lexer)
-    except LexerError:
-        while not lexer.at(TOPLEVEL_TOKENS):
-            lexer.next()
-
-        return None
+    if lexer.match(Tag.KwType):
+        return p_typedef(lexer)
 
     return lexer.next()
 
