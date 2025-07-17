@@ -638,7 +638,7 @@ def p_path(lexer, as_with=False, lhs=None):
     while lexer.match(Tag.PPathsep):
         child = None
 
-        if as_with and lexer.at(Tag.LParen):
+        if as_with and lexer.at(Tag.PLParen):
             child = p_with_path(lexer)
         else:
             child = p_path(lexer)
@@ -650,6 +650,10 @@ def p_path(lexer, as_with=False, lhs=None):
         arguments = p_path_args(lexer)
         path = syntax.PathCall(callee=path, arguments=arguments)
         return p_path(lexer, as_with=as_with, lhs=path)
+
+    if as_with and lexer.match(Tag.PDot):
+        child = p_with_path(lexer)
+        path = syntax.PathSub(parent=path, child=child)
 
     return path
 
