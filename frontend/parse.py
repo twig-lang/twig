@@ -21,7 +21,7 @@ def recovers_on(tokens, consumes=False):
                 if consumes:
                     lexer.next()
 
-                return None
+                return syntax.Error()
 
         return wrapper
 
@@ -237,14 +237,19 @@ def p_top_let_binding(lexer):
     return syntax.LetBinding(mode, name, type, value)
 
 
-def p_let(lexer):
-    kind = syntax.LetKind.VALUE
+def p_bindkind(lexer):
+    kind = syntax.BindingKind.VALUE
 
     if lexer.match(Tag.KwIf):
-        kind = syntax.LetKind.IF
+        kind = syntax.BindingKind.IF
+    elif lexer.match(Tag.KwWhile):
+        kind = syntax.BindingKind.WHILE
 
-    if lexer.match(Tag.KwWhile):
-        kind = syntax.LetKind.WHILE
+    return kind
+
+
+def p_let(lexer):
+    kind = p_bindkind(lexer)
 
     bindings = []
 
@@ -260,7 +265,7 @@ def p_let(lexer):
 
     body = None
 
-    if kind == syntax.LetKind.VALUE:
+    if kind == syntax.BindingKind.VALUE:
         if lexer.match(Tag.KwIn):
             body = p_statement(lexer)
         else:
@@ -569,13 +574,16 @@ def p_param_list(lexer, begin, end):
 
     if lexer.match(begin):
         while True:
+            if lexer.at(end):
+                break
+
             par = p_param(lexer)
             params.append(par)
 
-            if lexer.match(end):
+            if not lexer.match(Tag.PComma):
                 break
 
-            lexer.expect(Tag.PComma)
+        lexer.expect(end)
 
     return syntax.ParameterList(parameters=params)
 
@@ -706,20 +714,19 @@ def p_import(lexer):
 
 
 def p_subscript(lexer):
+    kind = p_bindkind(lexer)
     mode = p_mode(lexer)
-
     name = p_name(lexer)
 
     parameters = p_param_list(lexer, Tag.PLBracket, Tag.PRBracket)
 
     return_type = None
-
     if lexer.match(Tag.PColon):
         return_type = p_type(lexer)
 
     body = p_function_body(lexer)
 
-    return syntax.SubscriptDefinition(name, mode, parameters, return_type, body)
+    return syntax.SubscriptDefinition(kind, name, mode, parameters, return_type, body)
 
 
 @recovers_on(Tag.PSemicolon, consumes=True)

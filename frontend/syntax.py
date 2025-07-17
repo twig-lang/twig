@@ -13,7 +13,8 @@ class Node:
 
 
 class Error(Node):
-    pass
+    def __repr__(self):
+        return "syntax.Error"
 
 
 class FunctionBody(Node):
@@ -125,18 +126,18 @@ class LetBinding(Node):
 
 
 # '' | 'while' | 'if'
-class LetKind(Enum):
+class BindingKind(Enum):
     VALUE = "value"
     IF = "if"
     WHILE = "while"
 
 
-# 'let' [ 'while' | 'if' ] bindings [ 'in' statement ]
+# 'let' [ kind ] bindings [ 'in' statement ]
 # NOTE: the 'in' is required for let-if and let-while bindings,
 # and optional for "regular" bindings.
 @dataclass
 class StatementLet(Statement):
-    kind: LetKind
+    kind: BindingKind
     bindings: list[LetBinding]
     body: Optional[Statement]
 
@@ -231,6 +232,7 @@ class ExpressionSubscriptCall(Expression):
 
 @dataclass
 class SubscriptDefinition(Node):
+    kind: BindingKind
     name: str
     mode: Mode
     parameters: ParameterList

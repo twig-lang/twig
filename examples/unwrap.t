@@ -3,7 +3,7 @@ type MaybeInt = variant
   Some(i64);
 
 { only project a value if the variant is Some }
-subscript if unwrap(opt: MaybeInt): i64
+subscript if unwrap[opt: MaybeInt]: i64
   { variant names are not namespaced in the module
     they're defined in, so using MaybeInt.Some here would be
     an error. }

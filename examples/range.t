@@ -1,5 +1,5 @@
 { this subscript yields all numbers in a range. }
-subscript while range(from: u64, to: u64): u64
+subscript while range[from: u64, to: u64]: u64
 begin
   let mut value = from;
 
