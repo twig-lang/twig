@@ -9,6 +9,10 @@ function pick(
   else
     return f;
 
+{ If no default value is given, a value must
+  be passed on every call. }
+function id(x value: i64): i64 = x;
+
 function main
 begin
   pick(false);               { 0 }
@@ -18,4 +22,7 @@ begin
   pick(true,
     taken: 4,
     not_taken: 5);           { 4 }
+
+  id(value: 5); { OK }
+{ id();         { ERROR } }
 end

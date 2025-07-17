@@ -73,7 +73,7 @@ def p_argument(lexer):
     value = p_expression(lexer)
 
     if lexer.match(Tag.PColon):
-        assert type(value) is syntax.Name
+        assert type(value) is syntax.Name or syntax.PathNamed
         key = value
         value = p_expression(lexer)
 
@@ -562,8 +562,7 @@ def p_param(lexer):
     type = p_type(lexer)
 
     default = None
-    if key is not None:
-        lexer.expect(Tag.OpEq)
+    if key is not None and lexer.match(Tag.OpEq):
         default = p_expression(lexer)
 
     return syntax.Parameter(mode, name, key, type, default)
