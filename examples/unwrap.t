@@ -8,7 +8,7 @@ subscript if unwrap[opt: MaybeInt]: i64
     they're defined in, so using MaybeInt.Some here would be
     an error. }
 
-  if let Some(x) = opt then
+  if match opt in Some(x) then
     yield x;
 
   { not yielding is an option here! }

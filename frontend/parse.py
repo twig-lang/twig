@@ -176,7 +176,7 @@ def p_bin_rhs(lexer, prec, lhs):
             nextop, nextprec = nextop
 
             if nextprec > prec:
-                rhs = p_bin_rhs(prec + 1, rhs)
+                rhs = p_bin_rhs(lexer, prec + 1, rhs)
 
         lhs = syntax.ExpressionBinary(operator, lhs, rhs)
 
@@ -747,6 +747,7 @@ TOPLEVEL_TOKENS = [
     Tag.KwWith,
     Tag.KwImport,
     Tag.KwType,
+    Tag.KwMatch,
 ]
 
 
@@ -767,7 +768,7 @@ def p_toplevel(lexer):
     if lexer.match(Tag.KwType):
         return p_typedef(lexer)
 
-    return lexer.next()
+    lexer.expect(TOPLEVEL_TOKENS)
 
 
 def parse(lexer):
