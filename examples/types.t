@@ -1,4 +1,4 @@
-import Std.Option;
+import Std::Option;
 
 type int = i64;
 
@@ -6,7 +6,7 @@ type also_int = (i64);
 
 type unit = ();
 
-type MaybeInt = Std.Option(int).t;
+type MaybeInt = Std::Option!(int)::t;
 
 type IntAndUnit = record
   i: int,

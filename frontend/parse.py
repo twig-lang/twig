@@ -219,6 +219,7 @@ def p_let_binding(lexer):
 
     return syntax.LetBinding(mode, name, type, value)
 
+
 @recovers_on(Tag.PSemicolon, Tag.KwIn)
 def p_top_let_binding(lexer):
     mode = p_mode(lexer)
@@ -266,7 +267,7 @@ def p_let(lexer):
             lexer.expect(Tag.PSemicolon)
     else:
         lexer.expect(Tag.KwIn)
-        body = p_statement(lexer)
+        body = p_stmt(lexer)
 
     return syntax.StatementLet(kind, bindings, body)
 
@@ -599,7 +600,7 @@ def p_path_arg(lexer):
     name = p_name(lexer)
     value = None
 
-    if lexer.match(Tag.PColon):
+    if lexer.match(Tag.PPathsep):
         key = name
         value = p_path(lexer)
     else:
@@ -634,7 +635,7 @@ def p_path(lexer, as_with=False, lhs=None):
         name = p_name(lexer)
         path = syntax.PathNamed(name)
 
-    while lexer.match(Tag.PDot):
+    while lexer.match(Tag.PPathsep):
         child = None
 
         if as_with and lexer.at(Tag.LParen):
@@ -644,7 +645,8 @@ def p_path(lexer, as_with=False, lhs=None):
 
         path = syntax.PathSub(parent=path, child=child)
 
-    if lexer.match(Tag.PLParen):
+    if lexer.match(Tag.OpNot):
+        lexer.expect(Tag.PLParen)
         arguments = p_path_args(lexer)
         path = syntax.PathCall(callee=path, arguments=arguments)
         return p_path(lexer, as_with=as_with, lhs=path)

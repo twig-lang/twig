@@ -66,6 +66,7 @@ class Tag(Enum):
     PComma = "`,`"
     PSemicolon = "`;`"
     PColon = "`:`"
+    PPathsep = "`::`"
     PLParen = "`(`"
     PRParen = "`)`"
     PLBracket = "`[`"
@@ -95,7 +96,6 @@ SYM_1 = {
     ";": Tag.PSemicolon,
     ".": Tag.PDot,
     ",": Tag.PComma,
-    ":": Tag.PColon,
     "^": Tag.OpXor,
     "(": Tag.PLParen,
     ")": Tag.PRParen,
@@ -112,6 +112,7 @@ SYM_2 = {
     "&": (Tag.OpAnd, {"&": Tag.OpAndthen}),
     "|": (Tag.OpOr, {"|": Tag.OpOrelse}),
     "=": (Tag.OpEq, {"<": Tag.OpEqLt, ">": Tag.OpEqGt}),
+    ":": (Tag.PColon, {":": Tag.PPathsep}),
 }
 
 
