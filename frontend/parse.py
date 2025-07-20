@@ -84,15 +84,16 @@ def p_arguments(lexer, end):
     arguments = []
 
     while True:
+        if lexer.match(end):
+            break
+
         arg = p_argument(lexer)
         arguments.append(arg)
 
-        if lexer.at(end):
+        if lexer.match(end):
             break
 
         lexer.expect(Tag.PComma)
-
-    lexer.expect(end)
 
     return syntax.ArgumentList(arguments)
 
@@ -358,16 +359,60 @@ def p_if(lexer):
     return syntax.StatementIf(condition, taken, not_taken)
 
 
+def p_cons_arg(lexer):
+    key = None
+
+    value = p_pattern(lexer)
+
+    if lexer.match(Tag.PColon):
+        assert type(value) is syntax.PatternNamed
+        assert type(value.name) is syntax.PathNamed
+
+        key = value
+        value = p_pattern(lexer)
+
+
+def p_cons_arguments(lexer):
+    args = []
+
+    while True:
+        if lexer.match(Tag.PRParen):
+            break
+
+        arg = p_cons_arg(lexer)
+        args.append(arg)
+
+        if lexer.match(Tag.PRParen):
+            break
+
+        lexer.expect(Tag.PComma)
+
+    return args
+
+
 def p_pattern(lexer):
     path = p_path(lexer)
+    path = syntax.PatternNamed(path)
 
-    return syntax.PatternNamed(path)
+    while True:
+        if lexer.match(Tag.PLParen):
+            arguments = p_cons_arguments(lexer)
+            inner = syntax.PatternConstructor(path, arguments)
+
+        else:
+            break
+
+    return path
 
 
 def p_case(lexer):
-    lexer.expect(Tag.KwCase)
+    pattern = None
 
-    pattern = p_pattern(lexer)
+    if lexer.at(Tag.KwCase):
+        lexer.expect(Tag.KwCase)
+        pattern = p_pattern(lexer)
+    else:
+        lexer.expect(Tag.KwElse)
 
     lexer.expect(Tag.PColon)
 
@@ -390,6 +435,11 @@ def p_match(lexer):
         cases.append(case)
 
     return syntax.StatementMatch(checked, cases)
+
+
+def p_pass(lexer):
+    lexer.expect(Tag.PSemicolon)
+    return syntax.StatementPass()
 
 
 def p_stmt(lexer):
@@ -416,6 +466,9 @@ def p_stmt(lexer):
 
     if lexer.match(Tag.KwMatch):
         return p_match(lexer)
+
+    if lexer.match(Tag.KwPass):
+        return p_pass(lexer)
 
     expression = p_expression(lexer)
     lexer.expect(Tag.PSemicolon)

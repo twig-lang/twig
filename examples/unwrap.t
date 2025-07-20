@@ -8,8 +8,10 @@ subscript if unwrap[opt: MaybeInt]: i64
     they're defined in, so using MaybeInt.Some here would be
     an error. }
 
-  if match opt in Some(x) then
-    yield x;
+  match opt begin
+    case Some(x): yield x;
+    else: pass;
+  end
 
   { not yielding is an option here! }
 

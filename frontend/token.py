@@ -41,6 +41,7 @@ class Tag(Enum):
     KwIn = "`in`"
     KwCast = "`cast`"
     KwSet = "`set`"
+    KwPass = "`pass`"
     # operators
     OpAdd = "`+`"
     OpSub = "`-`"

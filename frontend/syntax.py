@@ -342,10 +342,25 @@ class PatternNamed(Pattern):
     name: Path
 
 
+# [ name ':' ] pattern
+@dataclass
+class ConstructorArgument(Node):
+    key: Optional[Name]
+    value: Pattern
+
+
+# pattern '(' { constructor-argument }, ')'
+@dataclass
+class PatternConstructor(Pattern):
+    constructor: Pattern
+    arguments: [ConstructorArgument]
+
+
 # 'case' pattern ':' stmt
+# 'else' : stmt (NOTE: then, pattern is None)
 @dataclass
 class Case(Node):
-    pattern: Pattern
+    pattern: Optional[Pattern]
     body: Statement
 
 
@@ -355,3 +370,9 @@ class Case(Node):
 class StatementMatch(Statement):
     checked: Expression
     cases: list[Case]
+
+
+# 'pass' ';'
+class StatementPass(Statement):
+    def __repr__(self):
+        return "syntax.StatementPass"
