@@ -358,6 +358,40 @@ def p_if(lexer):
     return syntax.StatementIf(condition, taken, not_taken)
 
 
+def p_pattern(lexer):
+    path = p_path(lexer)
+
+    return syntax.PatternNamed(path)
+
+
+def p_case(lexer):
+    lexer.expect(Tag.KwCase)
+
+    pattern = p_pattern(lexer)
+
+    lexer.expect(Tag.PColon)
+
+    body = p_stmt(lexer)
+
+    return syntax.Case(pattern, body)
+
+
+def p_match(lexer):
+    checked = p_expression(lexer)
+
+    cases = []
+
+    if lexer.match(Tag.KwBegin):
+        while not lexer.match(Tag.KwEnd):
+            case = p_case(lexer)
+            cases.append(case)
+    else:
+        case = p_case(lexer)
+        cases.append(case)
+
+    return syntax.StatementMatch(checked, cases)
+
+
 def p_stmt(lexer):
     if lexer.match(Tag.KwBegin):
         return p_begin(lexer)
@@ -379,6 +413,9 @@ def p_stmt(lexer):
 
     if lexer.match(Tag.KwYield):
         return p_yield(lexer)
+
+    if lexer.match(Tag.KwMatch):
+        return p_match(lexer)
 
     expression = p_expression(lexer)
     lexer.expect(Tag.PSemicolon)

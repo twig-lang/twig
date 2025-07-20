@@ -12,9 +12,14 @@ class Node:
     pass
 
 
+# A parsing error.
 class Error(Node):
     def __repr__(self):
         return "syntax.Error"
+
+
+class Pattern(Node):
+    pass
 
 
 class FunctionBody(Node):
@@ -57,11 +62,13 @@ class IntegerLiteral(Literal):
     value: int
 
 
+# [ '&' ] [ 'mut' ]
 class Mode(Flag):
     REFERENCE = auto()
     MUTABLE = auto()
 
 
+# mode [ name ':' ] expression
 @dataclass
 class Argument(Node):
     mode: Mode
@@ -69,11 +76,13 @@ class Argument(Node):
     value: Expression
 
 
+# [ argument { ',' argument } ]
 @dataclass
 class ArgumentList(Node):
     arguments: list[Argument]
 
 
+# mode name [ name ':' ] type [ '=' expression ]
 @dataclass
 class Parameter(Node):
     mode: Mode
@@ -83,11 +92,13 @@ class Parameter(Node):
     default: Optional[Expression]
 
 
+# [ parameter { ',' parameter } ]
 @dataclass
 class ParameterList(Node):
     parameters: list[Parameter]
 
 
+# function name [ '(' parameter-list ')' ] [ ':' type ] function-body
 @dataclass
 class FunctionDefinition(Node):
     name: str
@@ -96,27 +107,32 @@ class FunctionDefinition(Node):
     body: FunctionBody
 
 
+# '=' expression ';'
 @dataclass
 class FunctionBodyExpression(FunctionBody):
     body: Expression
 
 
+# statement
 @dataclass
 class FunctionBodyStatement(FunctionBody):
     body: Statement
 
 
+# expression
 @dataclass
 class StatementExpression(Statement):
     expression: Expression
 
 
+# expression '(' argument-list ')'
 @dataclass
 class ExpressionFunctionCall(Expression):
     callee: Expression
     arguments: ArgumentList
 
 
+# mode name [ ':' type ] '=' expression
 @dataclass
 class LetBinding(Node):
     mode: Mode
@@ -125,7 +141,7 @@ class LetBinding(Node):
     value: Expression
 
 
-# '' | 'while' | 'if'
+# [ 'while' | 'if' ]
 class BindingKind(Enum):
     VALUE = "value"
     IF = "if"
@@ -318,3 +334,24 @@ class Variant(Node):
 @dataclass
 class TypeVariant(Type):
     cases: list[Variant]
+
+
+# path
+@dataclass
+class PatternNamed(Pattern):
+    name: Path
+
+
+# 'case' pattern ':' stmt
+@dataclass
+class Case(Node):
+    pattern: Pattern
+    body: Statement
+
+
+# 'match' expression 'begin' { case } 'end'
+# 'match' expression case
+@dataclass
+class StatementMatch(Statement):
+    checked: Expression
+    cases: list[Case]
