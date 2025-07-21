@@ -10,7 +10,7 @@ begin
       a = a + b;
       b = a;
       x -= 1;
-    end;
+    end
 
   return a;
 end
