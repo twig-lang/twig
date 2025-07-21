@@ -1,4 +1,4 @@
-with import Std::Io.print_endline;
+with import Std::Io;
 
 { Prints a message. }
 

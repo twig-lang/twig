@@ -1,3 +1,4 @@
+import traceback
 from typing import Optional
 
 from frontend.lexer import Error as LexerError
@@ -7,21 +8,32 @@ from frontend import syntax, message as msg
 from frontend.message import Message
 from frontend.token import *
 
+SHOW_PARSING_TRACES = False
+
 
 # function jumps to a known token, and then it may consume it or not.
-def recovers_on(tokens, consumes=False):
+def recovers_on(tokens, consumes=False, forwards=False):
     def deco(function):
+        name = function.__name__
+
         def wrapper(lexer, *args, **kwargs):
             try:
                 return function(lexer, *args, **kwargs)
-            except LexerError:
+            except LexerError as exn:
                 while not lexer.at(tokens):
                     lexer.next()
 
                 if consumes:
                     lexer.next()
 
-                return syntax.Error()
+                if SHOW_PARSING_TRACES:
+                    print(f"fail on `{name}`")
+                    traceback.print_exception(exn)
+
+                if forwards:
+                    raise exn
+                else:
+                    return syntax.Error()
 
         return wrapper
 
@@ -737,29 +749,29 @@ def p_function(lexer):
     return syntax.FunctionDefinition(name, parameters, return_type, body)
 
 
-def p_path_arg(lexer):
+def p_path_arg(lexer, as_with=False):
     key = None
     name = p_name(lexer)
     value = None
 
     if lexer.match(Tag.PPathsep):
         key = name
-        value = p_path(lexer)
+        value = p_path(lexer, as_with=as_with)
     else:
         name = syntax.PathNamed(name)
-        value = p_path(lexer, lhs=name)
+        value = p_path(lexer, as_with=as_with, lhs=name)
 
     return syntax.ModuleArgument(key, value)
 
 
-def p_path_args(lexer):
+def p_path_args(lexer, as_with=False):
     args = []
 
     while True:
         if lexer.at(Tag.PRParen):
             break
 
-        arg = p_path_arg(lexer)
+        arg = p_path_arg(lexer, as_with=as_with)
         args.append(arg)
 
         if not lexer.at(Tag.PRParen):
@@ -780,7 +792,7 @@ def p_path(lexer, as_with=False, lhs=None):
     while lexer.match(Tag.PPathsep):
         child = None
 
-        if as_with and lexer.at(Tag.PLParen):
+        if as_with:
             child = p_with_path(lexer)
         else:
             child = p_path(lexer)
@@ -793,7 +805,7 @@ def p_path(lexer, as_with=False, lhs=None):
         path = syntax.PathCall(callee=path, arguments=arguments)
         return p_path(lexer, as_with=as_with, lhs=path)
 
-    if as_with and lexer.match(Tag.PDot):
+    if as_with and lexer.match(Tag.PPathsep):
         child = p_with_path(lexer)
         path = syntax.PathSub(parent=path, child=child)
 
@@ -813,11 +825,8 @@ def p_with_path(lexer):
         members.append(member)
 
     while lexer.match(Tag.PComma):
-        if lexer.at(Tag.Identifier):
-            member = p_with_path(lexer)
-            members.append(member)
-        else:
-            lexer.expect(Tag.Identifier)
+        member = p_with_path(lexer)
+        members.append(member)
 
     lexer.expect(Tag.PRParen)
 

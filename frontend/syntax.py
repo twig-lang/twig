@@ -400,6 +400,7 @@ class ExternVariable(Node):
     type: Type
 
 
+# 'extern' 'function' string name [ parameter-list ] ':' type ';'
 @dataclass
 class ExternFunction(Node):
     abi: str

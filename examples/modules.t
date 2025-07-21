@@ -55,6 +55,9 @@ module Identity(type T) = begin
   function f(x: T): T = x;
 end;
 
+function id_f32(x: f32): f32 =
+  Identity!(f32)::f(x);
+
 { Module types can be "added" together, which can be useful
   for applying more than one constraint at a time }
 
@@ -77,6 +80,13 @@ end;
 { Source code in files also corresponds to modules. To turn a
   file into a functor, a (single) declaration may be added,
   such as:
-     module Array(type T);
+     { file is Array.t }
+     module(type T);
 
-  where the name must correspond with the file name. }
+  which can then be used somewhere else like:
+     let array = Array!(u64)::new();
+
+  Note that a declaration such as
+     module;
+
+  is allowed. }

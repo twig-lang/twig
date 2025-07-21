@@ -6,7 +6,7 @@ type also_int = (i64);
 
 type unit = ();
 
-type MaybeInt = Std::Option!(int)::t;
+type MaybeInt = Option!(int)::t;
 
 type IntAndUnit = record
   i: int,
