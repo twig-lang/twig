@@ -39,9 +39,7 @@ class Tag(Enum):
     KwCase = "`case`"
     KwLet = "`let`"
     KwIn = "`in`"
-    KwCast = "`cast`"
     KwSet = "`set`"
-    KwPass = "`pass`"
     KwExtern = "`extern`"
     # operators
     OpAdd = "`+`"

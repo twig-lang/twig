@@ -385,11 +385,11 @@ class ExpressionUnary(Expression):
     rhs: Expression
 
 
-# cast '(' type ')' expression
+# expression ':' type
 @dataclass
 class ExpressionCast(Expression):
-    target: Type
-    rhs: Expression
+    lhs: Expression
+    type: Type
 
 
 # 'extern' string name ':' type ';'

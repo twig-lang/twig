@@ -10,7 +10,7 @@ subscript if unwrap[opt: MaybeInt]: i64
 
   match opt begin
     case Some(x): yield x;
-    else: pass;
+    else: ;
   end
 
   { not yielding is an option here! }

@@ -96,22 +96,7 @@ def p_unary_operator(lexer):
     return operator
 
 
-def p_cast(lexer):
-    lexer.expect(Tag.PLParen)
-
-    target = p_type(lexer)
-
-    lexer.expect(Tag.PRParen)
-
-    rhs = p_expression(lexer)
-
-    return syntax.ExpressionCast(target, rhs)
-
-
 def p_primary(lexer):
-    if lexer.match(Tag.KwCast):
-        return p_cast(lexer)
-
     operator = p_unary_operator(lexer)
 
     if operator:
@@ -214,6 +199,11 @@ def p_operator(lexer) -> Optional[tuple[syntax.Operator, int]]:
 
 def p_bin_rhs(lexer, prec, lhs):
     while True:
+        if lexer.match(Tag.PColon):
+            type = p_type(lexer)
+            lhs = syntax.ExpressionCast(lhs, type)
+            continue
+
         op = p_operator(lexer)
 
         if not op:
@@ -494,11 +484,6 @@ def p_match(lexer):
     return syntax.StatementMatch(checked, cases)
 
 
-def p_pass(lexer):
-    lexer.expect(Tag.PSemicolon)
-    return syntax.StatementPass()
-
-
 def p_stmt(lexer):
     if lexer.match(Tag.KwBegin):
         return p_begin(lexer)
@@ -524,8 +509,8 @@ def p_stmt(lexer):
     if lexer.match(Tag.KwMatch):
         return p_match(lexer)
 
-    if lexer.match(Tag.KwPass):
-        return p_pass(lexer)
+    if lexer.match(Tag.PSemicolon):
+        return syntax.StatementPass()
 
     expression = p_expression(lexer)
     lexer.expect(Tag.PSemicolon)
