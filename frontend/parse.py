@@ -33,6 +33,15 @@ def p_name(lexer):
     return syntax.Name(name)
 
 
+def p_label(lexer):
+    label = None
+
+    if lexer.match(Tag.PColon):
+        label = p_name(lexer)
+
+    return label
+
+
 def p_lit_str(lexer):
     value = lexer.expect(Tag.String).data
     return syntax.StringLiteral(value)
@@ -107,15 +116,11 @@ def p_primary(lexer):
 
 
 def p_argument(lexer):
+    key = p_label(lexer)
+
     mode = p_mode(lexer)
-    key = None
 
     value = p_expression(lexer)
-
-    if lexer.match(Tag.PColon):
-        assert type(value) is syntax.Name or syntax.PathNamed
-        key = value
-        value = p_expression(lexer)
 
     return syntax.Argument(mode, key, value)
 

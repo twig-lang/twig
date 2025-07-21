@@ -17,12 +17,12 @@ function main
 begin
   pick(false);               { 0 }
   pick(true);                { 1 }
-  pick(true, taken: 2);      { 2 }
-  pick(false, not_taken: 3); { 3 }
+  pick(true, :taken 2);      { 2 }
+  pick(false, :not_taken 3); { 3 }
   pick(true,
-    taken: 4,
-    not_taken: 5);           { 4 }
+    :taken 4,
+    :not_taken 5);           { 4 }
 
-  id(value: 5); { OK }
+  id(:value 5); { OK }
 { id();         { ERROR } }
 end
