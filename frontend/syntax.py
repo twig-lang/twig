@@ -390,3 +390,19 @@ class ExpressionUnary(Expression):
 class ExpressionCast(Expression):
     target: Type
     rhs: Expression
+
+
+# 'extern' string name ':' type ';'
+@dataclass
+class ExternVariable(Node):
+    abi: str
+    name: Name
+    type: Type
+
+
+@dataclass
+class ExternFunction(Node):
+    abi: str
+    name: Name
+    parameters: ParameterList
+    returns: Type

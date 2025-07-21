@@ -881,6 +881,27 @@ TOPLEVEL_TOKENS = [
 ]
 
 
+@recovers_on(Tag.PSemicolon)
+def p_extern(lexer):
+    abi = lexer.expect(Tag.String).data
+
+    if lexer.match(Tag.KwFunction):
+        name = p_name(lexer)
+        parameters = p_param_list(lexer, Tag.PLParen, Tag.PRParen)
+        lexer.expect(Tag.PColon)
+        returns = p_type(lexer)
+        lexer.expect(Tag.PSemicolon)
+
+        return syntax.ExternFunction(abi, name, parameters, returns)
+    else:
+        name = p_name(lexer)
+        lexer.expect(Tag.PColon)
+        type = p_type(lexer)
+        lexer.expect(Tag.PSemicolon)
+
+        return syntax.ExternVariable(abi, name, type)
+
+
 @recovers_on(TOPLEVEL_TOKENS)
 def p_toplevel(lexer):
     if lexer.match(Tag.KwFunction):
@@ -897,6 +918,9 @@ def p_toplevel(lexer):
 
     if lexer.match(Tag.KwType):
         return p_typedef(lexer)
+
+    if lexer.match(Tag.KwExtern):
+        return p_extern(lexer)
 
     lexer.expect(TOPLEVEL_TOKENS)
 
