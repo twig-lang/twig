@@ -376,3 +376,17 @@ class StatementMatch(Statement):
 class StatementPass(Statement):
     def __repr__(self):
         return "syntax.StatementPass"
+
+
+# unary-operator expression
+@dataclass
+class ExpressionUnary(Expression):
+    operator: Operator
+    rhs: Expression
+
+
+# cast '(' type ')' expression
+@dataclass
+class ExpressionCast(Expression):
+    target: Type
+    rhs: Expression

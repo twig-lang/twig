@@ -56,7 +56,47 @@ def p_literal(lexer):
     lexer.expect([Tag.Identifier, Tag.String, Tag.Int])
 
 
+UNARIES = {
+    Tag.OpAdd,  # abs()
+    Tag.OpSub,  # neg()
+    Tag.OpNot,  # not()
+}
+
+
+def p_unary_operator(lexer):
+    operator = lexer.peek().tag
+
+    if operator not in UNARIES:
+        return None
+
+    operator = syntax.Operator(operator)
+    lexer.next()
+
+    return operator
+
+
+def p_cast(lexer):
+    lexer.expect(Tag.PLParen)
+
+    target = p_type(lexer)
+
+    lexer.expect(Tag.PRParen)
+
+    rhs = p_expression(lexer)
+
+    return syntax.ExpressionCast(target, rhs)
+
+
 def p_primary(lexer):
+    if lexer.match(Tag.KwCast):
+        return p_cast(lexer)
+
+    operator = p_unary_operator(lexer)
+
+    if operator:
+        rhs = p_primary(lexer)
+        return syntax.ExpressionUnary(operator, rhs)
+
     if lexer.match(Tag.PLParen):
         inner = p_expression(lexer)
         lexer.expect(Tag.PRParen)
