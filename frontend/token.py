@@ -72,6 +72,7 @@ class Tag(Enum):
     PLBracket = "`[`"
     PRBracket = "`]`"
     PHash = "`#`"
+    PAt = '@'
 
     def _make_kwtab():
         tab = {}
@@ -102,6 +103,7 @@ SYM_1 = {
     "[": Tag.PLBracket,
     "]": Tag.PRBracket,
     "#": Tag.PHash,
+    "@": Tag.PAt,
 }
 
 # 2-char long symbols.
