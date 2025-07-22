@@ -3,7 +3,7 @@ from frontend.parse import parse
 from frontend.sourcemap import add_file
 from frontend.message import MESSAGES
 
-from sys import argv
+from sys import argv, exit
 from pprint import pp
 
 
@@ -20,5 +20,10 @@ def main():
     finally:
         pass
 
+    msgs = len(MESSAGES)
+
     while len(MESSAGES) > 0:
         MESSAGES.popleft().report()
+
+    if msgs > 0:
+        exit(f"{msgs} messages printed.")

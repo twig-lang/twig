@@ -103,6 +103,16 @@ def p_primary(lexer):
         rhs = p_primary(lexer)
         return syntax.ExpressionUnary(operator, rhs)
 
+    if lexer.match(Tag.OpMul):
+        is_mutable = lexer.match(Tag.KwMut)
+        source = p_expression(lexer)
+        return syntax.ExpressionAddressof(is_mutable, source)
+
+    if lexer.match(Tag.PAt):
+        mode = p_mode(lexer)
+        pointer = p_expression(lexer)
+        return syntax.ExpressionDeref(mode, pointer)
+
     if lexer.match(Tag.PLParen):
         if lexer.match(Tag.PRParen):
             return syntax.ExpressionUnit()
@@ -349,8 +359,26 @@ def p_while(lexer):
     return syntax.StatementWhile(condition, body)
 
 
+def p_lvalue(lexer):
+    inner = p_path(lexer)
+
+    while True:
+        if lexer.match(Tag.PDot):
+            name = p_name(lexer)
+            inner = syntax.ExpressionMember(inner, name)
+
+        if lexer.match(Tag.PLBracket):
+            arguments = p_arguments(lexer, Tag.PRBracket)
+            inner = syntax.ExpressionSubscriptCall(inner, arguments)
+
+        else:
+            break
+
+    return inner
+
+
 def p_set_binding(lexer):
-    lvalue = p_name(lexer)
+    lvalue = p_lvalue(lexer)
 
     operator = None
 
@@ -701,6 +729,11 @@ def p_type(lexer, on_def=False):
     if lexer.match(Tag.PLParen):
         return p_tuple(lexer)
 
+    if lexer.match(Tag.OpMul):
+        is_mutable = lexer.match(Tag.KwMut)
+        pointed = p_type(lexer)
+        return syntax.TypePointer(is_mutable, pointed)
+
     if on_def:
         if lexer.match(Tag.KwRecord):
             return p_record(lexer)
@@ -882,7 +915,7 @@ def p_with(lexer):
 
     lexer.expect(Tag.PSemicolon)
 
-    return syntax.StatementWith(imports, path)
+    return syntax.ToplevelWith(imports, path)
 
 
 @recovers_on(Tag.PSemicolon, consumes=True)

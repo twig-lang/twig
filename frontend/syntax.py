@@ -184,7 +184,7 @@ class StatementWhile(Statement):
 
 @dataclass
 class SetBinding(Node):
-    lvalue: str
+    lvalue: Expression
     operator: Optional[Operator]
     rvalue: Expression
 
@@ -236,7 +236,7 @@ class PathSub(Path):
 
 
 @dataclass
-class StatementWith(Statement):
+class ToplevelWith(Statement):
     imports: bool
     path: WithPath
 
@@ -519,3 +519,24 @@ class StatementModule(Statement):
     name: str
     type: Optional[ModuleExpression]
     value: ModuleExpression
+
+
+# '*' ['mut'] type
+@dataclass
+class TypePointer(Type):
+    is_mutable: bool
+    pointed: Type
+
+
+# '*' ['mut'] expression
+@dataclass
+class ExpressionAddressof(Expression):
+    is_mutable: bool
+    source: Expression
+
+
+# '@' mode expression
+@dataclass
+class ExpressionDeref(Expression):
+    mode: Mode
+    pointer: Expression
