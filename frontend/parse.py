@@ -104,6 +104,9 @@ def p_primary(lexer):
         return syntax.ExpressionUnary(operator, rhs)
 
     if lexer.match(Tag.PLParen):
+        if lexer.match(Tag.PRParen):
+            return syntax.ExpressionUnit()
+
         inner = p_expression(lexer)
         lexer.expect(Tag.PRParen)
 
@@ -151,6 +154,10 @@ def p_factor(lexer):
         elif lexer.match(Tag.PLBracket):
             arguments = p_arguments(lexer, Tag.PRBracket)
             inner = syntax.ExpressionSubscriptCall(callee=inner, arguments=arguments)
+
+        elif lexer.match(Tag.PDot):
+            name = p_name(lexer)
+            inner = syntax.ExpressionMember(inner, name)
 
         else:
             break
@@ -519,6 +526,9 @@ def p_stmt(lexer):
 
 
 def p_function_body(lexer):
+    if lexer.match(Tag.PSemicolon):
+        return syntax.FunctionBodyDeclaration()
+
     if lexer.match(Tag.OpEq):
         body = p_expression(lexer)
         lexer.expect(Tag.PSemicolon)
@@ -860,10 +870,10 @@ def p_subscript(lexer):
 @recovers_on(Tag.PSemicolon, consumes=True)
 def p_typedef(lexer):
     name = p_name(lexer)
+    type = None
 
-    lexer.expect(Tag.OpEq)
-
-    type = p_type(lexer, on_def=True)
+    if lexer.match(Tag.OpEq):
+        type = p_type(lexer, on_def=True)
 
     lexer.expect(Tag.PSemicolon)
 
@@ -877,6 +887,8 @@ TOPLEVEL_TOKENS = [
     Tag.KwImport,
     Tag.KwType,
     Tag.KwMatch,
+    Tag.KwExtern,
+    Tag.KwModule,
 ]
 
 
@@ -901,6 +913,112 @@ def p_extern(lexer):
         return syntax.ExternVariable(abi, name, type)
 
 
+def p_mod_primary(lexer):
+    if lexer.match(Tag.KwBegin):
+        definitions = []
+
+        while not lexer.match(Tag.KwEnd):
+            top = p_toplevel(lexer)
+
+        return syntax.ModuleBlock(definitions)
+
+    path = p_path(lexer)
+    return syntax.ModulePath(path)
+
+
+def p_mod_expr(lexer):
+    lhs = p_mod_primary(lexer)
+
+    while lexer.match(Tag.OpAdd):
+        rhs = p_mod_primary(lexer)
+        lhs = syntax.ModuleJoin(lhs, rhs)
+
+    return lhs
+
+
+def p_mod_par(lexer):
+    key = None
+    is_type = False
+    sig = None
+
+    if lexer.match(Tag.KwType):
+        is_type = True
+
+    name = p_name(lexer)
+
+    if lexer.at(Tag.Identifier):
+        key = name
+        name = p_name(lexer)
+
+    if not is_type and lexer.match(Tag.PColon):
+        sig = p_mod_expr(lexer)
+
+    return syntax.ModuleParameter(is_type, name, key, sig)
+
+
+def p_mod_parlist(lexer):
+    parameters = []
+    lexer.expect(Tag.PLParen)
+
+    if not lexer.at(Tag.PRParen):
+        par = p_mod_par(lexer)
+        parameters.append(par)
+
+        while not lexer.at(Tag.PRParen):
+            par = p_mod_par(lexer)
+            parameters.append(par)
+
+            if lexer.at(Tag.PRParen):
+                break
+
+            lexer.expect(Tag.PComma)
+
+    lexer.expect(Tag.PRParen)
+    return parameters
+
+
+@recovers_on(Tag.PSemicolon, consumes=True)
+def p_module(lexer):
+    if lexer.match(Tag.PSemicolon):
+        return syntax.ModuleGlobal([])
+
+    if lexer.match(Tag.OpNot):
+        parameters = p_mod_parlist(lexer)
+        lexer.expect(Tag.PSemicolon)
+        return syntax.ModuleGlobal(parameters)
+
+    if lexer.match(Tag.KwType):
+        name = p_name(lexer)
+        parameters = []
+
+        if lexer.match(Tag.OpNot):
+            parameters = p_mod_parlist(lexer)
+
+        lexer.expect(Tag.OpEq)
+
+        value = p_mod_expr(lexer)
+
+        lexer.expect(Tag.PSemicolon)
+        return syntax.ModuleType(name, parameters, value)
+
+    name = p_name(lexer)
+
+    type = None
+    if lexer.match(Tag.PColon):
+        type = p_mod_expr(lexer)
+
+    parameters = []
+    if lexer.match(Tag.OpNot):
+        parameters = p_mod_parlist(lexer)
+
+    lexer.expect(Tag.OpEq)
+
+    value = p_mod_expr(lexer)
+
+    lexer.expect(Tag.PSemicolon)
+    return syntax.ModuleDefinition(name, type, parameters, value)
+
+
 @recovers_on(TOPLEVEL_TOKENS)
 def p_toplevel(lexer):
     if lexer.match(Tag.KwFunction):
@@ -920,6 +1038,9 @@ def p_toplevel(lexer):
 
     if lexer.match(Tag.KwExtern):
         return p_extern(lexer)
+
+    if lexer.match(Tag.KwModule):
+        return p_module(lexer)
 
     lexer.expect(TOPLEVEL_TOKENS)
 

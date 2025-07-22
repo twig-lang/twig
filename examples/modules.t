@@ -23,7 +23,7 @@ module type HotPotato = begin
 
   function new(): t;
 
-  function drop(t);
+  function drop(self: t);
 end;
 
 module Potato: HotPotato = begin
@@ -34,7 +34,7 @@ module Potato: HotPotato = begin
 end;
 
 { A module functor, which takes other modules or types as inputs. }
-module Game(P: HotPotato) = begin
+module Game!(P: HotPotato) = begin
   function play()
   begin
     let potato = P::new();
@@ -43,15 +43,15 @@ module Game(P: HotPotato) = begin
 end;
 
 { Can also bind to modules the outputs of functors. }
-module PotatoGame = Game(Potato);
+module PotatoGame = Game!(Potato);
 
 { And there are module type functors. }
-module type GameType(P: HotPotato) = begin
+module type GameType!(P: HotPotato) = begin
   function play();
 end;
 
 { Types can be used as functor inputs. }
-module Identity(type T) = begin
+module Identity!(type T) = begin
   function f(x: T): T = x;
 end;
 
@@ -73,7 +73,7 @@ module type DoesAnotherThing = begin
   function another_thing(&self: t);
 end;
 
-module ThingDoer(M: DoesThing + DoesAnotherThing) = begin
+module ThingDoer!(M: DoesThing + DoesAnotherThing) = begin
   { assume there is something interesting here. }
 end;
 
@@ -81,7 +81,7 @@ end;
   file into a functor, a (single) declaration may be added,
   such as:
      { file is Array.t }
-     module(type T);
+     module!(type T);
 
   which can then be used somewhere else like:
      let array = Array!(u64)::new();

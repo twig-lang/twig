@@ -98,7 +98,7 @@ class ParameterList(Node):
     parameters: list[Parameter]
 
 
-# function name [ '(' parameter-list ')' ] [ ':' type ] function-body
+# 'function' name [ '(' parameter-list ')' ] [ ':' type ] function-body
 @dataclass
 class FunctionDefinition(Node):
     name: str
@@ -117,6 +117,12 @@ class FunctionBodyExpression(FunctionBody):
 @dataclass
 class FunctionBodyStatement(FunctionBody):
     body: Statement
+
+
+# ';'
+class FunctionBodyDeclaration(FunctionBody):
+    def __repr__(self):
+        return "syntax.FunctionBodyDeclaration"
 
 
 # expression
@@ -267,10 +273,11 @@ class Import(Node):
     path: Path
 
 
+# 'type' name [ '=' type ] ';'
 @dataclass
 class TypeDefinition(Node):
     name: Name
-    type: Type
+    type: Optional[Type]
 
 
 class TypeUnit(Type):
@@ -407,3 +414,76 @@ class ExternFunction(Node):
     name: Name
     parameters: ParameterList
     returns: Type
+
+
+class ModuleExpression(Node):
+    pass
+
+
+# path
+@dataclass
+class ModulePath(ModuleExpression):
+    path: Path
+
+
+# 'begin' { toplevel } 'end'
+@dataclass
+class ModuleBlock(ModuleExpression):
+    definitions: list[Node]
+
+
+# module-expression '+' module-expression
+@dataclass
+class ModuleJoin(ModuleExpression):
+    lhs: ModuleExpression
+    rhs: ModuleExpression
+
+
+# name [ name ] ':' module-expression
+# 'type' [ name ] name
+@dataclass
+class ModuleParameter(Node):
+    is_type: bool
+    name: Name
+    key: Optional[Name]
+    sig: Optional[ModuleExpression]
+
+
+# 'module' name [ ':' module-expression ] [ '!' mod-par-list  ] '=' module-expression ';'
+@dataclass
+class ModuleDefinition(Node):
+    name: Name
+    type: Optional[ModuleExpression]
+    parameters: list[ModuleParameter]
+    value: ModuleExpression
+
+
+# 'module' 'type' name [ '!' mod-par-list ] '=' module-expression ';'
+@dataclass
+class ModuleType(Node):
+    name: Name
+    parameters: list[ModuleParameter]
+    value: ModuleExpression
+
+
+# 'module' [ '!' mod-par-list ] ';'
+@dataclass
+class ModuleGlobal(Node):
+    parameters: list[ModuleParameter]
+
+
+# '(' [ mod-par { ',' mod-par }  ] ')'
+# class ModuleParameterList
+
+
+# '(' ')'
+class ExpressionUnit(Expression):
+    def __repr__(self):
+        return "syntax.ExpressionUnit"
+
+
+# expression '.' name
+@dataclass
+class ExpressionMember(Expression):
+    lhs: Expression
+    member: Name
