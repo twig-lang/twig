@@ -1,7 +1,7 @@
 { this subscript yields all numbers in a range. }
 subscript while range[from: u64, to: u64]: u64
 begin
-  let mut value = from;
+  let value = mut from;
 
   while value < to do begin
     yield value;
@@ -11,7 +11,7 @@ end
 
 function example: i64
 begin
-  let mut sum = 0;
+  let sum = mut 0;
 
   let while i = range(1, 100) in
     set sum += i;

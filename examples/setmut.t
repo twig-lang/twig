@@ -4,7 +4,7 @@ function setmut(&mut ref: u64, value: u64)
 
 function main
 begin
-  let mut ref = 100;
+  let ref = mut 100;
   let value = 50;
 
   setmut(&mut ref, value);

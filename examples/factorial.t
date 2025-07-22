@@ -1,6 +1,6 @@
 function factorial_iter(mut x: u64): u64
 begin
-  let mut result = 1;
+  let result = mut 1;
 
   while x > 2 do begin
     set result *= x;

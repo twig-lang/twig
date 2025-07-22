@@ -1,14 +1,17 @@
 function fib_iter(x: u64): u64
 begin
   let begin
-    mut a = 1;
-    mut b = 0;
+    a = mut 1;
+    b = mut 0;
+    c = mut 0;
   end;
 
   while x > 0 do
     set begin
+      c = a;
       a = a + b;
-      b = a;
+      b = c;
+
       x -= 1;
     end
 

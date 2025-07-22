@@ -41,6 +41,7 @@ class Tag(Enum):
     KwIn = "`in`"
     KwSet = "`set`"
     KwExtern = "`extern`"
+    KwUnsafe = "`unsafe`"
     # operators
     OpAdd = "`+`"
     OpSub = "`-`"
@@ -72,7 +73,7 @@ class Tag(Enum):
     PLBracket = "`[`"
     PRBracket = "`]`"
     PHash = "`#`"
-    PAt = '@'
+    PAt = "@"
 
     def _make_kwtab():
         tab = {}

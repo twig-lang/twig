@@ -237,9 +237,20 @@ def p_bin_rhs(lexer, prec, lhs):
 
 
 def p_expression(lexer):
+    if lexer.match(Tag.KwUnsafe):
+        inner = p_expression(lexer)
+        return syntax.ExpressionUnsafe(inner)
+
     lhs = p_factor(lexer)
 
     return p_bin_rhs(lexer, 0, lhs)
+
+
+def p_topexpr(lexer):
+    mode = p_mode(lexer)
+    value = p_expression(lexer)
+
+    return syntax.ModedExpression(mode, value)
 
 
 @recovers_on(Tag.KwEnd, consumes=True)
@@ -258,8 +269,6 @@ def p_begin(lexer):
 
 @recovers_on(Tag.PSemicolon, consumes=True)
 def p_let_binding(lexer):
-    mode = p_mode(lexer)
-
     name = p_name(lexer)
 
     type = None
@@ -268,17 +277,15 @@ def p_let_binding(lexer):
 
     lexer.expect(Tag.OpEq)
 
-    value = p_expression(lexer)
+    value = p_topexpr(lexer)
 
     lexer.expect(Tag.PSemicolon)
 
-    return syntax.LetBinding(mode, name, type, value)
+    return syntax.LetBinding(name, type, value)
 
 
 @recovers_on(Tag.PSemicolon, Tag.KwIn)
 def p_top_let_binding(lexer):
-    mode = p_mode(lexer)
-
     name = p_name(lexer)
 
     type = None
@@ -287,9 +294,9 @@ def p_top_let_binding(lexer):
 
     lexer.expect(Tag.OpEq)
 
-    value = p_expression(lexer)
+    value = p_topexpr(lexer)
 
-    return syntax.LetBinding(mode, name, type, value)
+    return syntax.LetBinding(name, type, value)
 
 
 def p_bindkind(lexer):
@@ -491,6 +498,30 @@ def p_match(lexer):
     return syntax.StatementMatch(checked, cases)
 
 
+def p_with_stmt(lexer):
+    module = p_mod_expr(lexer)
+
+    lexer.expect(Tag.PSemicolon)
+
+    return syntax.StatementWith(module)
+
+
+def p_module_stmt(lexer):
+    name = p_name(lexer)
+
+    type = None
+    if lexer.match(Tag.PColon):
+        type = p_mod_expr(lexer)
+
+    lexer.expect(Tag.OpEq)
+
+    value = p_mod_expr(lexer)
+
+    lexer.expect(Tag.PSemicolon)
+
+    return syntax.StatementModule(name, type, value)
+
+
 def p_stmt(lexer):
     if lexer.match(Tag.KwBegin):
         return p_begin(lexer)
@@ -515,6 +546,16 @@ def p_stmt(lexer):
 
     if lexer.match(Tag.KwMatch):
         return p_match(lexer)
+
+    if lexer.match(Tag.KwModule):
+        return p_module_stmt(lexer)
+
+    if lexer.match(Tag.KwWith):
+        return p_with_stmt(lexer)
+
+    if lexer.match(Tag.KwUnsafe):
+        inner = p_stmt(lexer)
+        return syntax.StatementUnsafe(inner)
 
     if lexer.match(Tag.PSemicolon):
         return syntax.StatementPass()
@@ -730,6 +771,8 @@ def p_param_list(lexer, begin, end):
 
 
 def p_function(lexer):
+    is_unsafe = lexer.match(Tag.KwUnsafe)
+
     name = p_name(lexer)
 
     parameters = p_param_list(lexer, Tag.PLParen, Tag.PRParen)
@@ -741,7 +784,7 @@ def p_function(lexer):
 
     body = p_function_body(lexer)
 
-    return syntax.FunctionDefinition(name, parameters, return_type, body)
+    return syntax.FunctionDefinition(is_unsafe, name, parameters, return_type, body)
 
 
 def p_path_arg(lexer, as_with=False):
@@ -852,6 +895,8 @@ def p_import(lexer):
 
 
 def p_subscript(lexer):
+    is_unsafe = lexer.match(Tag.KwUnsafe)
+
     kind = p_bindkind(lexer)
     mode = p_mode(lexer)
     name = p_name(lexer)
@@ -864,7 +909,9 @@ def p_subscript(lexer):
 
     body = p_function_body(lexer)
 
-    return syntax.SubscriptDefinition(kind, name, mode, parameters, return_type, body)
+    return syntax.SubscriptDefinition(
+        is_unsafe, kind, name, mode, parameters, return_type, body
+    )
 
 
 @recovers_on(Tag.PSemicolon, consumes=True)

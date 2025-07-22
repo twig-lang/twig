@@ -12,13 +12,13 @@ module Pointer!(type T) = begin
   subscript unsafe & deref[self: t]: T
     { A pointer dereference creates a projection of the pointer's value,
       so a `&` must be added to obtain a reference. This is an unsafe operation. }
-    yield unsafe @&self;
+    yield @&self;
 
   function refmut(&mut from: T): mutable =
     *mut from;
 
   subscript unsafe &mut deref_mut[self: mutable]: T
-    yield unsafe @&mut self;
+    yield @&mut self;
 
   function unsafe setptr(self: mutable, by: T)
     set self.deref_mut[] = by;

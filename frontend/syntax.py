@@ -93,9 +93,10 @@ class ParameterList(Node):
     parameters: list[Parameter]
 
 
-# 'function' name [ '(' parameter-list ')' ] [ ':' type ] function-body
+# 'function' ['unsafe'] name [ '(' parameter-list ')' ] [ ':' type ] function-body
 @dataclass
 class FunctionDefinition(Node):
+    is_unsafe: bool
     name: str
     parameters: ParameterList
     return_type: Type
@@ -133,10 +134,9 @@ class ExpressionFunctionCall(Expression):
     arguments: ArgumentList
 
 
-# mode name [ ':' type ] '=' expression
+# name [ ':' type ] '=' top-expression
 @dataclass
 class LetBinding(Node):
-    mode: Mode
     name: str
     type: Optional[Type]
     value: Expression
@@ -247,22 +247,26 @@ class ExpressionSubscriptCall(Expression):
     arguments: ArgumentList
 
 
+# 'subscript' ['unsafe'] ['if' | 'while'] mode name [parameter-list] [':' type] body
 @dataclass
 class SubscriptDefinition(Node):
+    is_unsafe: bool
     kind: BindingKind
-    name: str
     mode: Mode
+    name: str
     parameters: ParameterList
     return_type: Type
     body: FunctionBody
 
 
+# 'yield' mode expression ';'
 @dataclass
 class StatementYield(Statement):
     mode: Mode
     value: Expression
 
 
+# 'import' path ';'
 @dataclass
 class Import(Node):
     path: Path
@@ -482,3 +486,36 @@ class ExpressionUnit(Expression):
 class ExpressionMember(Expression):
     lhs: Expression
     member: str
+
+
+# 'unsafe' statement
+@dataclass
+class StatementUnsafe(Statement):
+    inner: Statement
+
+
+# 'unsafe' expression
+@dataclass
+class ExpressionUnsafe(Expression):
+    inner: Expression
+
+
+# mode expression
+@dataclass
+class ModedExpression(Node):
+    mode: Mode
+    value: Expression
+
+
+# 'with' module-expression ';'
+@dataclass
+class StatementWith(Statement):
+    module: ModuleExpression
+
+
+# 'module' name [':' module-expression] '=' module-expression ';'
+@dataclass
+class StatementModule(Statement):
+    name: str
+    type: Optional[ModuleExpression]
+    value: ModuleExpression

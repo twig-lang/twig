@@ -13,15 +13,15 @@ begin
   let value = 100;
 
   begin
-    let &ref = sub_ref[value];
+    let ref = sub_ref[value];
   end
 
   begin
-    let &mut refmut = sub_refmut[value];
+    let refmut = sub_refmut[value];
   end
 
   begin
     let val = sub_value[value];
-    let mut valmut = sub_value[value];
+    let valmut = mut sub_value[value];
   end
 end
