@@ -48,11 +48,6 @@ class ExpressionLiteral(Expression):
 
 
 @dataclass
-class Name(Node):
-    name: str
-
-
-@dataclass
 class StringLiteral(Literal):
     value: str
 
@@ -68,11 +63,11 @@ class Mode(Flag):
     MUTABLE = auto()
 
 
-# mode [ name ':' ] expression
+# [ ':' name ] mode expression
 @dataclass
 class Argument(Node):
+    key: Optional[str]
     mode: Mode
-    key: Optional[Name]
     value: Expression
 
 
@@ -86,8 +81,8 @@ class ArgumentList(Node):
 @dataclass
 class Parameter(Node):
     mode: Mode
-    name: Name
-    key: Optional[Name]
+    name: str
+    key: Optional[str]
     type: Type
     default: Optional[Expression]
 
@@ -142,7 +137,7 @@ class ExpressionFunctionCall(Expression):
 @dataclass
 class LetBinding(Node):
     mode: Mode
-    name: Name
+    name: str
     type: Optional[Type]
     value: Expression
 
@@ -189,7 +184,7 @@ class StatementWhile(Statement):
 
 @dataclass
 class SetBinding(Node):
-    lvalue: Name
+    lvalue: str
     operator: Optional[Operator]
     rvalue: Expression
 
@@ -213,7 +208,7 @@ class StatementIf(Statement):
 
 @dataclass
 class TypeNamed(Type):
-    name: Name
+    name: str
 
 
 class Path(Node):
@@ -226,7 +221,7 @@ class WithPath(Path):
 
 @dataclass
 class PathNamed(Path):
-    name: Name
+    name: str
 
 
 @dataclass
@@ -276,7 +271,7 @@ class Import(Node):
 # 'type' name [ '=' type ] ';'
 @dataclass
 class TypeDefinition(Node):
-    name: Name
+    name: str
     type: Optional[Type]
 
 
@@ -288,7 +283,7 @@ class TypeUnit(Type):
 # [ name ':' ] path
 @dataclass
 class ModuleArgument(Node):
-    key: Optional[Name]
+    key: Optional[str]
     value: Path
 
 
@@ -302,7 +297,7 @@ class PathCall(Path):
 # name ':' type
 @dataclass
 class Member(Node):
-    name: Name
+    name: str
     type: Type
 
 
@@ -327,13 +322,13 @@ class TypeTuple(Type):
 # 'enum' { name },
 @dataclass
 class TypeEnum(Type):
-    names: list[Name]
+    names: list[str]
 
 
 # name [ '(' { type }, ')' ]
 @dataclass
 class Variant(Node):
-    name: Name
+    name: str
     arguments: list[Type]
 
 
@@ -352,7 +347,7 @@ class PatternNamed(Pattern):
 # [ name ':' ] pattern
 @dataclass
 class ConstructorArgument(Node):
-    key: Optional[Name]
+    key: Optional[str]
     value: Pattern
 
 
@@ -403,7 +398,7 @@ class ExpressionCast(Expression):
 @dataclass
 class ExternVariable(Node):
     abi: str
-    name: Name
+    name: str
     type: Type
 
 
@@ -411,7 +406,7 @@ class ExternVariable(Node):
 @dataclass
 class ExternFunction(Node):
     abi: str
-    name: Name
+    name: str
     parameters: ParameterList
     returns: Type
 
@@ -444,15 +439,15 @@ class ModuleJoin(ModuleExpression):
 @dataclass
 class ModuleParameter(Node):
     is_type: bool
-    name: Name
-    key: Optional[Name]
+    name: str
+    key: Optional[str]
     sig: Optional[ModuleExpression]
 
 
 # 'module' name [ ':' module-expression ] [ '!' mod-par-list  ] '=' module-expression ';'
 @dataclass
 class ModuleDefinition(Node):
-    name: Name
+    name: str
     type: Optional[ModuleExpression]
     parameters: list[ModuleParameter]
     value: ModuleExpression
@@ -461,7 +456,7 @@ class ModuleDefinition(Node):
 # 'module' 'type' name [ '!' mod-par-list ] '=' module-expression ';'
 @dataclass
 class ModuleType(Node):
-    name: Name
+    name: str
     parameters: list[ModuleParameter]
     value: ModuleExpression
 
@@ -486,4 +481,4 @@ class ExpressionUnit(Expression):
 @dataclass
 class ExpressionMember(Expression):
     lhs: Expression
-    member: Name
+    member: str

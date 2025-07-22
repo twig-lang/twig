@@ -42,7 +42,7 @@ def recovers_on(tokens, consumes=False, forwards=False):
 
 def p_name(lexer):
     name = lexer.expect(Tag.Identifier).data
-    return syntax.Name(name)
+    return name
 
 
 def p_label(lexer):
@@ -122,7 +122,7 @@ def p_argument(lexer):
 
     value = p_expression(lexer)
 
-    return syntax.Argument(mode, key, value)
+    return syntax.Argument(key, mode, value)
 
 
 def p_arguments(lexer, end):
