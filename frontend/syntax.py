@@ -547,3 +547,9 @@ class ExpressionDeref(Expression):
 class TypeArray(Type):
     length: Optional[Expression]
     element: Type
+
+
+# '[' [ expression {',' expression} ] ']'
+@dataclass
+class ExpressionArray(Expression):
+    elements: list[Expression]

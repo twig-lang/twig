@@ -50,5 +50,8 @@ begin
 
   let sum = sum_all_in(&n_i23) + sum_all_in(&n_i32);
 
+  let values = [1, 2, 4, 8, 16, 32, 64];
+  set sum += sum_all_in(&values);
+
   { TODO: do something with sum. }
 end

@@ -122,6 +122,25 @@ def p_primary(lexer):
 
         return inner
 
+    if lexer.match(Tag.PLBracket):
+        elems = []
+
+        while True:
+            if lexer.at(Tag.PRBracket):
+                break
+
+            el = p_expression(lexer)
+            elems.append(el)
+
+            if lexer.at(Tag.PRBracket):
+                break
+            else:
+                lexer.expect(Tag.PComma)
+
+        lexer.expect(Tag.PRBracket)
+
+        return syntax.ExpressionArray(elems)
+
     return p_literal(lexer)
 
 
