@@ -734,6 +734,17 @@ def p_type(lexer, on_def=False):
         pointed = p_type(lexer)
         return syntax.TypePointer(is_mutable, pointed)
 
+    if lexer.match(Tag.PLBracket):
+        length = None
+        if not lexer.at(Tag.PRBracket):
+            length = p_expression(lexer)
+
+        lexer.expect(Tag.PRBracket)
+
+        element = p_type(lexer)
+
+        return syntax.TypeArray(length, element)
+
     if on_def:
         if lexer.match(Tag.KwRecord):
             return p_record(lexer)

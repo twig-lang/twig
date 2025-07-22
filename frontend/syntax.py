@@ -540,3 +540,10 @@ class ExpressionAddressof(Expression):
 class ExpressionDeref(Expression):
     mode: Mode
     pointer: Expression
+
+
+# '[' [integer] ']' type
+@dataclass
+class TypeArray(Type):
+    length: Optional[Expression]
+    element: Type
