@@ -1,7 +1,7 @@
-from frontend.iter import peekable, Peek
-from frontend.message import Message
-import frontend.message as msg
-from frontend.token import *
+from text.iter import peekable, Peek
+from text.message import Message
+import text.message as msg
+from text.token import *
 
 
 def _is_id_head(c):

@@ -1,12 +1,12 @@
 import traceback
 from typing import Optional
 
-from frontend.lexer import Error as LexerError
-from frontend.lexer import Lexer
-from frontend.sourcemap import KNOWN_FILES
-from frontend import syntax, message as msg
-from frontend.message import Message
-from frontend.token import *
+from text.lexer import Error as LexerError
+from text.lexer import Lexer
+from text.sourcemap import KNOWN_FILES
+from text import syntax, message as msg
+from text.message import Message
+from text.token import *
 
 SHOW_PARSING_TRACES = False
 

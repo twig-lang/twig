@@ -1,7 +1,7 @@
-from frontend.lexer import lexer, Error as LexerError
-from frontend.parse import parse
-from frontend.sourcemap import add_file
-from frontend.message import MESSAGES
+from text.lexer import lexer, Error as LexerError
+from text.parse import parse
+from text.sourcemap import add_file
+from text.message import MESSAGES
 
 from sys import argv, exit
 from pprint import pp
