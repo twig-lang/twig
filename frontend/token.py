@@ -9,7 +9,9 @@ class Tag(Enum):
     Float = "a float"
     Identifier = "an identifier"
     Char = "a character"
+    Bytechar = "a byte literal"
     String = "a string"
+    Bytestring = "a byte string"
     # keywords
     KwFunction = "`function`"
     KwBegin = "`begin`"

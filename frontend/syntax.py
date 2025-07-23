@@ -53,7 +53,22 @@ class StringLiteral(Literal):
 
 
 @dataclass
+class BytesLiteral(Literal):
+    value: bytes
+
+
+@dataclass
 class IntegerLiteral(Literal):
+    value: int
+
+
+@dataclass
+class ByteLiteral(Literal):
+    value: int
+
+
+@dataclass
+class CharLiteral(Literal):
     value: int
 
 

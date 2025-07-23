@@ -56,6 +56,19 @@ def p_label(lexer):
 
 def p_lit_str(lexer):
     value = lexer.expect(Tag.String).data
+
+    while lexer.at(Tag.String):
+        value += lexer.expect(Tag.String).data
+
+    return syntax.StringLiteral(value)
+
+
+def p_lit_bstr(lexer):
+    value = lexer.expect(Tag.Bytestring).data
+
+    while lexer.at(Tag.Bytestring):
+        value += lexer.expect(Tag.Bytestring).data
+
     return syntax.StringLiteral(value)
 
 
@@ -71,10 +84,19 @@ def p_literal(lexer):
     if lexer.at(Tag.String):
         return p_lit_str(lexer)
 
+    if lexer.at(Tag.Bytestring):
+        return p_lit_bstr(lexer)
+
+    if lexer.at(Tag.Char):
+        value = lexer.expect(Tag.Char).data
+        return syntax.CharLiteral(value)
+
     if lexer.at(Tag.Int):
         return p_lit_int(lexer)
 
-    lexer.expect([Tag.Identifier, Tag.String, Tag.Int])
+    lexer.expect(
+        [Tag.Identifier, Tag.String, Tag.Bytestring, Tag.Bytechar, Tag.Char, Tag.Int]
+    )
 
 
 UNARIES = {

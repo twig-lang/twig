@@ -16,13 +16,155 @@ class Error(Exception):
     pass
 
 
-def tokenize(text):
+def _ishex(c):
+    return c in "abcdefABCDEF0123456789"
+
+
+def l_char(head, path=""):
+    c = head.next()
+    point = head.get_point()
+
+    if c == "\\":
+        c = head.next()
+        span = (point, head.get_point())
+
+        if c == "r":
+            return ord("\r")
+        elif c == "0":
+            return 0
+        elif c == "n":
+            return ord("\n")
+        elif c == "t":
+            return ord("\t")
+        elif c == "x":
+            low = head.next()
+            hi = head.next()
+
+            assert _ishex(low)
+            assert _ishex(hi)
+
+            return bytes.fromhex(low + hi)[0]
+        elif c == "u":
+            assert head.next() == "{"
+
+            code = ""
+            while head.peek() != "}":
+                c = head.next()
+                if c == "_":
+                    continue
+                code += c
+
+            assert head.next() == "}"
+
+            return int(code, base=16)
+
+        elif c == '"':
+            return ord('"')
+        elif c == "'":
+            return ord("'")
+        elif c == "\\":
+            return ord("\\")
+        else:
+            msg.send(
+                Message(message=f"unknown character escape `{c}`", span=span, path=path)
+            )
+
+            raise Error()
+
+    return ord(c)
+
+
+def l_str(head, point, raw=False, as_bytes=False, path=""):
+    nhash = 0
+
+    if raw:
+        while head.peek() == "#":
+            nhash += 1
+            head.next()
+
+    assert head.next() == '"'
+
+    data = []
+
+    while True:
+        while head.peek() != '"':
+            if raw:
+                data.append(ord(head.next()))
+            else:
+                data.append(l_char(head, path=path))
+
+        # head.next() can only be "
+        head.next()
+
+        # count hashes, if any
+        if raw:
+            gothash = 0
+
+            while head.peek() == "#":
+                gothash += 1
+                head.next()
+
+                if nhash == gothash:
+                    break
+
+            # if not enough were found, add them to the string and keep going
+            if nhash != gothash:
+                data.extend([ord('"')] + [ord("#")] * gothash)
+            else:
+                break
+        else:
+            break
+
+    span = (point, head.get_point())
+
+    tag = Tag.Bytestring
+
+    if as_bytes:
+        data = bytes(data)
+    else:
+        tag = Tag.String
+        data = "".join(map(chr, data))
+
+    return Token(tag, span, data)
+
+
+def l_chr(head, point, byte=False, path=""):
+    head.next()
+
+    chr = l_char(head, path=path)
+
+    assert head.next() == "'"
+
+    if byte:
+        assert chr < 255
+
+    span = (point, head.get_point())
+
+    tag = Tag.Bytechar if byte else Tag.Char
+    chr = ord(chr)
+
+    return Token(tag, span, data=chr)
+
+
+def tokenize(path, text):
     text = text + " "
     head = peekable(iter(text))
+    can_eof = False
+    point = None
 
     try:
         while True:
             point = head.get_point()
+
+            can_eof = True
+
+            if head.peek().isspace():
+                while head.peek().isspace():
+                    head.next()
+
+                continue
+
+            can_eof = False
 
             if head.peek() == "{":
                 head.next()
@@ -35,12 +177,6 @@ def tokenize(text):
                     if head.peek() == "}":
                         nesting -= 1
 
-                    head.next()
-
-                continue
-
-            if head.peek().isspace():
-                while head.peek().isspace():
                     head.next()
 
                 continue
@@ -62,6 +198,24 @@ def tokenize(text):
                 while _is_id_tail(head.peek()):
                     ident += head.next()
 
+                if head.peek() in '"#':
+                    if ident == "r":
+                        yield l_str(head, point, raw=True, path=path)
+                        continue
+
+                    if ident == "rb":
+                        yield l_str(head, point, as_bytes=True, raw=True, path=path)
+                        continue
+
+                    if ident == "b":
+                        yield l_str(head, point, as_bytes=True, path=path)
+                        continue
+
+                if head.peek() == "'":
+                    if ident == "b" and head.peek() == "'":
+                        yield l_chr(head, point, byte=True, path=path)
+                        continue
+
                 span = (point, head.get_point())
 
                 try:
@@ -73,27 +227,11 @@ def tokenize(text):
                 continue
 
             if head.peek() == "'":
-                head.next()
-
-                chr = head.next()
-
-                assert head.next() == "'"
-
-                span = (point, head.get_point())
-                yield Token(Tag.Char, span, data=chr)
+                yield l_chr(head, point, path=path)
                 continue
 
             if head.peek() == '"':
-                str = ""
-                head.next()
-
-                while head.peek() != '"':
-                    str += head.next()
-
-                assert head.next() == '"'
-
-                span = (point, head.get_point())
-                yield Token(Tag.String, span, str)
+                yield l_str(head, point, path=path)
                 continue
 
             if head.peek() in SYM_1:
@@ -112,15 +250,30 @@ def tokenize(text):
                 yield Token(tag, span)
                 continue
 
-            yield ("unknown", point, head.next())
+            chr = head.next()
+            span = (point, head.get_point())
+
+            msg.send(
+                Message(message=f"unknown character `{chr}`", path=path, span=span)
+            )
+
+            raise Error()
+
     except StopIteration:
+        if not can_eof:
+            point = head.get_point() - 1
+            span = (point, point)
+
+            msg.send(Message(message="unexpected end of file", path=path, span=span))
+
+            raise Error()
         pass
 
 
 class Lexer:
     def __init__(self, path, text):
         self.path = path
-        self.head = peekable(tokenize(text))
+        self.head = peekable(tokenize(path, text))
 
     def next(self):
         return self.__next__()
