@@ -1,7 +1,8 @@
+from common.sourcemap import add_file
+from common.message import MESSAGES
+
 from text.lexer import lexer, Error as LexerError
 from text.parse import parse
-from text.sourcemap import add_file
-from text.message import MESSAGES
 
 from sys import argv, exit
 from pprint import pp

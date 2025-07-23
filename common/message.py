@@ -4,7 +4,7 @@ from enum import Enum
 from collections import deque
 from pathlib import Path
 
-from text.sourcemap import Sourcemap, KNOWN_FILES
+from common.sourcemap import Sourcemap, KNOWN_FILES
 
 
 class Kind(Enum):

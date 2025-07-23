@@ -1,6 +1,7 @@
-from text.iter import peekable, Peek
-from text.message import Message
-import text.message as msg
+from common.iter import peekable, Peek
+import common.message as msg
+from common.message import Message
+
 from text.token import *
 
 

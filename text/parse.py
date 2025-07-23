@@ -1,11 +1,13 @@
 import traceback
 from typing import Optional
 
+from common.sourcemap import KNOWN_FILES
+import common.message as msg
+from common.message import Message
+
 from text.lexer import Error as LexerError
 from text.lexer import Lexer
-from text.sourcemap import KNOWN_FILES
-from text import syntax, message as msg
-from text.message import Message
+from text import syntax
 from text.token import *
 
 SHOW_PARSING_TRACES = False
