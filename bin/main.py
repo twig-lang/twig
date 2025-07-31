@@ -1,5 +1,5 @@
 from common.sourcemap import add_file
-from common.message import MESSAGES
+from common.message import report_all
 
 from text.lexer import lexer, Error as LexerError
 from text.parse import parse
@@ -21,10 +21,5 @@ def main():
     finally:
         pass
 
-    msgs = len(MESSAGES)
-
-    while len(MESSAGES) > 0:
-        MESSAGES.popleft().report()
-
-    if msgs > 0:
-        exit(f"{msgs} messages printed.")
+    if not report_all():
+        exit(f"Compilation failed.")

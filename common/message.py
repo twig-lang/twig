@@ -16,6 +16,9 @@ class MarkKind(Enum):
     DIRECT = "direct"
 
 
+_MESSAGES = deque([])
+
+
 class Message:
     def __init__(self, message, **kwargs):
         self.kind = Kind.ERROR
@@ -36,14 +39,38 @@ class Message:
         return self
 
     def send(self):
-        MESSAGES.append(self)
+        _MESSAGES.append(self)
 
     def report(self):
         pass
 
 
-MESSAGES = deque([])
+def _report_one(msg: Message):
+    print(f"{msg.kind.value}: {msg.message}")
+
+    for highlight in msg.highlights:
+        print(f" %{highlight}")
+
+    for var, value in msg.variables.items():
+        print(f" ${repr(var)}={repr(value)}")
 
 
-def send(msg: Message):
-    MESSAGES.append(msg)
+def report_all():
+    errors = 0
+    warnings = 0
+
+    while len(_MESSAGES) > 0:
+        message = _MESSAGES.popleft()
+
+        if message.kind == Kind.ERROR:
+            errors += 1
+
+        if message.kind == Kind.WARNING:
+            warnings += 1
+
+        _report_one(message)
+
+    if errors != 0 or warnings != 0:
+        print(f"{errors} error(s), {warnings} warning(s) total.")
+
+    return errors == 0

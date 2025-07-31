@@ -66,9 +66,7 @@ def l_char(head, path=""):
         elif c == "\\":
             return ord("\\")
         else:
-            Message("unknown character escape").add_span(
-                path, span
-            ).send()
+            Message("unknown character escape").add_span(path, span).send()
 
             raise Error()
 
