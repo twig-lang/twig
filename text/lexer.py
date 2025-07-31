@@ -66,9 +66,9 @@ def l_char(head, path=""):
         elif c == "\\":
             return ord("\\")
         else:
-            msg.send(
-                Message(message=f"unknown character escape `{c}`", span=span, path=path)
-            )
+            Message("unknown character escape").add_span(
+                path, span
+            ).send()
 
             raise Error()
 
@@ -254,18 +254,15 @@ def tokenize(path, text):
             chr = head.next()
             span = (point, head.get_point())
 
-            msg.send(
-                Message(message=f"unknown character `{chr}`", path=path, span=span)
-            )
+            Message("unknown character").add_span(span).send()
 
             raise Error()
 
     except StopIteration:
         if not can_eof:
             point = head.get_point() - 1
-            span = (point, point)
 
-            msg.send(Message(message="unexpected end of file", path=path, span=span))
+            Message("unexpected end of file").add_point(path, point).send()
 
             raise Error()
         pass
@@ -315,24 +312,16 @@ class Lexer:
 
                 tags = ", ".join(values)
 
-                msg.send(
-                    Message(
-                        message=f"expected one of {tags}, got {got.tag.value}",
-                        path=self.path,
-                        span=got.span,
-                    )
-                )
+                Message("unexpected token", tags=tags, got=got.tag.value).add_span(
+                    self.path, got.span, tag="expected one of $tags, got $got"
+                ).send()
 
                 raise Error()
 
         elif got.tag != tag:
-            msg.send(
-                Message(
-                    message=f"expected {tag.value}, got {got.tag.value}",
-                    path=self.path,
-                    span=got.span,
-                )
-            )
+            Message("unexpected token", tag=tag.value, got=got.tag.value).add_span(
+                self.path, got.span, tag="expected $tag, got $got"
+            ).send()
 
             raise Error()
 
