@@ -10,7 +10,7 @@ from text.lexer import Lexer
 from text import syntax
 from text.token import *
 
-SHOW_PARSING_TRACES = False
+SHOW_PARSING_TRACES = True
 
 
 # function jumps to a known token, and then it may consume it or not.
@@ -120,6 +120,25 @@ def p_unary_operator(lexer):
     return operator
 
 
+def p_body(lexer):
+    statements = []
+    tail = None
+
+    while not lexer.at(Tag.PRCurl):
+        item = p_expression(lexer)
+
+        if lexer.at(Tag.PRCurl):
+            tail = item
+            break
+
+        lexer.expect(Tag.PSemicolon)
+        statements.append(item)
+
+    lexer.expect(Tag.PRCurl)
+
+    return syntax.Body(statements, tail)
+
+
 def p_primary(lexer):
     operator = p_unary_operator(lexer)
 
@@ -145,6 +164,9 @@ def p_primary(lexer):
         lexer.expect(Tag.PRParen)
 
         return inner
+
+    if lexer.match(Tag.PLCurl):
+        return p_body(lexer)
 
     if lexer.match(Tag.PLBracket):
         elems = []
@@ -306,7 +328,6 @@ def p_topexpr(lexer):
     return syntax.ModedExpression(mode, value)
 
 
-@recovers_on(Tag.KwEnd, consumes=True)
 def p_begin(lexer):
     children = []
 
@@ -914,7 +935,7 @@ def p_path(lexer, as_with=False, lhs=None):
         name = p_name(lexer)
         path = syntax.PathNamed(name)
 
-    while lexer.match(Tag.PPathsep):
+    while lexer.match(Tag.PDot):
         child = None
 
         if as_with:
@@ -930,7 +951,7 @@ def p_path(lexer, as_with=False, lhs=None):
         path = syntax.PathCall(callee=path, arguments=arguments)
         return p_path(lexer, as_with=as_with, lhs=path)
 
-    if as_with and lexer.match(Tag.PPathsep):
+    if as_with and lexer.match(Tag.PDot):
         child = p_with_path(lexer)
         path = syntax.PathSub(parent=path, child=child)
 

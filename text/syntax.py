@@ -568,3 +568,10 @@ class TypeArray(Type):
 @dataclass
 class ExpressionArray(Expression):
     elements: list[Expression]
+
+
+# '{' expression { ';' expression } [ ';' ] '}'
+@dataclass
+class Body(Expression):
+    statements: list[Expression]
+    value: Optional[Expression]

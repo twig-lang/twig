@@ -1,0 +1,9 @@
+function setmut(&mut ref: u64, value: u64) =
+  set ref = value;
+
+function main = {
+  let ref = mut 100;
+  let value = 50;
+
+  setmut(&mut ref, value);
+};

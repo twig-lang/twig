@@ -1,0 +1,27 @@
+with import Std.Option;
+
+type int = i64;
+
+type also_int = (i64);
+
+type unit = ();
+
+type MaybeInt = Option!(int).t;
+
+type IntAndUnit = struct
+  i: int,
+  u: unit;
+
+type AlsoIntAndUnit = (int, unit);
+
+type Bit = enum
+  Set,
+  Clear;
+
+type Bitcast = union
+  i: i64,
+  f: f64;
+
+type IntOrUnit = variant
+  Int(int),
+  Unit(unit);

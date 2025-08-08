@@ -1,0 +1,36 @@
+with import Std.(Iterator, Memory);
+
+type I32x23 = [23] i32;
+type I32x32 = [32] i32;
+
+function sum_all(&input: []i32): i32 = {
+ let result = mut 0;
+
+ while let i = input each {
+   set result += i;
+ };
+
+ result
+};
+
+function populate(&mut output: []i32) = {
+  while let begin {
+    value = output each_mut;
+    index = iota;
+  } {
+    set value = index;
+  };
+};
+
+function example = {
+  let n23 = mut unsafe Uninit!(I32x23).f;
+  let n32 = mut unsafe Uninit!(I32x32).f;
+
+  n23 populate;
+  n32 populate;
+
+  let sum = mut n23 sum_all + n32 sum_all;
+
+  let vals = [1, 2, 4, 8, 16, 32, 64];
+  set sum += vals sum_all;  
+};

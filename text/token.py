@@ -14,13 +14,10 @@ class Tag(Enum):
     Bytestring = "a byte string"
     # keywords
     KwFunction = "`function`"
-    KwBegin = "`begin`"
-    KwEnd = "`end`"
     KwLoop = "`loop`"
     KwWhile = "`while`"
     KwDo = "`do`"
     KwIf = "`if`"
-    KwThen = "`then`"
     KwElse = "`else`"
     KwYield = "`yield`"
     KwBreak = "`break`"
@@ -69,12 +66,12 @@ class Tag(Enum):
     PComma = "`,`"
     PSemicolon = "`;`"
     PColon = "`:`"
-    PPathsep = "`::`"
     PLParen = "`(`"
     PRParen = "`)`"
     PLBracket = "`[`"
     PRBracket = "`]`"
-    PHash = "`#`"
+    PLCurl = "`{`"
+    PRCurl = "`}`"
     PAt = "@"
 
     def _make_kwtab():
@@ -105,8 +102,10 @@ SYM_1 = {
     ")": Tag.PRParen,
     "[": Tag.PLBracket,
     "]": Tag.PRBracket,
-    "#": Tag.PHash,
+    "{": Tag.PLCurl,
+    "}": Tag.PRCurl,
     "@": Tag.PAt,
+    ":": Tag.PColon,
 }
 
 # 2-char long symbols.
@@ -117,7 +116,6 @@ SYM_2 = {
     "&": (Tag.OpAnd, {"&": Tag.OpAndthen}),
     "|": (Tag.OpOr, {"|": Tag.OpOrelse}),
     "=": (Tag.OpEq, {"<": Tag.OpEqLt, ">": Tag.OpEqGt}),
-    ":": (Tag.PColon, {":": Tag.PPathsep}),
 }
 
 

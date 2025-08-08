@@ -165,17 +165,8 @@ def tokenize(path, text):
 
             can_eof = False
 
-            if head.peek() == "{":
-                head.next()
-                nesting = 1
-
-                while nesting > 0:
-                    if head.peek() == "{":
-                        nesting += 1
-
-                    if head.peek() == "}":
-                        nesting -= 1
-
+            if head.peek() == "#":
+                while head.peek() != "\n":
                     head.next()
 
                 continue

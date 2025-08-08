@@ -1,0 +1,38 @@
+extern "C" function puts(text: *u8): i32;
+
+function escapes: str =
+  "newline: \n"
+  "tab: \t"
+  "quotes: \""
+  "quote: \'"
+  "cr: \r"
+
+  "also_newline: \x0a"
+  "and_quotes: \u{0022}"
+  "and_quote: \u{0_0_2_7}"
+
+  "with_newlines: Hello,
+world!"
+
+  r#"raw: "text strings" may include quotations or es\ca\pes."#
+  r##"also_raw: also #" and "# can be used in raw strings."##
+
+  "null: \0"
+;
+
+  It doesn't need to be encoded in UTF-8.  }
+function bytes: []u8 =
+  rb#""Hello, world!","#
+  b" said the program\n\0";
+
+function main {
+  let text = escapes;
+  let text_ptr = text as_bytes data;
+
+  unsafe puts(text_ptr);
+
+  let hello = bytes;
+  let hello_ptr = hello data;
+
+  unsafe puts(hello_ptr);
+};
