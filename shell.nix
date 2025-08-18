@@ -5,6 +5,7 @@ pkgs.mkShell {
   ] ++ (with pkgs.ocamlPackages; [
     ocaml
     ocp-indent
+    ocamlformat_0_26_2
     ocaml-lsp
     findlib
   ]);

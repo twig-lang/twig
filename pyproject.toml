@@ -1,6 +1,0 @@
-[project]
-name = "twig"
-version = "0.1.0"
-description = "A language of projections."
-requires-python = ">=3.12"
-dependencies = []
