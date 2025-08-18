@@ -1,4 +1,3 @@
 (executable
  (public_name twig)
- (name main)
- (libraries twig))
+ (name main))
