@@ -11,7 +11,9 @@
 
 (license LICENSE)
 
+(using menhir 2.1)
+
 (package
  (name twig)
- (depends ocaml)
+ (depends ocaml sedlex menhirLib)
  (tags ()))

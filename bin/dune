@@ -1,3 +1,9 @@
+(menhir
+ (modules parser))
+
 (executable
  (public_name twig)
- (name main))
+ (name main)
+ (libraries menhirLib)
+ (preprocess
+  (pps sedlex.ppx)))
