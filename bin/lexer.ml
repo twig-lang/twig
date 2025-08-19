@@ -19,12 +19,15 @@ let keywords =
     ("mod", KMod);
     ("mut", KMut);
     ("return", KReturn);
+    ("set", KSet);
     ("struct", KStruct);
     ("sub", KSub);
     ("type", KType);
     ("union", KUnion);
     ("unsafe", KUnsafe);
+    ("where", KWhere);
     ("while", KWhile);
+    ("with", KWith);
     ("yield", KYield);
   ]
   |> List.to_seq |> Hashtbl.of_seq
@@ -45,7 +48,7 @@ let next_char s =
   let chr = Uchar.utf_decode_uchar dec in
   Some ({ s with head = s.head + len }, chr)
 
-let rec skip_ws s =
+let skip_ws s =
   let here = s.here in
   let rec skip' s =
     let> h = peek_char s in

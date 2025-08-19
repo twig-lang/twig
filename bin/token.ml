@@ -2,7 +2,7 @@ type tag =
   (* "ignored" tags *)
   | Eof
   | Whitespace
-  | Comment
+  | Comment (* {| ... |} *)
   (* "primitive" tags *)
   | Identifier
   | Integer
@@ -11,12 +11,12 @@ type tag =
   | Char
   | Bool
   (* brace pairs *)
-  | LParen
-  | RParen
-  | LBrac
-  | RBrac
-  | LCurl
-  | RCurl
+  | LParen (* ( *)
+  | RParen (* ) *)
+  | LBrac (* [ *)
+  | RBrac (* ] *)
+  | LCurl (* { *)
+  | RCurl (* } *)
   (* operator "keywords" *)
   | Dot (* . *)
   | Comma (* , *)
@@ -27,8 +27,11 @@ type tag =
   | Question (* ? *)
   | Amp (* & *)
   | Bar (* | *)
+  | Star (* * *)
+  | At (* @ *)
   (* Keywords *)
   | KLet
+  | KSet
   | KIn
   | KFn
   | KMut
@@ -49,6 +52,8 @@ type tag =
   | KYield
   | KBreak
   | KContinue
+  | KWith
+  | KWhere
 
 type data =
   | Str of string
