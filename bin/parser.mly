@@ -105,10 +105,17 @@ path:
 
 ty:
   "(" ")" { Ast.UnitTy }
+| "(" ty ")" { $2 }
 | path { Ast.Named $1 }
 ;
 
 expression:
   "(" ")" { Ast.Unit }
+| "(" expression ")" { $2 }
 | path { Ast.Variable $1 }
+| block { Ast.Block $1 }
+;
+
+block:
+ "{" "}" { Ast.ExprBlock { statements=[] ; returns = None } }
 ;

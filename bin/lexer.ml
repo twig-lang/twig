@@ -55,6 +55,8 @@ let rec lexer' lexbuf =
   | xid_start, Star xid_continue -> id2kw (Sedlexing.Utf8.lexeme lexbuf)
   | '(' -> Parser.LParen
   | ')' -> Parser.RParen
+  | '{' -> Parser.LCurl
+  | '}' -> Parser.RCurl
   | Plus (Chars "+*/-,.;:!@#$%&=?!<>^" | math | other_math) ->
       op2kw (Sedlexing.Utf8.lexeme lexbuf)
   | eof -> Parser.Eof
