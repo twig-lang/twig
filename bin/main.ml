@@ -1,6 +1,4 @@
-open Position
-open Token
-open Lexer
-open Parse
-
-let () = print_endline "Hello, World!"
+let () =
+  let input = "fn unit : () = ();" in
+  let _ast = Option.get @@ Parse.parse_string input in
+  ()

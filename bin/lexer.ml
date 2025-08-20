@@ -1,34 +1,35 @@
 let keywords =
-  let open Token in
-  [
-    ("break", KBreak);
-    ("const", KConst);
-    ("continue", KContinue);
-    ("else", KElse);
-    ("enum", KEnum);
-    ("fn", KFn);
-    ("if", KIf);
-    ("let", KLet);
-    ("loop", KLoop);
-    ("match", KMatch);
-    ("mod", KMod);
-    ("mut", KMut);
-    ("return", KReturn);
-    ("set", KSet);
-    ("struct", KStruct);
-    ("sub", KSub);
-    ("type", KType);
-    ("union", KUnion);
-    ("unsafe", KUnsafe);
-    ("where", KWhere);
-    ("while", KWhile);
-    ("with", KWith);
-    ("yield", KYield);
-  ]
+  Parser.
+    [
+      ("as", As);
+      ("break", Break);
+      ("const", Const);
+      ("continue", Continue);
+      ("else", Else);
+      ("enum", Enum);
+      ("fn", Fn);
+      ("if", If);
+      ("let", Let);
+      ("loop", Loop);
+      ("match", Match);
+      ("mod", Mod);
+      ("mut", Mut);
+      ("return", Return);
+      ("set", Set);
+      ("struct", Struct);
+      ("sub", Sub);
+      ("type", Type);
+      ("union", Union);
+      ("unsafe", Unsafe);
+      ("where", Where);
+      ("while", While);
+      ("with", With);
+      ("yield", Yield);
+    ]
   |> List.to_seq |> Hashtbl.of_seq
 
 let lexer' lexbuf =
-  match%sedlex lexbuf with eof -> Parser.EOF | _ -> Parser.EOF
+  match%sedlex lexbuf with eof -> Parser.Eof | _ -> Parser.Eof
 
 let lexer lexbuf =
   let pre = Sedlexing.lexing_bytes_position_curr lexbuf in
