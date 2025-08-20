@@ -1,4 +1,5 @@
 let () =
-  let input = "fn unit : () = ();" in
-  let _ast = Option.get @@ Parse.parse_string input in
+  let path = "test.tw" in
+  let input = In_channel.open_text path in
+  let _ast = Option.get @@ Parse.parse_chan ~fname:path input in
   ()

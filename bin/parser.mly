@@ -71,8 +71,26 @@ toplevel:
 ;
 
 function_definition:
-  "fn" "identifier" ":" ty "=" expression ";" { Ast.FunctionDefinition {name = $2 ; ty= $4 ; value = $6} }
+  "fn" "identifier" arglist ":" ty "=" expression ";" { Ast.FunctionDefinition {name = $2 ; arguments= $3 ; ty= Some $5 ; value = Some $7} }
 ;
+
+arglist:
+               { [] }
+| "|" args "|" { $2 }
+;
+
+args:
+ { [] }
+| args "," arg { $3 :: $1 }
+| arg { [$1] }
+;
+
+arg:
+ "identifier" maybe_key maybe_val ":" ty { CallArgument { name = $1 ; key = $2 ; ty = $5 ; default = $3 } }
+;
+
+maybe_key: { None } | "identifier" { Some $1 };
+maybe_val: { None } | "=" expression { Some $2 };
 
 ty:
   "(" ")" { Ast.UnitTy }

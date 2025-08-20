@@ -7,5 +7,22 @@ type expr =
   | Unit
   | Bool of bool
 
-type ty = Function of ty * ty | Named of path | UnitTy
-type toplevel = FunctionDefinition of { name : string; ty : ty; value : expr }
+type ty = Named of path | UnitTy
+
+type call_arg =
+  | CallArgument of {
+      name : string;
+      key : string option;
+      ty : ty;
+      default : expr option;
+    }
+
+type call_arglist = call_arg list
+
+type toplevel =
+  | FunctionDefinition of {
+      name : string;
+      arguments : call_arglist;
+      ty : ty option;
+      value : expr option;
+    }

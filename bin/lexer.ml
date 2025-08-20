@@ -35,8 +35,11 @@ let operators =
       ("*", Star);
       ("&", Amp);
       ("@", At);
+      (".", Dot);
       (":", Colon);
+      (",", Comma);
       (";", Semicolon);
+      ("|", Bar);
     ]
   |> List.to_seq |> Hashtbl.of_seq
 

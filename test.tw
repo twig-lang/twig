@@ -1,0 +1,3 @@
+fn unit |a: (), b: ()| : () = ();
+
+fn unit_when |a: (), b beta = (): ()| : () = ();
