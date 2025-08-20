@@ -1,6 +1,6 @@
 %token Eof "eof"
 %token<string> Identifier "identifier"
-%token Operator "operator"
+%token<string> Operator "operator"
 %token<int> Integer "integer"
 %token<float> Real "real"
 %token<string> String "string"
