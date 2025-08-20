@@ -1,3 +1,5 @@
 fn unit |a: (), b: ()| : () = ();
 
 fn unit_when |a: (), b beta = (): ()| : () = ();
+
+fn integer |x: i32| : i32 = x;

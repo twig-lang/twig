@@ -8,9 +8,14 @@ type expr =
   | Bool of bool
 
 type ty = Named of path | UnitTy
+type mode = Mode of { is_ref : bool; is_mut : bool }
+
+let value is_mut = Mode { is_ref = false; is_mut }
+let reference is_mut = Mode { is_ref = true; is_mut }
 
 type call_arg =
   | CallArgument of {
+      mode : mode;
       name : string;
       key : string option;
       ty : ty;

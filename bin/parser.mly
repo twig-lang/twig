@@ -85,17 +85,30 @@ args:
 | arg { [$1] }
 ;
 
+mode:
+ { Ast.value false }
+| "mut" { Ast.value true }
+| "&" { Ast.reference false }
+| "&" "mut" { Ast.reference true }
+;
+
 arg:
- "identifier" maybe_key maybe_val ":" ty { CallArgument { name = $1 ; key = $2 ; ty = $5 ; default = $3 } }
+ mode "identifier" maybe_key maybe_val ":" ty { CallArgument { mode = $1; name = $2 ; key = $3 ; ty = $6 ; default = $4 } }
 ;
 
 maybe_key: { None } | "identifier" { Some $1 };
 maybe_val: { None } | "=" expression { Some $2 };
 
+path:
+ "identifier" { Ast.Atom $1 }
+;
+
 ty:
   "(" ")" { Ast.UnitTy }
+| path { Ast.Named $1 }
 ;
 
 expression:
   "(" ")" { Ast.Unit }
+| path { Ast.Variable $1 }
 ;
