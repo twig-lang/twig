@@ -54,6 +54,10 @@
 
 %start main
 %type<Ast.toplevel list> main
+
+%type<Ast.expr> block
+%type<Ast.stmt list> statements
+%type<Ast.stmt> statement
 %%
 
 let main :=
@@ -64,17 +68,24 @@ let file :=
 
 let toplevel :=
   ~ = function_definition ; <>
+| ~ = constant_definition ; <>
+
+let constant_definition :=
+  "const"
+  ; name = "identifier"
+  ; ty = preceded(":", ty)
+  ; value = preceded("=", expression)
+  ; ";"
+  ; { Ast.ConstantDefinition { name ; ty ; value } }
 
 let function_definition :=
   "fn"
   ; name = "identifier"
   ; arguments = argument_list(arg)
-  ; ":"
-  ; ~ = ty
-  ; "="
-  ; value = expression
+  ; ty = preceded(":", ty)?
+  ; value = preceded("=", expression)?
   ; ";"
-  ; { Ast.FunctionDefinition {name ; arguments ; ty = Some ty ; value = Some value} }
+  ; { Ast.FunctionDefinition {name ; arguments ; ty ; value } }
 
 let argument_list(arg) :=
 | { [] }
@@ -95,7 +106,10 @@ let arg :=
   ; { CallArgument { mode; name ; key ; ty ; default } }
 
 let path :=
-  atom = "identifier" ; <Ast.Atom>
+  path = separated_nonempty_list(".", path_atom) ; <Ast.Member>
+
+let path_atom :=
+  ~ = "identifier" ; <Ast.Atom>
 
 let ty :=
   "(" ; ")"          ;  { Ast.UnitTy }
@@ -103,12 +117,34 @@ let ty :=
 | ~ = path           ; <Ast.Named>
 
 let expression :=
+  ~ = top_expression     ; <>
+| ~ = primary_expression ; <>
+
+let primary_expression :=
   "(" ; ")"                  ; { Ast.Unit }
 | "(" ; ~ = expression ; ")" ; <>
 | ~ = path                   ; <Ast.Variable>
-| ~ = block                  ; <Ast.Block>
+| ~ = block                  ; <>
 | ~ = "integer"              ; <Ast.Integer>
 
+let top_expression :=
+  ~ = primary_expression ; <>
+
+let let_statement :=
+  "let"
+  ; name = "identifier"
+  ; ty = preceded(":", ty)?
+  ; "="
+  ; ~ = mode
+  ; value = expression
+  ; { Ast.Let { name ; ty ; mode ; value } }
+
 let block :=
-  ~ = delimited("{", expression, "}")
-  ; <Ast.Block>
+  "{" ; ~ = statements ; "}" ; <Ast.Block>
+
+let statements :=
+  ~ = separated_list(";", statement) ; <>
+
+let statement :=
+  ~ = expression    ; <Ast.ExprStmt>
+| ~ = let_statement ; <>

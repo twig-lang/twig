@@ -1,4 +1,7 @@
-type path = Atom of string | Member of path * path
+type mode = Mode of { is_ref : bool; is_mut : bool }
+
+type path = Member of path list | Atom of string
+and ty = Named of path | UnitTy
 
 and expr =
   | Variable of path
@@ -6,10 +9,11 @@ and expr =
   | Real of float
   | Unit
   | Bool of bool
-  | Block of expr
+  | Block of stmt list
 
-type ty = Named of path | UnitTy
-type mode = Mode of { is_ref : bool; is_mut : bool }
+and stmt =
+  | ExprStmt of expr
+  | Let of { name : string; ty : ty option; mode : mode; value : expr }
 
 let value is_mut = Mode { is_ref = false; is_mut }
 let reference is_mut = Mode { is_ref = true; is_mut }
@@ -32,3 +36,4 @@ type toplevel =
       ty : ty option;
       value : expr option;
     }
+  | ConstantDefinition of { name : string; ty : ty; value : expr }
