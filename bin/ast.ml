@@ -1,15 +1,12 @@
 type path = Atom of string | Member of path * path
 
-type expr_block =
-  | ExprBlock of { statements : expr list; returns : expr option }
-
 and expr =
   | Variable of path
   | Integer of int
   | Real of float
   | Unit
   | Bool of bool
-  | Block of expr_block
+  | Block of expr
 
 type ty = Named of path | UnitTy
 type mode = Mode of { is_ref : bool; is_mut : bool }

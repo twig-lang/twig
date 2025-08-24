@@ -90,13 +90,9 @@ let arg :=
   ~ = mode
   ; name = "identifier"
   ; key = "identifier"?
-  ; default = default_argument?
-  ; ":"
-  ; ~ = ty
+  ; default = preceded("=", expression)?
+  ; ty = preceded(":", ty)
   ; { CallArgument { mode; name ; key ; ty ; default } }
-
-let default_argument :=
-  "=" ; ~ = expression ; <>
 
 let path :=
   atom = "identifier" ; <Ast.Atom>
@@ -111,6 +107,8 @@ let expression :=
 | "(" ; ~ = expression ; ")" ; <>
 | ~ = path                   ; <Ast.Variable>
 | ~ = block                  ; <Ast.Block>
+| ~ = "integer"              ; <Ast.Integer>
 
 let block :=
-| "{" ; "}" ; { Ast.ExprBlock { statements=[] ; returns = None } }
+  ~ = delimited("{", expression, "}")
+  ; <Ast.Block>

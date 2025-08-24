@@ -49,6 +49,9 @@ let id2kw id =
 let op2kw op =
   Option.value ~default:(Parser.Operator op) @@ Hashtbl.find_opt operators op
 
+let digit = [%sedlex.regexp? '0' .. '9']
+let number = [%sedlex.regexp? Plus digit]
+
 let rec lexer' lexbuf =
   match%sedlex lexbuf with
   | Plus white_space -> lexer' lexbuf
@@ -59,8 +62,11 @@ let rec lexer' lexbuf =
   | '}' -> Parser.RCurl
   | Plus (Chars "+*/-,.;:!@#$%&=?!<>^" | math | other_math) ->
       op2kw (Sedlexing.Utf8.lexeme lexbuf)
+  | number -> Parser.Integer (int_of_string @@ Sedlexing.Utf8.lexeme lexbuf)
   | eof -> Parser.Eof
-  | _ -> failwith "unknown character"
+  | _ ->
+      ignore @@ Sedlexing.next lexbuf;
+      failwith @@ "unknown character `" ^ Sedlexing.Utf8.lexeme lexbuf ^ "`"
 
 let lexer lexbuf =
   let pre = Sedlexing.lexing_bytes_position_curr lexbuf in
