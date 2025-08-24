@@ -56,66 +56,61 @@
 %type<Ast.toplevel list> main
 %%
 
-main:
-  file Eof { $1 }
-| Eof { [] }
-;
+let main :=
+  ~ = file ; Eof ; <>
 
-file:
-  file toplevel { $2 :: $1 }
-| toplevel { [$1] }
-;
+let file :=
+  ~ = toplevel* ; <>
 
-toplevel:
-  function_definition { $1 }
-;
+let toplevel :=
+  ~ = function_definition ; <>
 
-function_definition:
-  "fn" "identifier" arglist ":" ty "=" expression ";" { Ast.FunctionDefinition {name = $2 ; arguments= $3 ; ty= Some $5 ; value = Some $7} }
-;
+let function_definition :=
+  "fn"
+  ; name = "identifier"
+  ; arguments = argument_list(arg)
+  ; ":"
+  ; ~ = ty
+  ; "="
+  ; value = expression
+  ; ";"
+  ; { Ast.FunctionDefinition {name ; arguments ; ty = Some ty ; value = Some value} }
 
-arglist:
-               { [] }
-| "|" args "|" { $2 }
-;
+let argument_list(arg) :=
+| { [] }
+| "|" ; args = separated_list(",", arg) ; "|" ; { args }
 
-args:
- { [] }
-| args "," arg { $3 :: $1 }
-| arg { [$1] }
-;
+let mode :=
+|               { Ast.value false }
+| "mut"       ; { Ast.value true }
+| "&"         ; { Ast.reference false }
+| "&" ; "mut" ; { Ast.reference true }
 
-mode:
- { Ast.value false }
-| "mut" { Ast.value true }
-| "&" { Ast.reference false }
-| "&" "mut" { Ast.reference true }
-;
+let arg :=
+  ~ = mode
+  ; name = "identifier"
+  ; key = "identifier"?
+  ; default = default_argument?
+  ; ":"
+  ; ~ = ty
+  ; { CallArgument { mode; name ; key ; ty ; default } }
 
-arg:
- mode "identifier" maybe_key maybe_val ":" ty { CallArgument { mode = $1; name = $2 ; key = $3 ; ty = $6 ; default = $4 } }
-;
+let default_argument :=
+  "=" ; ~ = expression ; <>
 
-maybe_key: { None } | "identifier" { Some $1 };
-maybe_val: { None } | "=" expression { Some $2 };
+let path :=
+  atom = "identifier" ; <Ast.Atom>
 
-path:
- "identifier" { Ast.Atom $1 }
-;
+let ty :=
+  "(" ; ")"          ;  { Ast.UnitTy }
+| "(" ; ~ = ty ; ")" ; <>
+| ~ = path           ; <Ast.Named>
 
-ty:
-  "(" ")" { Ast.UnitTy }
-| "(" ty ")" { $2 }
-| path { Ast.Named $1 }
-;
+let expression :=
+  "(" ; ")"                  ; { Ast.Unit }
+| "(" ; ~ = expression ; ")" ; <>
+| ~ = path                   ; <Ast.Variable>
+| ~ = block                  ; <Ast.Block>
 
-expression:
-  "(" ")" { Ast.Unit }
-| "(" expression ")" { $2 }
-| path { Ast.Variable $1 }
-| block { Ast.Block $1 }
-;
-
-block:
- "{" "}" { Ast.ExprBlock { statements=[] ; returns = None } }
-;
+let block :=
+| "{" ; "}" ; { Ast.ExprBlock { statements=[] ; returns = None } }
