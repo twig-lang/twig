@@ -2,6 +2,11 @@ type mode = Mode of { is_ref : bool; is_mut : bool }
 
 type path = Member of path list | Atom of string
 and ty = Named of path | UnitTy
+and fn_arg = FnArgument of { key : string option; mode : mode; value : expr }
+
+and message =
+  (* name (args...)? : tail? *)
+  | FnMessage of { name : path; args : fn_arg list; tail : expr option }
 
 and expr =
   | Variable of path
@@ -12,6 +17,10 @@ and expr =
   | Block of expr list
   (* NOTE: typed as () *)
   | Let of { name : string; ty : ty option; mode : mode; value : expr }
+  (* callee (args...) *)
+  | FnCall of { callee : expr; args : fn_arg list }
+  (* expr message* *)
+  | Send of { recv : expr; msg : message }
 
 let value is_mut = Mode { is_ref = false; is_mut }
 let reference is_mut = Mode { is_ref = true; is_mut }

@@ -115,6 +115,16 @@ let ty :=
 | ~ = path           ; <Ast.Named>
 
 let expression :=
+  ~ = msg_exp ; <>
+
+let msg_exp :=
+  recv = expression_nomsg
+  ; msgs = fn_message*
+  ; {
+  List.fold_left (fun r m -> Ast.Send { recv = r ; msg = m } ) recv msgs
+  }
+
+let expression_nomsg :=
   ~ = path                   ; <Ast.Variable>
 | ~ = block                  ; <>
 | ~ = "integer"              ; <Ast.Integer>
@@ -137,3 +147,18 @@ let block :=
       | 0 -> Ast.Unit
       | 1 -> List.hd items
       | _ -> Ast.Block items }
+
+let fn_message :=
+  name = path
+  ; args = delimited("(", separated_list(",", fn_arg) ,")")?
+  ; tail = preceded(":", expression_nomsg)?
+  ; { Ast.FnMessage {
+    name ;
+    args = Option.value ~default:[] args ;
+    tail }  }
+
+let fn_arg :=
+  key = terminated("identifier", ":")?
+  ; mode = mode
+  ; value = expression
+  ; { Ast.FnArgument { key ; mode ; value } }
