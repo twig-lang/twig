@@ -51,11 +51,13 @@ let op2kw op =
 
 let digit = [%sedlex.regexp? '0' .. '9']
 let number = [%sedlex.regexp? Plus digit]
+let id_head = [%sedlex.regexp? xid_start | '_']
+let id_tail = [%sedlex.regexp? xid_continue | '_']
 
 let rec lexer' lexbuf =
   match%sedlex lexbuf with
   | Plus white_space -> lexer' lexbuf
-  | xid_start, Star xid_continue -> id2kw (Sedlexing.Utf8.lexeme lexbuf)
+  | id_head, Star id_tail -> id2kw (Sedlexing.Utf8.lexeme lexbuf)
   | '(' -> Parser.LParen
   | ')' -> Parser.RParen
   | '{' -> Parser.LCurl

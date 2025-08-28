@@ -9,17 +9,15 @@ and expr =
   | Real of float
   | Unit
   | Bool of bool
-  | Block of stmt list
-
-and stmt =
-  | ExprStmt of expr
+  | Block of expr list
+  (* NOTE: typed as () *)
   | Let of { name : string; ty : ty option; mode : mode; value : expr }
 
 let value is_mut = Mode { is_ref = false; is_mut }
 let reference is_mut = Mode { is_ref = true; is_mut }
 
-type call_arg =
-  | CallArgument of {
+type fn_parameter =
+  | FnParameter of {
       mode : mode;
       name : string;
       key : string option;
@@ -27,12 +25,12 @@ type call_arg =
       default : expr option;
     }
 
-type call_arglist = call_arg list
+type fn_parlist = fn_parameter list
 
 type toplevel =
   | FunctionDefinition of {
       name : string;
-      arguments : call_arglist;
+      parameters : fn_parlist;
       ty : ty option;
       value : expr option;
     }

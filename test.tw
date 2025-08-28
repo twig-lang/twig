@@ -4,21 +4,38 @@ fn unit_when |a: (), b beta = (): ()| : () = ();
 
 fn integer |x: i32| : i32 = x;
 
-fn block: i32 = {
+fn block: i32 = (
   12345
-};
+);
 
 fn path: i32 =
   Module.Member;
 
 const ant: i32 = 132;
 
-fn let_binds = {
+fn let_binds = (
   let one = 1;
-  let ref_one = &one;
+  let ref_one = & one;
 
   let two = mut 2;
   let ref_two = &mut two;
 
-  unit()
-};
+  ()
+);
+
+fn calls = (
+  let u = ();
+  let i = 32;
+
+  unit(u, ());
+  unit(u, u);
+
+  u unit(());
+  u unit: ();
+
+  u unit_when(beta: ());
+
+  integer(i) integer integer integer();
+
+  ()
+);

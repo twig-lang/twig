@@ -56,8 +56,7 @@
 %type<Ast.toplevel list> main
 
 %type<Ast.expr> block
-%type<Ast.stmt list> statements
-%type<Ast.stmt> statement
+
 %%
 
 let main :=
@@ -81,29 +80,28 @@ let constant_definition :=
 let function_definition :=
   "fn"
   ; name = "identifier"
-  ; arguments = argument_list(arg)
+  ; parameters = parameter_list(fn_par)
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expression)?
   ; ";"
-  ; { Ast.FunctionDefinition {name ; arguments ; ty ; value } }
+  ; { Ast.FunctionDefinition {name ; parameters ; ty ; value } }
 
-let argument_list(arg) :=
-| { [] }
-| "|" ; args = separated_list(",", arg) ; "|" ; { args }
+let parameter_list(par) :=
+  pars = delimited("|", separated_list(",", fn_par), "|")?
+  ; { Option.value ~default:[] pars }
 
 let mode :=
-|               { Ast.value false }
-| "mut"       ; { Ast.value true }
-| "&"         ; { Ast.reference false }
-| "&" ; "mut" ; { Ast.reference true }
+  is_ref = boption("&")
+  ; is_mut = boption("mut")
+  ; { Ast.Mode { is_ref ; is_mut} }
 
-let arg :=
+let fn_par :=
   ~ = mode
   ; name = "identifier"
   ; key = "identifier"?
   ; default = preceded("=", expression)?
   ; ty = preceded(":", ty)
-  ; { CallArgument { mode; name ; key ; ty ; default } }
+  ; { FnParameter { mode; name ; key ; ty ; default } }
 
 let path :=
   path = separated_nonempty_list(".", path_atom) ; <Ast.Member>
@@ -117,20 +115,12 @@ let ty :=
 | ~ = path           ; <Ast.Named>
 
 let expression :=
-  ~ = top_expression     ; <>
-| ~ = primary_expression ; <>
-
-let primary_expression :=
-  "(" ; ")"                  ; { Ast.Unit }
-| "(" ; ~ = expression ; ")" ; <>
-| ~ = path                   ; <Ast.Variable>
+  ~ = path                   ; <Ast.Variable>
 | ~ = block                  ; <>
 | ~ = "integer"              ; <Ast.Integer>
+| ~ = let_exp                ; <>
 
-let top_expression :=
-  ~ = primary_expression ; <>
-
-let let_statement :=
+let let_exp :=
   "let"
   ; name = "identifier"
   ; ty = preceded(":", ty)?
@@ -140,11 +130,10 @@ let let_statement :=
   ; { Ast.Let { name ; ty ; mode ; value } }
 
 let block :=
-  "{" ; ~ = statements ; "}" ; <Ast.Block>
-
-let statements :=
-  ~ = separated_list(";", statement) ; <>
-
-let statement :=
-  ~ = expression    ; <Ast.ExprStmt>
-| ~ = let_statement ; <>
+  "("
+  ; items = separated_list(";", expression)
+  ; ")"
+  ; { match List.length items with
+      | 0 -> Ast.Unit
+      | 1 -> List.hd items
+      | _ -> Ast.Block items }
