@@ -39,3 +39,9 @@ fn calls = (
 
   ()
 );
+
+fn pick |choice: bool, left: i32, right: i32| : i32 =
+ if choice then left else right;
+
+fn setmut | &mut ref: i32, value: i32| =
+ set ref = value;

@@ -51,6 +51,8 @@
 %token Continue "continue"
 %token With "with"
 %token Where "where"
+%token Then "then"
+%token Do "do"
 
 %start main
 %type<Ast.toplevel list> main
@@ -82,7 +84,7 @@ let function_definition :=
   ; name = "identifier"
   ; parameters = parameter_list(fn_par)
   ; ty = preceded(":", ty)?
-  ; value = preceded("=", expression)?
+  ; value = preceded("=", expr_all)?
   ; ";"
   ; { Ast.FunctionDefinition {name ; parameters ; ty ; value } }
 
@@ -117,6 +119,24 @@ let ty :=
 let expr_all :=
   ~ = msg_exp ; <>
 | ~ = let_exp ; <>
+| ~ = if_exp  ; <>
+| ~ = set_exp ; <>
+
+let set_exp :=
+  "set"
+  ; lval = expression
+  ; "="
+  ; rval = expression
+  ; { Ast.Set { lval ; rval } }
+
+let if_exp :=
+  "if"
+  ; condition = expression
+  ; "then"
+  ; taken = expression
+  ; "else"
+  ; not_taken = expression
+  ; { Ast.If { condition ; taken ; not_taken } }
 
 let expression :=
   ~ = msg_exp ; <>

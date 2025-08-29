@@ -25,6 +25,8 @@ let keywords =
       ("while", While);
       ("with", With);
       ("yield", Yield);
+      ("then", Then);
+      ("do", Do);
     ]
   |> List.to_seq |> Hashtbl.of_seq
 

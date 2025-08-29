@@ -21,6 +21,8 @@ and expr =
   | FnCall of { callee : expr; args : fn_arg list }
   (* expr message* *)
   | Send of { recv : expr; msg : message }
+  | If of { condition : expr; taken : expr; not_taken : expr }
+  | Set of { lval : expr; rval : expr }
 
 let value is_mut = Mode { is_ref = false; is_mut }
 let reference is_mut = Mode { is_ref = true; is_mut }
