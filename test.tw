@@ -33,7 +33,7 @@ fn calls = (
   u unit(());
   u unit: ();
 
-  u unit_when(beta: ());
+  u unit_when(:beta ());
 
   integer(i) integer integer integer();
 

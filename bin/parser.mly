@@ -99,7 +99,7 @@ let fn_par :=
   ~ = mode
   ; name = "identifier"
   ; key = "identifier"?
-  ; default = preceded("=", expression)?
+  ; default = preceded("=", expression_nomsg)?
   ; ty = preceded(":", ty)
   ; { FnParameter { mode; name ; key ; ty ; default } }
 
@@ -114,6 +114,10 @@ let ty :=
 | "(" ; ~ = ty ; ")" ; <>
 | ~ = path           ; <Ast.Named>
 
+let expr_all :=
+  ~ = msg_exp ; <>
+| ~ = let_exp ; <>
+
 let expression :=
   ~ = msg_exp ; <>
 
@@ -125,10 +129,19 @@ let msg_exp :=
   }
 
 let expression_nomsg :=
+  ~ = call ; <>
+
+let call :=
+  callee = primary
+  ; args = delimited("(", separated_list(",", fn_arg) ,")")*
+  ; {
+   List.fold_left (fun c a -> Ast.FnCall { callee = c ; args = a } ) callee args
+  }
+
+let primary :=
   ~ = path                   ; <Ast.Variable>
 | ~ = block                  ; <>
 | ~ = "integer"              ; <Ast.Integer>
-| ~ = let_exp                ; <>
 
 let let_exp :=
   "let"
@@ -141,7 +154,7 @@ let let_exp :=
 
 let block :=
   "("
-  ; items = separated_list(";", expression)
+  ; items = separated_list(";", expr_all)
   ; ")"
   ; { match List.length items with
       | 0 -> Ast.Unit
@@ -158,7 +171,7 @@ let fn_message :=
     tail }  }
 
 let fn_arg :=
-  key = terminated("identifier", ":")?
+  key = preceded(":","identifier")?
   ; mode = mode
   ; value = expression
   ; { Ast.FnArgument { key ; mode ; value } }
