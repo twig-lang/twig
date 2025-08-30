@@ -27,6 +27,7 @@ let keywords =
       ("yield", Yield);
       ("then", Then);
       ("do", Do);
+      ("extern", Extern);
     ]
   |> List.to_seq |> Hashtbl.of_seq
 
@@ -42,6 +43,7 @@ let operators =
       (",", Comma);
       (";", Semicolon);
       ("|", Bar);
+      ("!", Bang);
     ]
   |> List.to_seq |> Hashtbl.of_seq
 
@@ -56,6 +58,32 @@ let number = [%sedlex.regexp? Plus digit]
 let id_head = [%sedlex.regexp? xid_start | '_']
 let id_tail = [%sedlex.regexp? xid_continue | '_']
 
+let lex_str_escape lexbuf =
+  match%sedlex lexbuf with
+  | 'n' -> Uchar.of_char '\n'
+  | 'r' -> Uchar.of_char '\r'
+  | 't' -> Uchar.of_char '\t'
+  | '\\' -> Uchar.of_char '\\'
+  | _ ->
+      ignore @@ Sedlexing.next lexbuf;
+      failwith @@ "unknown character escape: \\" ^ Sedlexing.Utf8.lexeme lexbuf
+
+let rec lex_str buf lexbuf =
+  match%sedlex lexbuf with
+  | Plus (Compl '"' | '\\') ->
+      Buffer.add_string buf (Sedlexing.Utf8.lexeme lexbuf);
+      lex_str buf lexbuf
+  | '"' -> Parser.String (Buffer.contents buf)
+  | '\\' ->
+      let escape = lex_str_escape lexbuf in
+      Buffer.add_utf_8_uchar buf escape;
+      lex_str buf lexbuf
+  | _ ->
+      ignore @@ Sedlexing.next lexbuf;
+      failwith @@ "unknown string character `"
+      ^ Sedlexing.Utf8.lexeme lexbuf
+      ^ "`"
+
 let rec lexer' lexbuf =
   match%sedlex lexbuf with
   | Plus white_space -> lexer' lexbuf
@@ -67,6 +95,7 @@ let rec lexer' lexbuf =
   | Plus (Chars "+*/-,.;:!@#$%&=?!<>^" | math | other_math) ->
       op2kw (Sedlexing.Utf8.lexeme lexbuf)
   | number -> Parser.Integer (int_of_string @@ Sedlexing.Utf8.lexeme lexbuf)
+  | '"' -> lex_str (Buffer.create 16) lexbuf
   | eof -> Parser.Eof
   | _ ->
       ignore @@ Sedlexing.next lexbuf;

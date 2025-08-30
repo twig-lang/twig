@@ -4,6 +4,10 @@ fn unit2 |a: (), b: ()| = ();
 
 fn unit_key |a: (), b beta: ()| = ();
 
+fn default |x value = (): ()| = ();
+
+fn complex_key |x this.value: ()| = ();
+
 fn calls = (
  let u = ();
 
@@ -28,6 +32,11 @@ fn calls = (
    unit2(u)
    unit2: u
    unit_key(beta: u);
+
+ default();
+ default(value: u);
+
+ complex_key(this.value: u);
 
  u
 );

@@ -53,6 +53,7 @@
 %token Where "where"
 %token Then "then"
 %token Do "do"
+%token Extern "extern"
 
 %start main
 %type<Ast.toplevel list> main
@@ -70,6 +71,78 @@ let file :=
 let toplevel :=
   ~ = function_definition ; <>
 | ~ = constant_definition ; <>
+| ~ = type_definition     ; <>
+| ~ = extern              ; <>
+
+let extern :=
+  "extern"
+  ; abi = "string"?
+  ; "fn"
+  ; name = "identifier"
+  ; parameters = parameter_list(fn_par)
+  ; ty = preceded(":", ty)?
+  ; ";"
+  ; { Ast.Extern { abi ; name ; parameters ; ty } }
+
+let type_definition :=
+  "type"
+  ; name = "identifier"
+  ; "="
+  ; ty = ty_all
+  ; ";"
+  ; { Ast.TypeDefinition { name ; ty } }
+
+let ty_all :=
+  ~ = ty        ; <>
+| ~ = struct_ty ; <>
+| ~ = enum_ty   ; <>
+| ~ = union_ty   ; <>
+
+let enum_ty :=
+  "enum"
+  ; members = delimited(
+    "(",
+    separated_list(",", enum_member),
+    ")"
+  )
+  ; { Ast.EnumTy { members } }
+
+let enum_member :=
+  name = "identifier"
+  ; args = delimited(
+    "(",
+    separated_list(",", ty),
+    ")"
+  )?
+  ; {
+  match args with
+  | None -> Ast.EnumMember { name }
+  | Some args -> Ast.EnumMemberArgs { name ; args }
+  }
+
+let struct_ty :=
+  "struct"
+  ; members = delimited(
+   "(",
+   separated_list(",", struct_member),
+   ")"
+  )
+  ; { Ast.StructTy { members } }
+
+let union_ty :=
+  "union"
+  ; members = delimited(
+   "(",
+   separated_list(",", struct_member),
+   ")"
+  )
+  ; { Ast.UnionTy { members } }
+
+let struct_member :=
+  name = "identifier"
+  ; ":"
+  ; ty = ty
+  ; { Ast.StructMember { name ; ty } }
 
 let constant_definition :=
   "const"
@@ -109,25 +182,54 @@ let path :=
   path = separated_nonempty_list(".", path_atom) ; <Ast.Member>
 
 let path_atom :=
-  ~ = "identifier" ; <Ast.Atom>
+  name = "identifier"
+  ; args = preceded(
+    "!",
+    delimited(
+      "(",
+      separated_list(",", path),
+      ")"
+    )
+  )?
+  ; {
+   match args with
+   | None -> Ast.Atom name
+   | Some args -> Ast.Call { name ; args }
+  }
 
 let ty :=
-  "(" ; ")"          ;  { Ast.UnitTy }
-| "(" ; ~ = ty ; ")" ; <>
+  ts = delimited(
+    "(",
+    separated_list(",", ty),
+    ")"
+  )
+  ; {
+   match List.length ts with
+   | 0 -> Ast.UnitTy
+   | 1 -> List.hd ts
+   | _ -> Ast.Tuple ts
+  }
 | ~ = path           ; <Ast.Named>
 
 let expr_all :=
-  ~ = msg_exp ; <>
-| ~ = let_exp ; <>
-| ~ = if_exp  ; <>
-| ~ = set_exp ; <>
+  ~ = msg_exp   ; <>
+| ~ = let_exp   ; <>
+| ~ = if_exp    ; <>
+| ~ = set_exp   ; <>
+| ~ = while_exp ; <>
+
+let operator :=
+  ~ = "operator" ; <>
+| "*"            ; {"*"}
+| "|"            ; {"|"}
 
 let set_exp :=
   "set"
   ; lval = expression
   ; "="
+  ; operator = operator?
   ; rval = expression
-  ; { Ast.Set { lval ; rval } }
+  ; { Ast.Set { lval ; operator; rval } }
 
 let if_exp :=
   "if"
@@ -138,15 +240,21 @@ let if_exp :=
   ; not_taken = expression
   ; { Ast.If { condition ; taken ; not_taken } }
 
+let while_exp :=
+  "while"
+  ; condition = expression
+  ; "do"
+  ; body = expression
+  ; { Ast.While { condition ; body } }
+
 let expression :=
-  ~ = msg_exp ; <>
+  "unsafe" ; ~ = expression ; <Ast.Unsafe>
+| ~ = msg_exp ; <>
 
 let msg_exp :=
   recv = expression_nomsg
-  ; msgs = fn_message*
-  ; {
-  List.fold_left (fun r m -> Ast.Send { recv = r ; msg = m } ) recv msgs
-  }
+  ; msgs = message*
+  ; { List.fold_left (fun r m -> Ast.Send { recv = r ; msg = m } ) recv msgs }
 
 let expression_nomsg :=
   ~ = call ; <>
@@ -180,6 +288,15 @@ let block :=
       | 0 -> Ast.Unit
       | 1 -> List.hd items
       | _ -> Ast.Block items }
+
+let message :=
+  ~ = fn_message ; <>
+| ~ = op_message ; <>
+
+let op_message :=
+  name = operator
+  ; arg = expression_nomsg
+  ; { Ast.OpMessage { name ; arg } }
 
 let fn_message :=
   name = path

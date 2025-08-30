@@ -1,12 +1,30 @@
 type mode = Mode of { is_ref : bool; is_mut : bool }
 
-type path = Member of path list | Atom of string
-and ty = Named of path | UnitTy
+type path =
+  | Member of path list
+  | Atom of string
+  | Call of { name : string; args : path list }
+
+and struct_member = StructMember of { name : string; ty : ty }
+
+and enum_member =
+  | EnumMember of { name : string }
+  | EnumMemberArgs of { name : string; args : ty list }
+
+and ty =
+  | Named of path
+  | UnitTy
+  | StructTy of { members : struct_member list }
+  | UnionTy of { members : struct_member list }
+  | EnumTy of { members : enum_member list }
+  | Tuple of ty list
+
 and fn_arg = FnArgument of { key : string option; mode : mode; value : expr }
 
 and message =
   (* name (args...)? : tail? *)
   | FnMessage of { name : path; args : fn_arg list; tail : expr option }
+  | OpMessage of { name : string; arg : expr }
 
 and expr =
   | Variable of path
@@ -22,7 +40,9 @@ and expr =
   (* expr message* *)
   | Send of { recv : expr; msg : message }
   | If of { condition : expr; taken : expr; not_taken : expr }
-  | Set of { lval : expr; rval : expr }
+  | Set of { lval : expr; operator : string option; rval : expr }
+  | While of { condition : expr; body : expr }
+  | Unsafe of expr
 
 let value is_mut = Mode { is_ref = false; is_mut }
 let reference is_mut = Mode { is_ref = true; is_mut }
@@ -46,3 +66,10 @@ type toplevel =
       value : expr option;
     }
   | ConstantDefinition of { name : string; ty : ty; value : expr }
+  | TypeDefinition of { name : string; ty : ty }
+  | Extern of {
+      abi : string option;
+      name : string;
+      parameters : fn_parameter list;
+      ty : ty option;
+    }
