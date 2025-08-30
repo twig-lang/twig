@@ -1,13 +1,13 @@
-function pick(
+fn pick |
   condition: bool,
   t taken     = 1: i64,
   f not_taken = 0: i64
-): i64 =
- if condition { t } else { f };
+| : i64 =
+ if condition then t else f;
 
-function id(x value: i64): i64 = x;
+fn id | x value: i64 | : i64 = x;
 
-function main = {
+fn main = (
   pick(false);
   pick(true);
   pick(true, taken: 2);
@@ -18,4 +18,6 @@ function main = {
     not_taken: 5);
 
   id(value: 5);
-};
+
+  ()
+);

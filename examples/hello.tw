@@ -1,4 +1,4 @@
 with import Std.Io;
 
-function main =
+fn main =
  print_endline("Hello, world!");

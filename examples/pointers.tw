@@ -1,0 +1,35 @@
+mod Pointer!(type T) = {
+  type t = *const T;
+  type mutable = *mut T;
+
+  fn ref | &from: T | : t =
+    *from;
+
+  unsafe sub& deref | self: t | : T =
+    yield @ & self;
+
+  fn refmut | &mut from: T | : mutable =
+    *mut from;
+
+  unsafe sub&mut deref_mut | self: mutable | : T =
+    yield @ & mut self;
+
+  fn unsafe setptr | self: mutable, by: T | =
+    set self deref_mut = by;
+};
+
+fn pointer_example = (
+  mod Ptr = Pointer!(i32);
+
+  let five = 5;
+  let fmut = mut 5;
+
+  let ptr = Ptr.ref(&five);
+  let pmt = Ptr.refmut(&mut fmut);
+
+  unsafe (
+    let _ = ptr.deref[];
+
+    pmt.setptr(five)
+  )
+);

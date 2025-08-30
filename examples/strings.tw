@@ -1,6 +1,6 @@
-extern "C" function puts(text: *u8): i32;
+extern "C" fn puts | text: *u8 | : i32;
 
-function escapes: str =
+fn escapes: str =
   "newline: \n"
   "tab: \t"
   "quotes: \""
@@ -21,11 +21,11 @@ world!"
 ;
 
   It doesn't need to be encoded in UTF-8.  }
-function bytes: []u8 =
+fn bytes: []u8 =
   rb#""Hello, world!","#
   b" said the program\n\0";
 
-function main {
+fn main = (
   let text = escapes;
   let text_ptr = text as_bytes data;
 
@@ -34,5 +34,5 @@ function main {
   let hello = bytes;
   let hello_ptr = hello data;
 
-  unsafe puts(hello_ptr);
-};
+  unsafe puts(hello_ptr)
+);

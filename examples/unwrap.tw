@@ -1,0 +1,21 @@
+type MaybeInt = variant {
+  None;
+  Some(i64)
+};
+
+sub if &unwrap | &opt: MaybeInt | : i64 =
+  when match Some(x) = opt do
+    yield x;
+
+fn print | x: i64 | = ();
+
+fn example = (
+  let some = Some(0);
+  let none = None;
+
+  when let x = some unwrap do
+    print(x);
+
+  when let x = none unwrap do
+    print(x)
+);

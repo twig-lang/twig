@@ -1,0 +1,33 @@
+fn unit |a: ()| = ();
+
+fn unit2 |a: (), b: ()| = ();
+
+fn unit_key |a: (), b beta: ()| = ();
+
+fn calls = (
+ let u = ();
+
+ unit(u);
+ u unit;
+
+ unit2(u, u);
+ u unit2(u);
+ u unit2: u;
+
+ u unit2: u
+   unit2: u;
+
+ u unit2(u)
+   unit2: u;
+
+ unit_key(u, beta: u);
+
+ u unit_key(beta: u);
+
+ u unit
+   unit2(u)
+   unit2: u
+   unit_key(beta: u);
+
+ u
+);
