@@ -1,4 +1,5 @@
 type mode = Mode of { is_ref : bool; is_mut : bool }
+type yields = Returns | YieldIf | YieldWhile
 
 type path =
   | Member of path list
@@ -18,6 +19,8 @@ and ty =
   | UnionTy of { members : struct_member list }
   | EnumTy of { members : enum_member list }
   | Tuple of ty list
+  | Array of int * ty
+  | Slice of ty
 
 and fn_arg = FnArgument of { key : string option; mode : mode; value : expr }
 
@@ -37,15 +40,20 @@ and expr =
   | Let of { name : string; ty : ty option; mode : mode; value : expr }
   (* callee (args...) *)
   | FnCall of { callee : expr; args : fn_arg list }
+  (* callee [args...] *)
+  | SubCall of { callee : expr; args : fn_arg list }
   (* expr message* *)
   | Send of { recv : expr; msg : message }
   | If of { condition : expr; taken : expr; not_taken : expr }
+  | When of { condition : expr; taken : expr }
   | Set of { lval : expr; operator : string option; rval : expr }
   | While of { condition : expr; body : expr }
   | Unsafe of expr
-
-let value is_mut = Mode { is_ref = false; is_mut }
-let reference is_mut = Mode { is_ref = true; is_mut }
+  | Yield of mode * expr
+  | WhileLet of { name : string; ty : ty option; value : expr; body : expr }
+  | ArrayLit of expr list
+  | Cast of expr * ty
+  | String of string
 
 type fn_parameter =
   | FnParameter of {
@@ -56,12 +64,24 @@ type fn_parameter =
       default : expr option;
     }
 
-type fn_parlist = fn_parameter list
+type import_path =
+  | ImportAtom of string
+  | ImportMember of string * import_path
+  | ImportMultiple of import_path list
 
 type toplevel =
   | FunctionDefinition of {
+      yields : yields;
       name : string;
-      parameters : fn_parlist;
+      parameters : fn_parameter list;
+      ty : ty option;
+      value : expr option;
+    }
+  | SubDefinition of {
+      yields : yields;
+      mode : mode;
+      name : string;
+      parameters : fn_parameter list;
       ty : ty option;
       value : expr option;
     }
@@ -73,3 +93,5 @@ type toplevel =
       parameters : fn_parameter list;
       ty : ty option;
     }
+  | ToplevelWith of { imports : bool; path : import_path }
+  | Import of import_path

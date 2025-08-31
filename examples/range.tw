@@ -1,14 +1,14 @@
 fn while range | mut f from: u64, t to: u64 | : u64 =
   while f < t do (
     yield f;
-    set f += 1;
+    set f = + 1
   );
 
 fn example: u64 = (
   let sum = mut 0;
 
   while let i = range(from: 1, to: 100) do
-    set sum += i;
+    set sum = + i;
 
   sum
 );

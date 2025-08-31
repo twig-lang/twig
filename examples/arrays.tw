@@ -7,19 +7,19 @@ fn sum_all | &input: []i32 | : i32 = (
  let result = mut 0;
 
  while let i = input each do
-   set result += i
- );
+   set result = + i;
 
  result
 );
 
-fn populate | &mut output: []i32 | =
-  while let (
-    value = output each_mut;
-    index = iota;
-  ) do
-    set value = index
-  );
+fn populate | &mut output: []i32 | = (
+  let value = 0;
+
+  while let value = output each_mut do (
+    set value = index;
+    set value = + 1
+  )
+);
 
 fn example = (
   let n23 = mut unsafe Uninit!(I32x23).f;
@@ -31,5 +31,5 @@ fn example = (
   let sum = mut n23 sum_all + n32 sum_all;
 
   let vals = [1, 2, 4, 8, 16, 32, 64];
-  set sum += vals sum_all
+  set sum = + vals sum_all
 );

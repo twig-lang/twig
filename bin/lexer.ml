@@ -28,6 +28,10 @@ let keywords =
       ("then", Then);
       ("do", Do);
       ("extern", Extern);
+      ("import", Import);
+      ("when", When);
+      ("true", True);
+      ("false", False);
     ]
   |> List.to_seq |> Hashtbl.of_seq
 
@@ -70,7 +74,7 @@ let lex_str_escape lexbuf =
 
 let rec lex_str buf lexbuf =
   match%sedlex lexbuf with
-  | Plus (Compl '"' | '\\') ->
+  | Plus (Compl ('"' | '\\')) ->
       Buffer.add_string buf (Sedlexing.Utf8.lexeme lexbuf);
       lex_str buf lexbuf
   | '"' -> Parser.String (Buffer.contents buf)
@@ -84,18 +88,33 @@ let rec lex_str buf lexbuf =
       ^ Sedlexing.Utf8.lexeme lexbuf
       ^ "`"
 
-let rec lexer' lexbuf =
+let rec lex_comment nest lexbuf =
+  match%sedlex lexbuf with
+  | '{' -> lex_comment (succ nest) lexbuf
+  | '}' -> if nest = 1 then lexer' lexbuf else lex_comment (pred nest) lexbuf
+  | Plus (Compl ('{' | '}')) -> lex_comment nest lexbuf
+  | eof ->
+      ignore @@ Sedlexing.next lexbuf;
+      failwith @@ "unexpected eof in comment"
+  | _ ->
+      ignore @@ Sedlexing.next lexbuf;
+      failwith @@ "unknown char in comment:`"
+      ^ Sedlexing.Utf8.lexeme lexbuf
+      ^ "`"
+
+and lexer' lexbuf =
   match%sedlex lexbuf with
   | Plus white_space -> lexer' lexbuf
   | id_head, Star id_tail -> id2kw (Sedlexing.Utf8.lexeme lexbuf)
   | '(' -> Parser.LParen
   | ')' -> Parser.RParen
-  | '{' -> Parser.LCurl
-  | '}' -> Parser.RCurl
+  | '[' -> Parser.LBrac
+  | ']' -> Parser.RBrac
   | Plus (Chars "+*/-,.;:!@#$%&=?!<>^" | math | other_math) ->
       op2kw (Sedlexing.Utf8.lexeme lexbuf)
   | number -> Parser.Integer (int_of_string @@ Sedlexing.Utf8.lexeme lexbuf)
   | '"' -> lex_str (Buffer.create 16) lexbuf
+  | '{' -> lex_comment 1 lexbuf
   | eof -> Parser.Eof
   | _ ->
       ignore @@ Sedlexing.next lexbuf;

@@ -1,3 +1,5 @@
+// Here be dragons
+
 %token Eof "eof"
 %token<string> Identifier "identifier"
 %token<string> Operator "operator"
@@ -5,14 +7,11 @@
 %token<float> Real "real"
 %token<string> String "string"
 %token<char> Char "char"
-%token<bool> Bool "bool"
 
 %token LParen "("
 %token RParen ")"
 %token LBrac "["
 %token RBrac "]"
-%token LCurl "{"
-%token RCurl "}"
 
 %token Dot "."
 %token Colon ":"
@@ -54,6 +53,10 @@
 %token Then "then"
 %token Do "do"
 %token Extern "extern"
+%token Import "import"
+%token When "when"
+%token True "true"
+%token False "false"
 
 %start main
 %type<Ast.toplevel list> main
@@ -73,6 +76,26 @@ let toplevel :=
 | ~ = constant_definition ; <>
 | ~ = type_definition     ; <>
 | ~ = extern              ; <>
+| ~ = top_with            ; <>
+| ~ = sub_definition      ; <>
+
+let top_with :=
+  "with"
+  ; imports = boption("import")
+  ; path = import_path
+  ; ";"
+  ; { Ast.ToplevelWith { imports ; path } }
+
+let import_path :=
+  top = "identifier"
+  ; sub = preceded(".", import_path)?
+  ; { match sub with
+      | Some sub -> Ast.ImportMember (top ,sub)
+      | None -> Ast.ImportAtom top }
+| "("
+  ; ~ = separated_list(",", import_path)
+  ; ")"
+  ; <Ast.ImportMultiple>
 
 let extern :=
   "extern"
@@ -152,14 +175,31 @@ let constant_definition :=
   ; ";"
   ; { Ast.ConstantDefinition { name ; ty ; value } }
 
+let yields :=
+  "if"    ; {Ast.YieldIf}
+| "while" ; {Ast.YieldWhile}
+|           {Ast.Returns}
+
 let function_definition :=
   "fn"
+  ; ~ = yields
   ; name = "identifier"
   ; parameters = parameter_list(fn_par)
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expr_all)?
   ; ";"
-  ; { Ast.FunctionDefinition {name ; parameters ; ty ; value } }
+  ; { Ast.FunctionDefinition { yields ; name ; parameters ; ty ; value } }
+
+let sub_definition :=
+  "sub"
+  ; mode = mode
+  ; ~ = yields
+  ; name = "identifier"
+  ; parameters = parameter_list(fn_par)
+  ; ty = preceded(":", ty)?
+  ; value = preceded("=", expr_all)?
+  ; ";"
+  ; { Ast.SubDefinition { yields ; mode ; name ; parameters ; ty ; value } }
 
 let parameter_list(par) :=
   pars = delimited("|", separated_list(",", fn_par), "|")?
@@ -210,6 +250,10 @@ let ty :=
    | _ -> Ast.Tuple ts
   }
 | ~ = path           ; <Ast.Named>
+| ~ = delimited("[", "integer", "]")
+  ; ~ = ty
+  ; <Ast.Array>
+| "[" ; "]" ; ~ = ty ; <Ast.Slice>
 
 let expr_all :=
   ~ = msg_exp   ; <>
@@ -217,6 +261,13 @@ let expr_all :=
 | ~ = if_exp    ; <>
 | ~ = set_exp   ; <>
 | ~ = while_exp ; <>
+| ~ = yield_exp ; <>
+
+let yield_exp :=
+  "yield"
+  ; ~ = mode
+  ; ~ = expression
+  ; <Ast.Yield>
 
 let operator :=
   ~ = "operator" ; <>
@@ -235,20 +286,34 @@ let if_exp :=
   "if"
   ; condition = expression
   ; "then"
-  ; taken = expression
+  ; taken = expr_all
   ; "else"
-  ; not_taken = expression
+  ; not_taken = expr_all
   ; { Ast.If { condition ; taken ; not_taken } }
 
 let while_exp :=
   "while"
   ; condition = expression
   ; "do"
-  ; body = expression
+  ; body = expr_all
   ; { Ast.While { condition ; body } }
+| "while" ; "let"
+  ; name = "identifier"
+  ; ty = preceded(":", ty)?
+  ; "="
+  ; value = expression
+  ; "do"
+  ; body = expr_all
+  ; { Ast.WhileLet { name ; ty ; value ; body } }
 
 let expression :=
   "unsafe" ; ~ = expression ; <Ast.Unsafe>
+| ~ = delimited(
+    "[",
+    separated_list(",", expression),
+    "]"
+  )
+  ; <Ast.ArrayLit>
 | ~ = msg_exp ; <>
 
 let msg_exp :=
@@ -257,19 +322,25 @@ let msg_exp :=
   ; { List.fold_left (fun r m -> Ast.Send { recv = r ; msg = m } ) recv msgs }
 
 let expression_nomsg :=
-  ~ = call ; <>
-
-let call :=
-  callee = primary
-  ; args = delimited("(", separated_list(",", fn_arg) ,")")*
-  ; {
-   List.fold_left (fun c a -> Ast.FnCall { callee = c ; args = a } ) callee args
-  }
+  ~ = primary ; <>
+| callee = expression_nomsg
+  ; args = delimited("(", separated_list(",", fn_arg) ,")")
+  ; { Ast.FnCall { callee ; args } }
+| callee = expression_nomsg
+  ; args = delimited("[", separated_list(",", fn_arg) ,"]")
+  ; { Ast.FnCall { callee ; args } }
+| ~ = expression_nomsg
+  ; "as"
+  ; ~ = ty
+  ; <Ast.Cast>
 
 let primary :=
-  ~ = path                   ; <Ast.Variable>
-| ~ = block                  ; <>
-| ~ = "integer"              ; <Ast.Integer>
+  ~ = path      ; <Ast.Variable>
+| ~ = block     ; <>
+| ~ = "integer" ; <Ast.Integer>
+| ~ = "string"  ; <Ast.String>
+| "true"        ; {Ast.Bool true}
+| "false"       ; {Ast.Bool false}
 
 let let_exp :=
   "let"

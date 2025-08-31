@@ -1,17 +1,15 @@
 fn fib_iter | mut x: u64 | : u64 = (
-  let (
-    a = mut 1;
-    b = mut 0;
-    c = mut 0;
+  let a = mut 1;
+  let b = mut 0;
+  let c = mut 0;
+
+  while x > 0 do (
+    set c = a;
+    set a = + b;
+    set b = c;
+    set x = - 1
   );
 
-  while x > 0 do
-    set (
-      c = a;
-      a += b;
-      b = c;
-      x -= 1;
-    );
   a
 );
 
