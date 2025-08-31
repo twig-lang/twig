@@ -361,7 +361,7 @@ let block :=
       | _ -> Ast.Block items }
 
 let message :=
-  ~ = fn_message ; <>
+//  ~ = fn_message ; <>
 | ~ = op_message ; <>
 
 let op_message :=
@@ -379,7 +379,10 @@ let fn_message :=
     tail }  }
 
 let fn_arg :=
-  key = preceded(":","identifier")?
+  key = terminated("identifier", ":")
   ; mode = mode
   ; value = expression
-  ; { Ast.FnArgument { key ; mode ; value } }
+  ; { Ast.FnArgument { key = Some key ; mode ; value } }
+| mode = mode
+  ; value = expression
+  ; { Ast.FnArgument { key = None ; mode ; value } }
