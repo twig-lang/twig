@@ -1,3 +1,8 @@
+type import_path =
+  | ImportAtom of string
+  | ImportMember of string * import_path
+  | ImportMultiple of import_path list
+
 type mode = Mode of { is_ref : bool; is_mut : bool }
 type yields = Returns | YieldIf | YieldWhile
 
@@ -33,11 +38,18 @@ and message =
 
 and pattern = PatNamed of path
 and case = Case of { pat : pattern; body : expr }
+and modexpr = ModBody of toplevel list | ModPath of path
+and sigexpr = SigNamed of path | SigJoin of path list
+
+and mod_arg =
+  | ModArgModule of { name : string; ty : sigexpr option }
+  | ModArgTy of path
 
 and expr =
   | Variable of path
   | Integer of int
   | Real of float
+  | Char of Uchar.t
   | Unit
   | Bool of bool
   | Block of expr list
@@ -61,7 +73,7 @@ and expr =
   | String of string
   | Match of { scrutinee : expr; cases : case list }
 
-type fn_parameter =
+and fn_parameter =
   | FnParameter of {
       mode : mode;
       name : string;
@@ -70,12 +82,7 @@ type fn_parameter =
       default : expr option;
     }
 
-type import_path =
-  | ImportAtom of string
-  | ImportMember of string * import_path
-  | ImportMultiple of import_path list
-
-type toplevel =
+and toplevel =
   | FunctionDefinition of {
       yields : yields;
       name : string;
@@ -93,6 +100,7 @@ type toplevel =
     }
   | ConstantDefinition of { name : string; ty : ty; value : expr }
   | TypeDefinition of { name : string; ty : ty }
+  | TypeAbstract of string
   | Extern of {
       abi : string option;
       name : string;
@@ -101,3 +109,10 @@ type toplevel =
     }
   | ToplevelWith of { imports : bool; path : import_path }
   | Import of import_path
+  | ModDefinition of {
+      name : string;
+      signature : sigexpr option;
+      args : mod_arg list;
+      value : modexpr;
+    }
+  | SigDefinition of { name : string; args : mod_arg list; value : modexpr }

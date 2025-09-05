@@ -6,7 +6,7 @@
 %token<int> Integer "integer"
 %token<float> Real "real"
 %token<string> String "string"
-%token<char> Char "char"
+%token<Uchar.t> Char "char"
 
 %token LParen "("
 %token RParen ")"
@@ -28,7 +28,6 @@
 %token As "as"
 %token Let "let"
 %token Set "set"
-%token In "in"
 %token Fn "fn"
 %token Mut "mut"
 %token Sub "sub"
@@ -78,6 +77,46 @@ let toplevel :=
 | ~ = extern              ; <>
 | ~ = top_with            ; <>
 | ~ = sub_definition      ; <>
+| ~ = mod_definition      ; <>
+
+let mod_definition :=
+  "mod"
+  ; name = "identifier"
+  ; args = preceded("!", parameter_list(mod_arg))?
+  ; signature = preceded(":", sig_expr)?
+  ; "="
+  ; value = mod_expr
+  ; ";"
+  ; { let args = Option.value ~default:[] args in
+      Ast.ModDefinition { name ; args ; signature ; value }}
+
+| "mod" ; "type"
+  ; name = "identifier"
+  ; args = preceded("!", parameter_list(mod_arg))?
+  ; "="
+  ; value = mod_expr
+  ; ";"
+  ; { let args = Option.value ~default:[] args in
+      Ast.SigDefinition { name ; args ; value }}
+
+let mod_arg :=
+  name = "identifier"
+  ; ty = preceded(":", sig_expr)?
+  ; { Ast.ModArgModule { name ; ty }}
+| "type" ; ~ = path ; <Ast.ModArgTy>
+
+let sig_expr :=
+  joins = separated_nonempty_list("&", path)
+  ; { match joins with
+      | p :: [] -> Ast.SigNamed p
+      | js      -> Ast.SigJoin js }
+
+let mod_expr :=
+  "("
+  ; body = toplevel*
+  ; ")"
+  ; <Ast.ModBody>
+| ~ = path ; <Ast.ModPath>
 
 let top_with :=
   "with"
@@ -114,6 +153,10 @@ let type_definition :=
   ; ty = ty_all
   ; ";"
   ; { Ast.TypeDefinition { name ; ty } }
+| "type"
+  ; name = "identifier"
+  ; ";"
+  ; <Ast.TypeAbstract>
 
 let ty_all :=
   ~ = ty        ; <>
@@ -190,7 +233,7 @@ let sub_definition :=
   ; { Ast.SubDefinition { yields ; mode ; name ; parameters ; ty ; value } }
 
 let parameter_list(par) :=
-  pars = delimited("|", separated_list(",", fn_par), "|")?
+  pars = delimited("|", separated_list(",", par), "|")?
   ; { Option.value ~default:[] pars }
 
 let mode :=
@@ -351,6 +394,8 @@ let primary :=
 | ~ = block     ; <>
 | ~ = "integer" ; <Ast.Integer>
 | ~ = "string"  ; <Ast.String>
+| ~ = "char"    ; <Ast.Char>
+| ~ = "real"    ; <Ast.Real>
 | "true"        ; {Ast.Bool true}
 | "false"       ; {Ast.Bool false}
 
