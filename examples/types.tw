@@ -6,24 +6,20 @@ type unit = ();
 
 type MaybeInt = Option!(int).t;
 
-type IntAndUnit = struct (
+type IntAndUnit = struct
   i: int,
-  u: unit
-);
+  u: unit;
 
 type AlsoIntAndUnit = (int, unit);
 
-type Bit = enum (
+type Bit = enum
   Set,
-  Clear
-);
+  Clear;
 
-type Bitcast = union (
+type Bitcast = union
   i: i64,
-  f: f64
-);
+  f: f64;
 
-type IntOrUnit = enum (
+type IntOrUnit = enum
   Int(int),
-  Unit(unit)
-);
+  Unit(unit);

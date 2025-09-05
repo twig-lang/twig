@@ -1,21 +1,20 @@
-type Pair = struct (
+type Pair = struct
  left: i32,
- right: i32
-);
+ right: i32;
 
 fn a_struct: Pair =
- Pair (left: 0, right: 1)
+ Pair (;left = 0, right = 1);
 
 fn another_struct: Pair = (
  let left = 0;
  let right = 1;
 
- Pair (left, right)
+ Pair (;left, right)
 );
 
 fn struct_update: Pair = (
  let left = 1;
  let p = another_struct();
 
- p with (left, right: 2)
+ p with (left, right = 2)
 );

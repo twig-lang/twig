@@ -5,9 +5,9 @@ fn fib_iter | mut x: u64 | : u64 = (
 
   while x > 0 do (
     set c = a;
-    set a = + b;
+    set a = a + b;
     set b = c;
-    set x = - 1
+    set x = x - 1
   );
 
   a

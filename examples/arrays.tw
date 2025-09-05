@@ -7,7 +7,7 @@ fn sum_all | &input: []i32 | : i32 = (
  let result = mut 0;
 
  while let i = input each do
-   set result = + i;
+   set result = result + i;
 
  result
 );
@@ -17,7 +17,7 @@ fn populate | &mut output: []i32 | = (
 
   while let value = output each_mut do (
     set value = index;
-    set value = + 1
+    set value = value + 1
   )
 );
 
@@ -31,5 +31,5 @@ fn example = (
   let sum = mut n23 sum_all + n32 sum_all;
 
   let vals = [1, 2, 4, 8, 16, 32, 64];
-  set sum = + vals sum_all
+  set sum = sum + vals sum_all
 );

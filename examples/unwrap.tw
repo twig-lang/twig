@@ -1,11 +1,11 @@
-type MaybeInt = variant {
-  None;
-  Some(i64)
-};
+type MaybeInt = enum
+  None,
+  Some(i64);
 
-sub if &unwrap | &opt: MaybeInt | : i64 =
-  when match Some(x) = opt do
-    yield x;
+sub& if unwrap | &opt: MaybeInt | : i64 =
+  match opt with
+   Some(x) = (yield x),
+   _ = ();
 
 fn print | x: i64 | = ();
 
