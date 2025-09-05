@@ -439,7 +439,7 @@ let primary :=
   ~ = path      ; <Ast.Variable>
 | ~ = block     ; <>
 | ~ = "integer" ; <Ast.Integer>
-| ~ = "string"  ; <Ast.String>
+| s = "string"+ ; {Ast.String (String.concat "" s)}
 | ~ = "char"    ; <Ast.Char>
 | ~ = "real"    ; <Ast.Real>
 | "true"        ; {Ast.Bool true}

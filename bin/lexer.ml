@@ -68,6 +68,9 @@ let lex_str_escape lexbuf =
   | 'r' -> Uchar.of_char '\r'
   | 't' -> Uchar.of_char '\t'
   | '\\' -> Uchar.of_char '\\'
+  | '"' -> Uchar.of_char '"'
+  | '\'' -> Uchar.of_char '\''
+  | '0' -> Uchar.of_int 0
   | _ ->
       ignore @@ Sedlexing.next lexbuf;
       failwith @@ "unknown character escape: \\" ^ Sedlexing.Utf8.lexeme lexbuf
