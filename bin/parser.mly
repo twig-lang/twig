@@ -1,4 +1,4 @@
-// Here be dragons
+// Here be dragons.
 
 %token Eof "eof"
 %token<string> Identifier "identifier"
@@ -123,11 +123,7 @@ let ty_all :=
 
 let enum_ty :=
   "enum"
-  ; members = delimited(
-    "(",
-    separated_list(",", enum_member),
-    ")"
-  )
+  ; members = separated_list(",", enum_member)
   ; { Ast.EnumTy { members } }
 
 let enum_member :=
@@ -145,20 +141,12 @@ let enum_member :=
 
 let struct_ty :=
   "struct"
-  ; members = delimited(
-   "(",
-   separated_list(",", struct_member),
-   ")"
-  )
+  ; members = separated_list(",", struct_member)
   ; { Ast.StructTy { members } }
 
 let union_ty :=
   "union"
-  ; members = delimited(
-   "(",
-   separated_list(",", struct_member),
-   ")"
-  )
+  ; members = separated_list(",", struct_member)
   ; { Ast.UnionTy { members } }
 
 let struct_member :=
@@ -262,6 +250,23 @@ let expr_all :=
 | ~ = set_exp   ; <>
 | ~ = while_exp ; <>
 | ~ = yield_exp ; <>
+| ~ = match_exp ; <>
+
+let match_exp :=
+  "match"
+  ; scrutinee = expression
+  ; "with"
+  ; cases = separated_list(",", match_case)
+  ; { Ast.Match { scrutinee ; cases } }
+
+let match_case :=
+  pat = pattern
+  ; "="
+  ; body = expression
+  ; { Ast.Case { pat ; body} }
+
+let pattern :=
+  name = path ; <Ast.PatNamed>
 
 let yield_exp :=
   "yield"

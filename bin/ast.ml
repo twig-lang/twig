@@ -31,6 +31,9 @@ and message =
   | SubMessage of { name : path; args : fn_arg list; tail : expr option }
   | OpMessage of { name : string; arg : expr }
 
+and pattern = PatNamed of path
+and case = Case of { pat : pattern; body : expr }
+
 and expr =
   | Variable of path
   | Integer of int
@@ -56,6 +59,7 @@ and expr =
   | ArrayLit of expr list
   | Cast of expr * ty
   | String of string
+  | Match of { scrutinee : expr; cases : case list }
 
 type fn_parameter =
   | FnParameter of {
