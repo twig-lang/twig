@@ -24,19 +24,19 @@ fn calls = (
  u unit2(u)
    unit2: u;
 
- unit_key(u, beta: u);
+ unit_key(u; beta = u);
 
- u unit_key(beta: u);
+ u unit_key(;beta = u);
 
  u unit
    unit2(u)
    unit2: u
-   unit_key(beta: u);
+   unit_key(;beta = u);
 
  default();
- default(value: u);
+ default(;value = u);
 
-{ complex_key(this.value: u);}
+{ complex_key(;this.value = u);}
 
  u
 );

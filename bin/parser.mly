@@ -324,15 +324,22 @@ let msg_exp :=
 let expression_nomsg :=
   ~ = primary ; <>
 | callee = expression_nomsg
-  ; args = delimited("(", separated_list(",", fn_arg) ,")")
+  ; args = delimited("(", arglist ,")")
   ; { Ast.FnCall { callee ; args } }
 | callee = expression_nomsg
-  ; args = delimited("[", separated_list(",", fn_arg) ,"]")
+  ; args = delimited("[", arglist ,"]")
   ; { Ast.FnCall { callee ; args } }
 | ~ = expression_nomsg
   ; "as"
   ; ~ = ty
   ; <Ast.Cast>
+
+let arglist :=
+  ~ = separated_list(",", fn_arg) ; <>
+| positional = separated_list(",", fn_arg)
+  ; ";"
+  ; keys = separated_list(",", key_fn_arg)
+  ; { List.append positional keys }
 
 let primary :=
   ~ = path      ; <Ast.Variable>
@@ -361,7 +368,7 @@ let block :=
       | _ -> Ast.Block items }
 
 let message :=
-//  ~ = fn_message ; <>
+  ~ = fn_message ; <>
 | ~ = op_message ; <>
 
 let op_message :=
@@ -371,7 +378,7 @@ let op_message :=
 
 let fn_message :=
   name = path
-  ; args = delimited("(", separated_list(",", fn_arg) ,")")?
+  ; args = delimited("(", arglist ,")")?
   ; tail = preceded(":", expression_nomsg)?
   ; { Ast.FnMessage {
     name ;
@@ -379,10 +386,12 @@ let fn_message :=
     tail }  }
 
 let fn_arg :=
-  key = terminated("identifier", ":")
+  mode = mode
+  ; value = expression
+  ; { Ast.FnArgument { key = None; mode ; value } }
+
+let key_fn_arg :=
+  key = terminated("identifier", "=")
   ; mode = mode
   ; value = expression
   ; { Ast.FnArgument { key = Some key ; mode ; value } }
-| mode = mode
-  ; value = expression
-  ; { Ast.FnArgument { key = None ; mode ; value } }
