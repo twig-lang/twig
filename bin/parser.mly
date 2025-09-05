@@ -299,6 +299,8 @@ let expr_all :=
 | ~ = match_exp  ; <>
 | ~ = when_exp   ; <>
 
+| ~ = preceded("return", expression) ; <Ast.Return>
+
 | ~ = top_all    ; <Ast.Top>
 
 let match_exp :=
@@ -347,6 +349,15 @@ let if_exp :=
   ; "else"
   ; not_taken = expr_all
   ; { Ast.If { condition ; taken ; not_taken } }
+| "if"; "let"
+  ; bind = pattern
+  ; ty = preceded(":", ty)?
+  ; value = preceded("=", expression)
+  ; "then"
+  ; taken = expr_all
+  ; "else"
+  ; not_taken = expr_all
+  ; { Ast.IfLet { bind; ty; value ; taken ; not_taken } }
 
 let while_exp :=
   "while"
