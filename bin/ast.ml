@@ -25,8 +25,10 @@ and ty =
 and fn_arg = FnArgument of { key : string option; mode : mode; value : expr }
 
 and message =
-  (* name (args...)? : tail? *)
+  (* recv path [: tail ] *)
+  | MemberMessage of { name : path; tail : expr option }
   | FnMessage of { name : path; args : fn_arg list; tail : expr option }
+  | SubMessage of { name : path; args : fn_arg list; tail : expr option }
   | OpMessage of { name : string; arg : expr }
 
 and expr =

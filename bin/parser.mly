@@ -368,7 +368,7 @@ let block :=
       | _ -> Ast.Block items }
 
 let message :=
-  ~ = fn_message ; <>
+  ~ = call_message ; <>
 | ~ = op_message ; <>
 
 let op_message :=
@@ -376,14 +376,18 @@ let op_message :=
   ; arg = expression_nomsg
   ; { Ast.OpMessage { name ; arg } }
 
-let fn_message :=
+let call_message :=
   name = path
-  ; args = delimited("(", arglist ,")")?
+  ; args = delimited("(", arglist ,")")
   ; tail = preceded(":", expression_nomsg)?
-  ; { Ast.FnMessage {
-    name ;
-    args = Option.value ~default:[] args ;
-    tail }  }
+  ; {Ast.FnMessage { name ; args ; tail }}
+| name = path
+  ; args = delimited("[", arglist ,"]")
+  ; tail = preceded(":", expression_nomsg)?
+  ; {Ast.SubMessage { name ; args ; tail }}
+| name = path
+  ; tail = preceded(":", expression_nomsg)?
+  ; {Ast.MemberMessage { name ; tail }}
 
 let fn_arg :=
   mode = mode

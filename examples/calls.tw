@@ -6,7 +6,7 @@ fn unit_key |a: (), b beta: ()| = ();
 
 fn default |x value = (): ()| = ();
 
-{fn complex_key |x this.value: ()| = ();}
+sub script |x: ()| = x;
 
 fn calls = (
  let u = ();
@@ -36,7 +36,10 @@ fn calls = (
  default();
  default(;value = u);
 
-{ complex_key(;this.value = u);}
+ script[u];
+
+ u script
+   script[];
 
  u
 );
