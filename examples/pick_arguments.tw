@@ -10,14 +10,14 @@ fn id | ;value: i64 | : i64 = x;
 fn main = (
   pick(false);
   pick(true);
-  pick(true; taken = 2);
-  pick(false; not_taken = 3);
+  pick(true; taken: 2);
+  pick(false; not_taken: 3);
 
   pick(true;
-    taken = 4,
-    not_taken = 5);
+    taken: 4,
+    not_taken: 5);
 
-  id(;value = 5);
+  id(;value: 5);
 
   ()
 );

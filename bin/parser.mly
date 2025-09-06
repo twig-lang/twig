@@ -572,7 +572,7 @@ let fn_arg :=
   ; { Ast.FnArgument { key = None; mode ; value } }
 
 let key_fn_arg :=
-  key = terminated("identifier", "=")
+  key = terminated("identifier", ":")
   ; mode = mode
   ; value = expression
   ; { Ast.FnArgument { key = Some key ; mode ; value } }

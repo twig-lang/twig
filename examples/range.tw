@@ -7,7 +7,7 @@ sub while range | ; mut from: u64, to: u64 | : u64 =
 fn example: u64 = (
   let sum = mut 0;
 
-  while let i = range[;from = 1, to = 100] do
+  while let i = range[;from: 1, to: 100] do
     set sum = sum + i;
 
   sum

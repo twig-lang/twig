@@ -3,7 +3,7 @@ type Pair = struct
  right: i32;
 
 fn a_struct: Pair =
- Pair (;left = 0, right = 1);
+ Pair (;left: 0, right: 1);
 
 fn another_struct: Pair = (
  let left = 0;
@@ -16,5 +16,5 @@ fn struct_update: Pair = (
  let left = 1;
  let p = another_struct();
 
- p with (left, right = 2)
+ p with (left, right: 2)
 );
