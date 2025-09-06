@@ -211,7 +211,7 @@ let yields :=
 let function_definition :=
   unsafep = boption("unsafe")
   ; "fn"
-  ; name = "identifier"
+  ; name = fn_name
   ; parameters = parameter_list2(fn_par, key_fn_par)
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expr_all)?
@@ -229,7 +229,7 @@ let sub_definition :=
   ; "sub"
   ; mode = mode
   ; ~ = yields
-  ; name = "identifier"
+  ; name = fn_name
   ; parameters = parameter_list2(fn_par, key_fn_par)
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expr_all)?
@@ -243,6 +243,10 @@ let sub_definition :=
         key_parameters ;
         ty ;
         value } }
+
+let fn_name :=
+  ~ = "identifier" ; <Ast.FnNamed>
+| "(" ; ~ = operator ; ")" ; <Ast.FnOperator>
 
 let parameter_list2(par, key_par) :=
   { ([], []) }

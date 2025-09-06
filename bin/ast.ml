@@ -6,6 +6,7 @@ type import_path =
 type mode = Mode of { is_ref : bool; is_mut : bool }
 type yields = Returns | YieldIf | YieldWhile
 type ptr_mut = PtrConst | PtrMut
+type fn_name = FnNamed of string | FnOperator of string
 
 type path =
   | Member of path list
@@ -120,7 +121,7 @@ and fn_parameter =
 and toplevel =
   | FunctionDefinition of {
       unsafep : bool;
-      name : string;
+      name : fn_name;
       pos_parameters : fn_parameter list;
       key_parameters : fn_parameter list;
       ty : ty option;
@@ -130,7 +131,7 @@ and toplevel =
       unsafep : bool;
       yields : yields;
       mode : mode;
-      name : string;
+      name : fn_name;
       pos_parameters : fn_parameter list;
       key_parameters : fn_parameter list;
       ty : ty option;

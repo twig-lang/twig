@@ -59,6 +59,7 @@ let op2kw op =
 
 let digit = [%sedlex.regexp? '0' .. '9']
 let number = [%sedlex.regexp? Plus digit]
+let flt = [%sedlex.regexp? number, '.', number]
 let id_head = [%sedlex.regexp? xid_start | '_']
 let id_tail = [%sedlex.regexp? xid_continue | '_']
 
@@ -115,6 +116,7 @@ and lexer' lexbuf =
   | ']' -> Parser.RBrac
   | Plus (Chars "+*/-,.;:!@#$%&=?!<>^" | math | other_math) ->
       op2kw (Sedlexing.Utf8.lexeme lexbuf)
+  | flt -> Parser.Real (float_of_string @@ Sedlexing.Utf8.lexeme lexbuf)
   | number -> Parser.Integer (int_of_string @@ Sedlexing.Utf8.lexeme lexbuf)
   | '"' -> lex_str (Buffer.create 16) lexbuf
   | '{' -> lex_comment 1 lexbuf
