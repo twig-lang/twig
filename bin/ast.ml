@@ -77,6 +77,19 @@ and expr =
   | While of { condition : expr; body : expr }
   | Unsafe of expr
   | Yield of mode * expr
+  | ArrayLit of expr list
+  | Cast of expr * ty
+  | String of string
+  | Match of { scrutinee : expr; cases : case list }
+  | Addressof of ptr_mut * expr
+  | Deref of mode * expr
+  | Top of toplevel
+  | Update of expr * (string * mode * expr) list
+  | Label of string * expr
+  | Continue
+  | Break of string option * expr option
+  | Return of expr option
+  | Loop of expr
   | IfLet of {
       bind : pattern;
       ty : ty option;
@@ -86,15 +99,15 @@ and expr =
     }
   | WhileLet of { bind : pattern; ty : ty option; value : expr; body : expr }
   | WhenLet of { bind : pattern; ty : ty option; value : expr; body : expr }
-  | ArrayLit of expr list
-  | Cast of expr * ty
-  | String of string
-  | Match of { scrutinee : expr; cases : case list }
-  | Addressof of ptr_mut * expr
-  | Deref of mode * expr
-  | Top of toplevel
-  | Update of expr * (string * mode * expr) list
-  | Return of expr
+  | IfMatch of {
+      bind : pattern;
+      ty : ty option;
+      value : expr;
+      taken : expr;
+      not_taken : expr;
+    }
+  | WhileMatch of { bind : pattern; ty : ty option; value : expr; body : expr }
+  | WhenMatch of { bind : pattern; ty : ty option; value : expr; body : expr }
 
 and fn_parameter =
   | FnParameter of {

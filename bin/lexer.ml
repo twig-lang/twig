@@ -21,7 +21,6 @@ let keywords =
       ("type", Type);
       ("union", Union);
       ("unsafe", Unsafe);
-      ("where", Where);
       ("while", While);
       ("with", With);
       ("yield", Yield);
@@ -32,6 +31,7 @@ let keywords =
       ("when", When);
       ("true", True);
       ("false", False);
+      ("label", Label);
     ]
   |> List.to_seq |> Hashtbl.of_seq
 

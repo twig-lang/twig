@@ -19,7 +19,6 @@
 %token Semicolon ";"
 %token Equal "="
 %token Bang "!"
-%token Question "?"
 %token Amp "&"
 %token Bar "|"
 %token Star "*"
@@ -48,7 +47,6 @@
 %token Break "break"
 %token Continue "continue"
 %token With "with"
-%token Where "where"
 %token Then "then"
 %token Do "do"
 %token Extern "extern"
@@ -56,6 +54,7 @@
 %token When "when"
 %token True "true"
 %token False "false"
+%token Label "label"
 
 %start main
 %type<Ast.toplevel list> main
@@ -299,7 +298,20 @@ let expr_all :=
 | ~ = match_exp  ; <>
 | ~ = when_exp   ; <>
 
-| ~ = preceded("return", expression) ; <Ast.Return>
+| ~ = preceded("return", expr_all?) ; <Ast.Return>
+| ~ = preceded("loop", expr_all) ; <Ast.Loop>
+
+| "continue" ; {Ast.Continue}
+
+| "label"
+  ; name = "identifier"
+  ; tail = expr_all
+  ; <Ast.Label>
+
+| "break"
+  ; label = "identifier"?
+  ; value = preceded("with", expr_all)?
+  ; <Ast.Break>
 
 | ~ = top_all    ; <Ast.Top>
 
@@ -358,6 +370,15 @@ let if_exp :=
   ; "else"
   ; not_taken = expr_all
   ; { Ast.IfLet { bind; ty; value ; taken ; not_taken } }
+| "if"; "match"
+  ; bind = pattern
+  ; ty = preceded(":", ty)?
+  ; value = preceded("=", expression)
+  ; "then"
+  ; taken = expr_all
+  ; "else"
+  ; not_taken = expr_all
+  ; { Ast.IfLet { bind; ty; value ; taken ; not_taken } }
 
 let while_exp :=
   "while"
@@ -373,6 +394,14 @@ let while_exp :=
   ; "do"
   ; body = expr_all
   ; { Ast.WhileLet { bind ; ty ; value ; body } }
+| "while" ; "match"
+  ; bind = pattern
+  ; ty = preceded(":", ty)?
+  ; "="
+  ; value = expression
+  ; "do"
+  ; body = expr_all
+  ; { Ast.WhileMatch { bind ; ty ; value ; body } }
 
 let when_exp :=
   "when"
@@ -381,6 +410,14 @@ let when_exp :=
   ; taken = expr_all
   ; { Ast.When { condition ; taken } }
 | "when" ; "let"
+  ; bind = pattern
+  ; ty = preceded(":", ty)?
+  ; "="
+  ; value = expression
+  ; "do"
+  ; body = expr_all
+  ; { Ast.WhenLet { bind ; ty ; value ; body } }
+| "when" ; "match"
   ; bind = pattern
   ; ty = preceded(":", ty)?
   ; "="
