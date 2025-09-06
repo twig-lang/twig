@@ -211,12 +211,18 @@ let yields :=
 let function_definition :=
   unsafep = boption("unsafe")
   ; "fn"
-  ; ~ = yields
   ; name = "identifier"
-  ; parameters = parameter_list(fn_par)
+  ; parameters = parameter_list2(fn_par, key_fn_par)
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expr_all)?
-  ; { Ast.FunctionDefinition { unsafep ; yields ; name ; parameters ; ty ; value } }
+  ; { let (pos_parameters, key_parameters) = parameters in
+      Ast.FunctionDefinition {
+        unsafep ;
+        name ;
+        pos_parameters ;
+        key_parameters ;
+        ty ;
+        value } }
 
 let sub_definition :=
   unsafep = boption("unsafe")
@@ -224,10 +230,27 @@ let sub_definition :=
   ; mode = mode
   ; ~ = yields
   ; name = "identifier"
-  ; parameters = parameter_list(fn_par)
+  ; parameters = parameter_list2(fn_par, key_fn_par)
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expr_all)?
-  ; { Ast.SubDefinition { unsafep ; yields ; mode ; name ; parameters ; ty ; value } }
+  ; { let (pos_parameters, key_parameters) = parameters in
+      Ast.SubDefinition {
+        unsafep ;
+        yields ;
+        mode ;
+        name ;
+        pos_parameters ;
+        key_parameters ;
+        ty ;
+        value } }
+
+let parameter_list2(par, key_par) :=
+  { ([], []) }
+| "|"
+  ; positional = separated_list(",", par)
+  ; keys = preceded(";", separated_list(",", key_par))?
+  ; "|"
+  ; { (positional , Option.value ~default:[] keys) }
 
 let parameter_list(par) :=
   pars = delimited("|", separated_list(",", par), "|")?
@@ -241,10 +264,15 @@ let mode :=
 let fn_par :=
   ~ = mode
   ; name = "identifier"
-  ; key = "identifier"?
+  ; ty = preceded(":", ty)
+  ; { FnParameter { mode; name ; ty ; default = None } }
+
+let key_fn_par :=
+  ~ = mode
+  ; name = "identifier"
   ; default = preceded("=", expression_nomsg)?
   ; ty = preceded(":", ty)
-  ; { FnParameter { mode; name ; key ; ty ; default } }
+  ; { FnParameter { mode; name ; ty ; default } }
 
 let path :=
   path = separated_nonempty_list(".", path_atom) ; <Ast.Member>

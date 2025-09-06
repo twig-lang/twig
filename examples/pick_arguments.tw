@@ -1,11 +1,11 @@
 fn pick |
-  condition: bool,
-  t taken     = 1: i64,
-  f not_taken = 0: i64
+  condition: bool ;
+  taken     = 1: i64,
+  not_taken = 0: i64
 | : i64 =
- if condition then t else f;
+ if condition then taken else not_taken;
 
-fn id | x value: i64 | : i64 = x;
+fn id | ;value: i64 | : i64 = x;
 
 fn main = (
   pick(false);

@@ -113,7 +113,6 @@ and fn_parameter =
   | FnParameter of {
       mode : mode;
       name : string;
-      key : string option;
       ty : ty;
       default : expr option;
     }
@@ -121,9 +120,9 @@ and fn_parameter =
 and toplevel =
   | FunctionDefinition of {
       unsafep : bool;
-      yields : yields;
       name : string;
-      parameters : fn_parameter list;
+      pos_parameters : fn_parameter list;
+      key_parameters : fn_parameter list;
       ty : ty option;
       value : expr option;
     }
@@ -132,7 +131,8 @@ and toplevel =
       yields : yields;
       mode : mode;
       name : string;
-      parameters : fn_parameter list;
+      pos_parameters : fn_parameter list;
+      key_parameters : fn_parameter list;
       ty : ty option;
       value : expr option;
     }
