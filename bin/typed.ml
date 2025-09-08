@@ -1,3 +1,10 @@
+type path_argument = PArgPath of path
+
+and path =
+  | PathAtom of string
+  | PathCall of path * path_argument list
+  | PathMember of path * string
+
 type ty_primitive =
   | T_unit
   | T_bool
@@ -15,13 +22,14 @@ type ty_primitive =
 
 type ty =
   | TyPrimitive of ty_primitive
-  | TyProduct of ty list
+  | TyNamed of path
   | TyPointer of ty
   | TyArray of int * ty
   | TySlice of ty
+  | TyTuple of ty list
 (* Types *)
 
-type expr = EVariable of string
+type expr = EVariable of path
 (* Expressions *)
 
 type t = |

@@ -19,6 +19,7 @@ fn calls = (
  unit2(u, u);
  u unit2(u);
  u unit2: u;
+ unit2(u): u;
 
  u unit2: u
    unit2: u;

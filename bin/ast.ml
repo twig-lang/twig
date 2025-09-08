@@ -7,6 +7,7 @@ type mode = Mode of { is_ref : bool; is_mut : bool }
 type yields = Returns | YieldIf | YieldWhile
 type ptr_mut = PtrConst | PtrMut
 type fn_name = FnNamed of string | FnOperator of string
+type lambda_kind = Function | FunctionPointer | Subscript | SubscriptPointer
 
 type path =
   | Member of path list
@@ -19,6 +20,8 @@ and enum_member =
   | EnumMember of { name : string }
   | EnumMemberArgs of { name : string; args : ty list }
 
+and anon_par = AnonParameter of bool * mode * ty
+
 and ty =
   | Named of path
   | UnitTy
@@ -29,6 +32,7 @@ and ty =
   | Array of int * ty
   | Slice of ty
   | Pointer of ptr_mut * ty
+  | Lambda of lambda_kind * anon_par list * ty option
 
 and fn_arg = FnArgument of { key : string option; mode : mode; value : expr }
 
