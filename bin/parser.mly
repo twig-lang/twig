@@ -267,16 +267,18 @@ let mode :=
 
 let fn_par :=
   ~ = mode
+  ; is_label = boption("label")
   ; name = "identifier"
   ; ty = preceded(":", ty)
-  ; { FnParameter { mode; name ; ty ; default = None } }
+  ; { FnParameter { is_label; mode; name ; ty ; default = None } }
 
 let key_fn_par :=
   ~ = mode
+  ; is_label = boption("label")
   ; name = "identifier"
   ; default = preceded("=", expression_nomsg)?
   ; ty = preceded(":", ty)
-  ; { FnParameter { mode; name ; ty ; default } }
+  ; { FnParameter { is_label; mode; name ; ty ; default } }
 
 let path :=
   path = separated_nonempty_list(".", path_atom) ; <Ast.Member>
@@ -337,6 +339,7 @@ let expr_all :=
 
 | "label"
   ; name = "identifier"
+  ; ty = preceded(":", ty)?
   ; tail = expr_all
   ; <Ast.Label>
 
@@ -494,6 +497,9 @@ let msg_exp :=
   recv = expression_nomsg
   ; msgs = message*
   ; { List.fold_left (fun r m -> Ast.Send { recv = r ; msg = m } ) recv msgs }
+| ~ = expression_nomsg
+  ; tail = preceded(":", expression_nomsg)
+  ; <Ast.TailArg>
 
 let expression_nomsg :=
   ~ = primary ; <>

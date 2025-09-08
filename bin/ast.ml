@@ -64,6 +64,8 @@ and expr =
   | Unit
   | Bool of bool
   | Block of expr list
+  (* expr : expr *)
+  | TailArg of expr * expr
   (* NOTE: typed as () *)
   | Let of { bind : pattern; ty : ty option; mode : mode; value : expr }
   (* callee (args...) *)
@@ -86,7 +88,7 @@ and expr =
   | Deref of mode * expr
   | Top of toplevel
   | Update of expr * (string * mode * expr) list
-  | Label of string * expr
+  | Label of string * ty option * expr
   | Continue
   | Break of string option * expr option
   | Return of expr option
@@ -112,6 +114,7 @@ and expr =
 
 and fn_parameter =
   | FnParameter of {
+      is_label : bool;
       mode : mode;
       name : string;
       ty : ty;

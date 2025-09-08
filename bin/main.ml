@@ -13,7 +13,7 @@ let anon s =
 let process_file path =
   let input = In_channel.open_text path in
   let raw_ast = Option.get @@ Parse.parse_chan ~fname:path input in
-  let ty_ast = Typed_ast.from_ast raw_ast in
+  let ty_ast = Typed.from_ast raw_ast in
   ignore ty_ast;
   ()
 

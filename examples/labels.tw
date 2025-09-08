@@ -1,0 +1,21 @@
+fn exit_either | label t : (), label f : (); condition: bool | =
+ if condition then
+  break t
+ else
+  break f;
+
+fn labels = (
+ { exits to the inner label }
+ label outer
+  label inner
+   exit_either(outer, inner; condition: false);
+
+ { exits to the outer label }
+ label outer
+  label inner
+   exit_either(outer, inner; condition: true)
+);
+
+fn typed_label: i32 =
+ label value: i32
+  break value with 4;
