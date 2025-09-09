@@ -3,56 +3,58 @@ type import_path =
   | ImportMember of string * import_path
   | ImportMultiple of import_path list
 
-type mode = Mode of { is_ref : bool; is_mut : bool }
-type yields = Returns | YieldIf | YieldWhile
+type mode = Mode of bool * bool
+(* is it a reference , is it mutable *)
+
+type yields = YieldNone | YieldIf | YieldWhile
 type ptr_mut = PtrConst | PtrMut
 type fn_name = FnNamed of string | FnOperator of string
-type lambda_kind = Function | FunctionPointer | Subscript | SubscriptPointer
+
+type lambda_kind =
+  | LamFunction
+  | LamFunctionPointer
+  | LamSubscript
+  | LamSubscriptPointer
 
 type path =
-  | Member of path list
-  | Atom of string
-  | Call of { name : string; args : path list }
+  | PathMember of path * path
+  | PathAtom of string
+  | PathCall of string * path list
 
-and struct_member = StructMember of { name : string; ty : ty }
-
-and enum_member =
-  | EnumMember of { name : string }
-  | EnumMemberArgs of { name : string; args : ty list }
-
+and struct_member = StructMember of string * ty
+and enum_member = EnumMember of string * ty list option
 and anon_par = AnonParameter of bool * mode * ty
 
 and ty =
-  | Named of path
-  | UnitTy
-  | StructTy of { members : struct_member list }
-  | UnionTy of { members : struct_member list }
-  | EnumTy of { members : enum_member list }
-  | Tuple of ty list
-  | Array of int * ty
-  | Slice of ty
-  | Pointer of ptr_mut * ty
-  | Lambda of lambda_kind * anon_par list * ty option
+  | TyNamed of path
+  | TyUnit
+  | TyStruct of struct_member list
+  | TyUnion of struct_member list
+  | TyEnum of enum_member list
+  | TyTuple of ty list
+  | TyArray of int * ty
+  | TySlice of ty
+  | TyPointer of ptr_mut * ty
+  | TyLambda of lambda_kind * anon_par list * ty option
 
-and fn_arg = FnArgument of { key : string option; mode : mode; value : expr }
+and fn_arg = FnArgument of string option * mode * expr
+(* key, mode, value *)
 
 and message =
-  (* recv path [: tail ] *)
-  | MemberMessage of { name : path; tail : (mode * expr) option }
-  | FnMessage of {
-      name : path;
-      args : fn_arg list;
-      tail : (mode * expr) option;
-    }
-  | SubMessage of {
-      name : path;
-      args : fn_arg list;
-      tail : (mode * expr) option;
-    }
-  | OpMessage of { name : string; arg : mode * expr }
+  | MsgMember of path * (mode * expr) option (* recv path [: tail] *)
+  | MsgFn of path * fn_arg list * (mode * expr) option
+    (* recv path(...) [: tail] *)
+  | MsgSub of path * fn_arg list * (mode * expr) option
+    (* recv path[...] [: tail] *)
+  | MsgOp of string * (mode * expr)
+(* recv op arg *)
 
-and pattern = PatNamed of path | PatSink | PatArgs of path * pattern list
-and case = Case of { pat : pattern; body : expr }
+and pattern =
+  | PatNamed of path (* path *)
+  | PatSink (* _ *)
+  | PatArgs of path * pattern list (* path (...) *)
+
+and case = Case of pattern * expr
 and modexpr = ModBody of toplevel list | ModPath of path
 and sigexpr = SigNamed of path | SigJoin of path list
 

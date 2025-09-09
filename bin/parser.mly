@@ -164,8 +164,8 @@ let ty_all :=
 
 let enum_ty :=
   "enum"
-  ; members = separated_list(",", enum_member)
-  ; { Ast.EnumTy { members } }
+  ; ~ = separated_list(",", enum_member)
+  ; <Ast.TyEnum>
 
 let enum_member :=
   name = "identifier"
@@ -174,27 +174,21 @@ let enum_member :=
     separated_list(",", ty),
     ")"
   )?
-  ; {
-  match args with
-  | None -> Ast.EnumMember { name }
-  | Some args -> Ast.EnumMemberArgs { name ; args }
-  }
+  ; <Ast.EnumMember>
 
 let struct_ty :=
   "struct"
-  ; members = separated_list(",", struct_member)
-  ; { Ast.StructTy { members } }
+  ; ~ = separated_list(",", struct_member)
+  ; <Ast.TyStruct>
 
 let union_ty :=
   "union"
-  ; members = separated_list(",", struct_member)
-  ; { Ast.UnionTy { members } }
+  ; ~ = separated_list(",", struct_member)
+  ; <Ast.TyUnion>
 
 let struct_member :=
-  name = "identifier"
-  ; ":"
-  ; ty = ty
-  ; { Ast.StructMember { name ; ty } }
+  ~ = "identifier" ; ":" ; ~ = ty
+  ; <Ast.StructMember>
 
 let constant_definition :=
   "const"
@@ -206,7 +200,7 @@ let constant_definition :=
 let yields :=
   "if"    ; {Ast.YieldIf}
 | "while" ; {Ast.YieldWhile}
-|           {Ast.Returns}
+|           {Ast.YieldNone}
 
 let function_definition :=
   unsafep = boption("unsafe")
@@ -263,7 +257,7 @@ let parameter_list(par) :=
 let mode :=
   is_ref = boption("&")
   ; is_mut = boption("mut")
-  ; { Ast.Mode { is_ref ; is_mut} }
+  ; <Ast.Mode>
 
 let fn_par :=
   ~ = mode
@@ -281,7 +275,10 @@ let key_fn_par :=
   ; { FnParameter { is_label; mode; name ; ty ; default } }
 
 let path :=
-  path = separated_nonempty_list(".", path_atom) ; <Ast.Member>
+  path = separated_nonempty_list(".", path_atom)
+  ; { match path with
+      | a :: xs -> List.fold_right (fun a x -> Ast.PathMember (a, x)) xs a
+      | [] -> failwith "unreachable" }
 
 let path_atom :=
   name = "identifier"
@@ -293,11 +290,10 @@ let path_atom :=
       ")"
     )
   )?
-  ; {
-   match args with
-   | None -> Ast.Atom name
-   | Some args -> Ast.Call { name ; args }
-  }
+  ; { Option.fold
+      ~none:(Ast.PathAtom name)
+      ~some:(fun a->Ast.PathCall (name, a))
+      args }
 
 let ty :=
   ts = delimited(
@@ -307,16 +303,16 @@ let ty :=
   )
   ; {
    match List.length ts with
-   | 0 -> Ast.UnitTy
+   | 0 -> Ast.TyUnit
    | 1 -> List.hd ts
-   | _ -> Ast.Tuple ts
+   | _ -> Ast.TyTuple ts
   }
-| ~ = path           ; <Ast.Named>
+| ~ = path           ; <Ast.TyNamed>
 | ~ = delimited("[", "integer", "]")
   ; ~ = ty
-  ; <Ast.Array>
-| "[" ; "]" ; ~ = ty ; <Ast.Slice>
-| "*" ; ~ = ptr_mut ; ~ = ty ; <Ast.Pointer>
+  ; <Ast.TyArray>
+| "[" ; "]" ; ~ = ty ; <Ast.TySlice>
+| "*" ; ~ = ptr_mut ; ~ = ty ; <Ast.TyPointer>
 
 let ptr_mut :=
   "const" ; {Ast.PtrConst}
@@ -361,7 +357,7 @@ let match_case :=
   pat = pattern
   ; "="
   ; body = expression
-  ; { Ast.Case { pat ; body} }
+  ; <Ast.Case>
 
 let pattern :=
   name = path
@@ -472,7 +468,7 @@ let expression :=
       | None -> left
       | Some args ->
         let args = args
-          |> List.map (fun (Ast.FnArgument a) -> (Option.get a.key, a.mode, a.value))
+          |> List.map (fun (Ast.FnArgument (k,m,v)) -> (Option.get k, m, v))
         in Ast.Update (left, args) }
 
 let expression_nw :=
@@ -561,34 +557,34 @@ let mode_exp :=
 let op_message :=
   name = operator
   ; arg = mode_exp
-  ; { Ast.OpMessage { name ; arg } }
+  ; <Ast.MsgOp>
 
 let call_message :=
   name = path
   ; args = delimited("(", arglist ,")")
   ; tail = preceded(":", mode_exp)?
-  ; {Ast.FnMessage { name ; args ; tail }}
+  ; <Ast.MsgFn>
 | name = path
   ; args = delimited("[", arglist ,"]")
   ; tail = preceded(":", mode_exp)?
-  ; {Ast.SubMessage { name ; args ; tail }}
+  ; <Ast.MsgSub>
 | name = path
   ; tail = preceded(":", mode_exp)?
-  ; {Ast.MemberMessage { name ; tail }}
+  ; <Ast.MsgMember>
 
 let fn_arg :=
   mode = mode
   ; value = expression
-  ; { Ast.FnArgument { key = None; mode ; value } }
+  ; {Ast.FnArgument (None, mode ,value) }
 
 let key_fn_arg :=
   key = terminated("identifier", ":")
   ; mode = mode
   ; value = expression
-  ; { Ast.FnArgument { key = Some key ; mode ; value } }
+  ; { Ast.FnArgument (Some key, mode, value) }
 | name = "identifier"
   ; mode = mode
-  ; { Ast.FnArgument {
-        key = Some name ;
-        mode ;
-        value = Ast.(Variable (Atom name)) } }
+  ; { Ast.FnArgument (
+        Some name,
+        mode,
+        Ast.(Variable (PathAtom name))) }
