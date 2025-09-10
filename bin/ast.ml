@@ -76,54 +76,27 @@ and expr =
   | ExprTailArg of expr * expr
   | ExprCall of expr * argument list
   | ExprSubCall of expr * argument list
-  | ExprSend of { recv : expr; msg : message }
+  | ExprSend of expr * message
   (* control flow *)
   | ExprUnsafe of expr
   | ExprBlock of expr list
-  | ExprIf of { condition : expr; taken : expr; not_taken : expr }
-  | ExprWhen of { condition : expr; taken : expr }
-  | ExprWhile of { condition : expr; body : expr }
-  | ExprMatch of { scrutinee : expr; cases : case list }
+  | ExprIf of expr * expr * expr
+  | ExprWhen of expr * expr
+  | ExprWhile of expr * expr
+  | ExprMatch of expr * case list
   | ExprLabel of string * ty option * expr
   | ExprLoop of expr
   (* if/while/when let *)
-  | ExprIfLet of {
-      bind : pattern;
-      ty : ty option;
-      value : expr;
-      taken : expr;
-      not_taken : expr;
-    }
-  | ExprWhileLet of {
-      bind : pattern;
-      ty : ty option;
-      value : expr;
-      body : expr;
-    }
-  | ExprWhenLet of { bind : pattern; ty : ty option; value : expr; body : expr }
+  | ExprIfLet of pattern * ty option * expr * expr * expr
+  | ExprWhileLet of pattern * ty option * expr * expr
+  | ExprWhenLet of pattern * ty option * expr * expr
   (* if/while/when match *)
-  | ExprIfMatch of {
-      bind : pattern;
-      ty : ty option;
-      value : expr;
-      taken : expr;
-      not_taken : expr;
-    }
-  | ExprWhileMatch of {
-      bind : pattern;
-      ty : ty option;
-      value : expr;
-      body : expr;
-    }
-  | ExprWhenMatch of {
-      bind : pattern;
-      ty : ty option;
-      value : expr;
-      body : expr;
-    }
+  | ExprIfMatch of pattern * ty option * expr * expr * expr
+  | ExprWhileMatch of pattern * ty option * expr * expr
+  | ExprWhenMatch of pattern * ty option * expr * expr
   (* statements *)
   | ExprLet of pattern * ty option * mode * expr
-  | ExprSet of { lval : expr; rval : expr }
+  | ExprSet of expr * expr
   | ExprContinue
   | ExprBreak of string option * expr option
   | ExprReturn of expr option

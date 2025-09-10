@@ -63,16 +63,10 @@
 
 %%
 
-let main :=
-  ~ = file ; Eof ; <>
-
-let file :=
-  ~ = toplevel* ; <>
+let main := ~ = toplevel* ; Eof ; <>
 
 let toplevel :=
-  ~ = top_all
-  ; ";"
-  ; <>
+  ~ = terminated(top_all, ";") ; <>
 
 let top_all :=
   ~ = function_definition ; <>
@@ -85,76 +79,79 @@ let top_all :=
 
 let mod_definition :=
   "mod"
-  ; name = "identifier"
-  ; args = preceded("!", parameter_list(mod_arg))?
-  ; signature = preceded(":", sig_expr)?
-  ; "="
-  ; value = mod_expr
-  ; { let args = Option.value ~default:[] args in
-      Ast.TopModDefinition { name ; args ; signature ; value }}
+; name = "identifier"
+; args = preceded("!", parameter_list(mod_arg))?
+; signature = preceded(":", sig_expr)?
+; "="
+; value = mod_expr
+; { let args = Option.value ~default:[] args in
+    Ast.TopModDefinition { name ; args ; signature ; value }}
 
 | "mod" ; "type"
-  ; name = "identifier"
-  ; args = preceded("!", parameter_list(mod_arg))?
-  ; "="
-  ; value = mod_expr
-  ; { let args = Option.value ~default:[] args in
-      Ast.TopSigDefinition { name ; args ; value }}
+; name = "identifier"
+; args = preceded("!", parameter_list(mod_arg))?
+; "="
+; value = mod_expr
+; { let args = Option.value ~default:[] args in
+    Ast.TopSigDefinition { name ; args ; value }}
 
 let mod_arg :=
   name = "identifier"
-  ; ty = preceded(":", sig_expr)?
-  ; { Ast.ModArgModule { name ; ty }}
+; ty = preceded(":", sig_expr)?
+; { Ast.ModArgModule { name ; ty }}
+
 | "type" ; ~ = path ; <Ast.ModArgTy>
 
 let sig_expr :=
   joins = separated_nonempty_list("&", path)
-  ; { match joins with
-      | p :: [] -> Ast.SigNamed p
-      | js      -> Ast.SigJoin js }
+; { match joins with
+    | p :: [] -> Ast.SigNamed p
+    | js      -> Ast.SigJoin js }
 
 let mod_expr :=
-  "("
-  ; body = toplevel*
-  ; ")"
-  ; <Ast.ModBody>
-| ~ = path ; <Ast.ModPath>
+  ~ = delimited("(", toplevel*, ")")
+; <Ast.ModBody>
+
+| ~ = path
+; <Ast.ModPath>
 
 let top_with :=
   "with"
-  ; imports = boption("import")
-  ; path = import_path
-  ; { Ast.TopWith { imports ; path } }
+; imports = boption("import")
+; path = import_path
+; { Ast.TopWith { imports ; path } }
 
 let import_path :=
   top = "identifier"
-  ; sub = preceded(".", import_path)?
-  ; { match sub with
-      | Some sub -> Ast.ImportMember (top ,sub)
-      | None -> Ast.ImportAtom top }
+; sub = preceded(".", import_path)?
+; { match sub with
+    | Some sub -> Ast.ImportMember (top ,sub)
+    | None -> Ast.ImportAtom top }
+
 | "("
-  ; ~ = separated_list(",", import_path)
-  ; ")"
-  ; <Ast.ImportMultiple>
+; ~ = separated_list(",", import_path)
+; ")"
+; <Ast.ImportMultiple>
 
 let extern :=
   "extern"
-  ; abi = "string"?
-  ; "fn"
-  ; name = "identifier"
-  ; parameters = parameter_list(fn_par)
-  ; ty = preceded(":", ty)?
-  ; { Ast.TopExtern { abi ; name ; parameters ; ty } }
+; abi = "string"?
+; "fn"
+; name = "identifier"
+; parameters = parameter_list(fn_par)
+; ty = preceded(":", ty)?
+; { Ast.TopExtern { abi ; name ; parameters ; ty } }
 
 let type_definition :=
   "type"
-  ; name = "identifier"
-  ; "="
-  ; ty = ty_all
-  ; { Ast.TopTypeDefinition { name ; ty } }
+; name = "identifier"
+; "="
+; ty = ty_all
+; { Ast.TopTypeDefinition { name ; ty } }
+
 | "type"
-  ; name = "identifier"
-  ; <Ast.TopTypeAbstract>
+; ~ = "identifier"
+; <Ast.TopTypeAbstract>
 
 let ty_all :=
   ~ = ty        ; <>
@@ -164,38 +161,39 @@ let ty_all :=
 
 let enum_ty :=
   "enum"
-  ; ~ = separated_list(",", enum_member)
-  ; <Ast.TyEnum>
+; ~ = separated_list(",", enum_member)
+; <Ast.TyEnum>
 
 let enum_member :=
   name = "identifier"
-  ; args = delimited(
-    "(",
-    separated_list(",", ty),
-    ")"
-  )?
-  ; <Ast.EnumMember>
+; args = delimited(
+  "(",
+  separated_list(",", ty),
+  ")"
+)?
+; <Ast.EnumMember>
 
 let struct_ty :=
   "struct"
-  ; ~ = separated_list(",", struct_member)
-  ; <Ast.TyStruct>
+; ~ = separated_list(",", struct_member)
+; <Ast.TyStruct>
 
 let union_ty :=
   "union"
-  ; ~ = separated_list(",", struct_member)
-  ; <Ast.TyUnion>
+; ~ = separated_list(",", struct_member)
+; <Ast.TyUnion>
 
 let struct_member :=
-  ~ = "identifier" ; ":" ; ~ = ty
-  ; <Ast.StructMember>
+  ~ = "identifier"
+; ~ = preceded(":", ty)
+; <Ast.StructMember>
 
 let constant_definition :=
   "const"
-  ; name = "identifier"
-  ; ty = preceded(":", ty)
-  ; value = preceded("=", expression)
-  ; { Ast.TopConstDefinition { name ; ty ; value } }
+; name = "identifier"
+; ty = preceded(":", ty)
+; value = preceded("=", expression)
+; { Ast.TopConstDefinition { name ; ty ; value } }
 
 let yields :=
   "if"    ; {Ast.YieldIf}
@@ -204,121 +202,127 @@ let yields :=
 
 let function_definition :=
   unsafep = boption("unsafe")
-  ; "fn"
-  ; name = fn_name
-  ; parameters = parameter_list2(fn_par, key_fn_par)
-  ; ty = preceded(":", ty)?
-  ; value = preceded("=", expr_all)?
-  ; { let (pos_parameters, key_parameters) = parameters in
-      Ast.TopFnDefinition {
-        unsafep ;
-        name ;
-        pos_parameters ;
-        key_parameters ;
-        ty ;
-        value } }
+; "fn"
+; name = fn_name
+; parameters = parameter_list2(fn_par, key_fn_par)
+; ty = preceded(":", ty)?
+; value = preceded("=", expr_all)?
+; { let (pos_parameters, key_parameters) = parameters in
+    Ast.TopFnDefinition {
+      unsafep ;
+      name ;
+      pos_parameters ;
+      key_parameters ;
+      ty ;
+      value } }
 
 let sub_definition :=
   unsafep = boption("unsafe")
-  ; "sub"
-  ; mode = mode
-  ; ~ = yields
-  ; name = fn_name
-  ; parameters = parameter_list2(fn_par, key_fn_par)
-  ; ty = preceded(":", ty)?
-  ; value = preceded("=", expr_all)?
-  ; { let (pos_parameters, key_parameters) = parameters in
-      Ast.TopSubDefinition {
-        unsafep ;
-        yields ;
-        mode ;
-        name ;
-        pos_parameters ;
-        key_parameters ;
-        ty ;
-        value } }
+; "sub"
+; mode = mode
+; ~ = yields
+; name = fn_name
+; parameters = parameter_list2(fn_par, key_fn_par)
+; ty = preceded(":", ty)?
+; value = preceded("=", expr_all)?
+; { let (pos_parameters, key_parameters) = parameters in
+    Ast.TopSubDefinition {
+      unsafep ;
+      yields ;
+      mode ;
+      name ;
+      pos_parameters ;
+      key_parameters ;
+      ty ;
+      value } }
 
 let fn_name :=
-  ~ = "identifier" ; <Ast.FnNamed>
-| "(" ; ~ = operator ; ")" ; <Ast.FnOperator>
+  ~ = "identifier"
+; <Ast.FnNamed>
+
+| ~ = delimited("(", operator, ")")
+; <Ast.FnOperator>
 
 let parameter_list2(par, key_par) :=
   { ([], []) }
 | "|"
-  ; positional = separated_list(",", par)
-  ; keys = preceded(";", separated_list(",", key_par))?
-  ; "|"
-  ; { (positional , Option.value ~default:[] keys) }
+; positional = separated_list(",", par)
+; keys = preceded(";", separated_list(",", key_par))?
+; "|"
+; { (positional , Option.value ~default:[] keys) }
 
 let parameter_list(par) :=
   pars = delimited("|", separated_list(",", par), "|")?
-  ; { Option.value ~default:[] pars }
+; { Option.value ~default:[] pars }
 
 let mode :=
   is_ref = boption("&")
-  ; is_mut = boption("mut")
-  ; <Ast.Mode>
+; is_mut = boption("mut")
+; <Ast.Mode>
 
 let fn_par :=
   ~ = mode
-  ; ~ = "identifier"
-  ; ~ = preceded(":", ty)
-  ; <Ast.Parameter>
+; ~ = "identifier"
+; ~ = preceded(":", ty)
+; <Ast.Parameter>
+
 | "label"
-  ; ~ = "identifier"
-  ; ~ = preceded(":", ty)
-  ; <Ast.ParameterLabel>
+; ~ = "identifier"
+; ~ = preceded(":", ty)
+; <Ast.ParameterLabel>
 
 let key_fn_par :=
   ~ = mode
-  ; ~ = "identifier"
-  ; ~ = preceded("=", expression_nomsg)?
-  ; ~ = preceded(":", ty)
-  ; <Ast.ParameterKey>
+; ~ = "identifier"
+; ~ = preceded("=", expression_nomsg)?
+; ~ = preceded(":", ty)
+; <Ast.ParameterKey>
+
 | "label"
-  ; ~ = "identifier"
-  ; ty = preceded(":", ty)
-  ; <Ast.ParameterLabel>
+; ~ = "identifier"
+; ty = preceded(":", ty)
+; <Ast.ParameterLabel>
 
 let path :=
   path = separated_nonempty_list(".", path_atom)
-  ; { match path with
-      | a :: xs -> List.fold_right (fun a x -> Ast.PathMember (a, x)) xs a
-      | [] -> failwith "unreachable" }
+; { match path with
+    | a :: xs -> List.fold_right (fun a x -> Ast.PathMember (a, x)) xs a
+    | [] -> failwith "unreachable" }
 
 let path_atom :=
   name = "identifier"
-  ; args = preceded(
-    "!",
-    delimited(
-      "(",
-      separated_list(",", path),
-      ")"
-    )
-  )?
-  ; { Option.fold
-      ~none:(Ast.PathAtom name)
-      ~some:(fun a->Ast.PathCall (name, a))
-      args }
+; args = preceded(
+  "!",
+  delimited(
+    "(",
+    separated_list(",", path),
+    ")"
+  )
+)?
+; { Option.fold
+    ~none:(Ast.PathAtom name)
+    ~some:(fun a->Ast.PathCall (name, a))
+    args }
 
 let ty :=
-  ts = delimited(
+  ~ = path           ; <Ast.TyNamed>
+| "[" ; "]" ; ~ = ty ; <Ast.TySlice>
+| "*" ; ~ = ptr_mut ; ~ = ty ; <Ast.TyPointer>
+
+| ~ = delimited("[", "integer", "]")
+; ~ = ty
+; <Ast.TyArray>
+
+| ts = delimited(
     "(",
     separated_list(",", ty),
     ")"
   )
-  ; {
-   match List.length ts with
-   | 0 -> Ast.TyUnit
-   | 1 -> List.hd ts
-   | _ -> Ast.TyTuple ts
-  }
-| ~ = path           ; <Ast.TyNamed>
-| ~ = delimited("[", "integer", "]")
-  ; ~ = ty
-  ; <Ast.TyArray>
-| "[" ; "]" ; ~ = ty ; <Ast.TySlice>
-| "*" ; ~ = ptr_mut ; ~ = ty ; <Ast.TyPointer>
+; {
+  match List.length ts with
+  | 0 -> Ast.TyUnit
+  | 1 -> List.hd ts
+  | _ -> Ast.TyTuple ts }
 
 let ptr_mut :=
   "const" ; {Ast.PtrConst}
@@ -340,43 +344,43 @@ let expr_all :=
 | "continue" ; {Ast.ExprContinue}
 
 | "label"
-  ; name = "identifier"
-  ; ty = preceded(":", ty)?
-  ; tail = expr_all
-  ; <Ast.ExprLabel>
+; ~ = "identifier"
+; ~ = preceded(":", ty)?
+; ~ = expr_all
+; <Ast.ExprLabel>
 
 | "break"
-  ; label = "identifier"?
-  ; value = preceded("with", expr_all)?
-  ; <Ast.ExprBreak>
+; label = "identifier"?
+; value = preceded("with", expr_all)?
+; <Ast.ExprBreak>
 
 | ~ = top_all    ; <Ast.ExprTop>
 
 let match_exp :=
   "match"
-  ; scrutinee = expression_nw
-  ; "with"
-  ; cases = separated_list(",", match_case)
-  ; { Ast.ExprMatch { scrutinee ; cases } }
+; ~ = expression_nw
+; "with"
+; ~ = separated_list(",", match_case)
+; <Ast.ExprMatch>
 
 let match_case :=
-  pat = pattern
-  ; "="
-  ; body = expression
-  ; <Ast.Case>
+  ~ = pattern
+; "="
+; ~ = expression
+; <Ast.Case>
 
 let pattern :=
   name = path
-  ; args = delimited("(", separated_list(",", pattern), ")")?
-  ; { match args with
-      | None -> Ast.PatNamed name
-      | Some args -> Ast.PatArgs (name, args) }
+; args = delimited("(", separated_list(",", pattern), ")")?
+; { match args with
+    | None -> Ast.PatNamed name
+    | Some args -> Ast.PatArgs (name, args) }
 
 let yield_exp :=
   "yield"
-  ; ~ = mode
-  ; ~ = expression
-  ; <Ast.ExprYield>
+; ~ = mode
+; ~ = expression
+; <Ast.ExprYield>
 
 let operator :=
   ~ = "operator" ; <>
@@ -385,123 +389,136 @@ let operator :=
 
 let set_exp :=
   "set"
-  ; lval = expression
-  ; "="
-  ; rval = expression
-  ; { Ast.ExprSet { lval ; rval } }
+; l = expression
+; "="
+; r = expression
+; <Ast.ExprSet>
 
 let if_exp :=
   "if"
-  ; condition = expression
-  ; "then"
-  ; taken = expr_all
-  ; "else"
-  ; not_taken = expr_all
-  ; { Ast.ExprIf { condition ; taken ; not_taken } }
+; ~ = expression
+; "then"
+; t = expr_all
+; "else"
+; f = expr_all
+; <Ast.ExprIf>
+
 | "if"; "let"
-  ; bind = pattern
-  ; ty = preceded(":", ty)?
-  ; value = preceded("=", expression)
-  ; "then"
-  ; taken = expr_all
-  ; "else"
-  ; not_taken = expr_all
-  ; { Ast.ExprIfLet { bind; ty; value ; taken ; not_taken } }
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; ~ = preceded("=", expression)
+; "then"
+; t = expr_all
+; "else"
+; f = expr_all
+; <Ast.ExprIfLet>
+
 | "if"; "match"
-  ; bind = pattern
-  ; ty = preceded(":", ty)?
-  ; value = preceded("=", expression)
-  ; "then"
-  ; taken = expr_all
-  ; "else"
-  ; not_taken = expr_all
-  ; { Ast.ExprIfMatch { bind; ty; value ; taken ; not_taken } }
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; ~ = preceded("=", expression)
+; "then"
+; t = expr_all
+; "else"
+; f = expr_all
+; <Ast.ExprIfMatch>
 
 let while_exp :=
   "while"
-  ; condition = expression
-  ; "do"
-  ; body = expr_all
-  ; { Ast.ExprWhile { condition ; body } }
+; ~ = expression
+; "do"
+; ~ = expr_all
+; <Ast.ExprWhile>
+
 | "while" ; "let"
-  ; bind = pattern
-  ; ty = preceded(":", ty)?
-  ; "="
-  ; value = expression
-  ; "do"
-  ; body = expr_all
-  ; { Ast.ExprWhileLet { bind ; ty ; value ; body } }
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; "="
+; ~ = expression
+; "do"
+; ~ = expr_all
+; <Ast.ExprWhileLet>
+
 | "while" ; "match"
-  ; bind = pattern
-  ; ty = preceded(":", ty)?
-  ; "="
-  ; value = expression
-  ; "do"
-  ; body = expr_all
-  ; { Ast.ExprWhileMatch { bind ; ty ; value ; body } }
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; "="
+; ~ = expression
+; "do"
+; ~ = expr_all
+; <Ast.ExprWhileMatch>
 
 let when_exp :=
   "when"
-  ; condition = expression
-  ; "do"
-  ; taken = expr_all
-  ; { Ast.ExprWhen { condition ; taken } }
+; ~ = expression
+; "do"
+; ~ = expr_all
+; <Ast.ExprWhen>
+
 | "when" ; "let"
-  ; bind = pattern
-  ; ty = preceded(":", ty)?
-  ; "="
-  ; value = expression
-  ; "do"
-  ; body = expr_all
-  ; { Ast.ExprWhenLet { bind ; ty ; value ; body } }
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; "="
+; ~ = expression
+; "do"
+; ~ = expr_all
+; <Ast.ExprWhenLet>
+
 | "when" ; "match"
-  ; bind = pattern
-  ; ty = preceded(":", ty)?
-  ; "="
-  ; value = expression
-  ; "do"
-  ; body = expr_all
-  ; { Ast.ExprWhenMatch { bind ; ty ; value ; body } }
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; "="
+; ~ = expression
+; "do"
+; ~ = expr_all
+; <Ast.ExprWhenMatch>
 
 let expression :=
   left = expression_nw
-  ; args = preceded("with",
-      delimited("(",
-        separated_list(",",key_fn_arg),
-      ")")
-    )?
-  ; { match args with
-      | None -> left
-      | Some args ->
-        let args = args
-          |> List.map (fun (Ast.Argument (k,m,v)) -> (Option.get k, m, v))
-        in Ast.ExprUpdate (left, args) }
+; args = preceded("with",
+    delimited("(",
+      separated_list(",",key_fn_arg),
+    ")")
+  )?
+; { match args with
+    | None -> left
+    | Some args ->
+      let args = args
+        |> List.map (fun (Ast.Argument (k,m,v)) -> (Option.get k, m, v))
+      in Ast.ExprUpdate (left, args) }
 
 let expression_nw :=
-  "unsafe" ; ~ = expression_nw ; <Ast.ExprUnsafe>
+  ~ = msg_exp ; <>
+
+| "unsafe"
+; ~ = expression_nw
+; <Ast.ExprUnsafe>
+
 | ~ = delimited(
     "[",
     separated_list(",", expression),
     "]"
   )
-  ; <Ast.ExprArray>
-| ~ = msg_exp ; <>
+; <Ast.ExprArray>
+
 | "*"
-  ; ~ = ptr_mut
-  ; ~ = expression_nw
-  ; <Ast.ExprAddressof>
+; ~ = ptr_mut
+; ~ = expression_nw
+; <Ast.ExprAddressof>
+
 | "@"
-  ; ~ = mode
-  ; ~ = expression_nw
-  ; <Ast.ExprDeref>
+; ~ = mode
+; ~ = expression_nw
+; <Ast.ExprDeref>
 
 let msg_exp :=
   recv = expression_nomsg
-  ; msgs = message*
-  ; { List.fold_left (fun r m -> Ast.ExprSend { recv = r ; msg = m } ) recv msgs }
+; msgs = message*
+; { List.fold_left (fun r m -> Ast.ExprSend(r,m)) recv msgs }
+
 | ~ = expression_nomsg
-  ; tail = preceded(":", expression_nomsg)
-  ; <Ast.ExprTailArg>
+; ~ = preceded(":", expression_nomsg)
+; <Ast.ExprTailArg>
 
 let expression_nomsg :=
   ~ = primary
@@ -549,9 +566,9 @@ let let_exp :=
 ; <Ast.ExprLet>
 
 let block :=
-  "("
-; items = separated_list(";", expr_all)
-; ")"
+  items = delimited("(",
+    separated_list(";", expr_all),
+  ")")
 ; { match List.length items with
     | 0 -> Ast.ExprUnit
     | 1 -> List.hd items
