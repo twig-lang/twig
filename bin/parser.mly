@@ -91,7 +91,7 @@ let mod_definition :=
   ; "="
   ; value = mod_expr
   ; { let args = Option.value ~default:[] args in
-      Ast.ModDefinition { name ; args ; signature ; value }}
+      Ast.TopModDefinition { name ; args ; signature ; value }}
 
 | "mod" ; "type"
   ; name = "identifier"
@@ -99,7 +99,7 @@ let mod_definition :=
   ; "="
   ; value = mod_expr
   ; { let args = Option.value ~default:[] args in
-      Ast.SigDefinition { name ; args ; value }}
+      Ast.TopSigDefinition { name ; args ; value }}
 
 let mod_arg :=
   name = "identifier"
@@ -124,7 +124,7 @@ let top_with :=
   "with"
   ; imports = boption("import")
   ; path = import_path
-  ; { Ast.ToplevelWith { imports ; path } }
+  ; { Ast.TopWith { imports ; path } }
 
 let import_path :=
   top = "identifier"
@@ -144,17 +144,17 @@ let extern :=
   ; name = "identifier"
   ; parameters = parameter_list(fn_par)
   ; ty = preceded(":", ty)?
-  ; { Ast.Extern { abi ; name ; parameters ; ty } }
+  ; { Ast.TopExtern { abi ; name ; parameters ; ty } }
 
 let type_definition :=
   "type"
   ; name = "identifier"
   ; "="
   ; ty = ty_all
-  ; { Ast.TypeDefinition { name ; ty } }
+  ; { Ast.TopTypeDefinition { name ; ty } }
 | "type"
   ; name = "identifier"
-  ; <Ast.TypeAbstract>
+  ; <Ast.TopTypeAbstract>
 
 let ty_all :=
   ~ = ty        ; <>
@@ -195,7 +195,7 @@ let constant_definition :=
   ; name = "identifier"
   ; ty = preceded(":", ty)
   ; value = preceded("=", expression)
-  ; { Ast.ConstantDefinition { name ; ty ; value } }
+  ; { Ast.TopConstDefinition { name ; ty ; value } }
 
 let yields :=
   "if"    ; {Ast.YieldIf}
@@ -210,7 +210,7 @@ let function_definition :=
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expr_all)?
   ; { let (pos_parameters, key_parameters) = parameters in
-      Ast.FunctionDefinition {
+      Ast.TopFnDefinition {
         unsafep ;
         name ;
         pos_parameters ;
@@ -228,7 +228,7 @@ let sub_definition :=
   ; ty = preceded(":", ty)?
   ; value = preceded("=", expr_all)?
   ; { let (pos_parameters, key_parameters) = parameters in
-      Ast.SubDefinition {
+      Ast.TopSubDefinition {
         unsafep ;
         yields ;
         mode ;
@@ -261,18 +261,24 @@ let mode :=
 
 let fn_par :=
   ~ = mode
-  ; is_label = boption("label")
-  ; name = "identifier"
-  ; ty = preceded(":", ty)
-  ; { FnParameter { is_label; mode; name ; ty ; default = None } }
+  ; ~ = "identifier"
+  ; ~ = preceded(":", ty)
+  ; <Ast.Parameter>
+| "label"
+  ; ~ = "identifier"
+  ; ~ = preceded(":", ty)
+  ; <Ast.ParameterLabel>
 
 let key_fn_par :=
   ~ = mode
-  ; is_label = boption("label")
-  ; name = "identifier"
-  ; default = preceded("=", expression_nomsg)?
+  ; ~ = "identifier"
+  ; ~ = preceded("=", expression_nomsg)?
+  ; ~ = preceded(":", ty)
+  ; <Ast.ParameterKey>
+| "label"
+  ; ~ = "identifier"
   ; ty = preceded(":", ty)
-  ; { FnParameter { is_label; mode; name ; ty ; default } }
+  ; <Ast.ParameterLabel>
 
 let path :=
   path = separated_nonempty_list(".", path_atom)
@@ -328,30 +334,30 @@ let expr_all :=
 | ~ = match_exp  ; <>
 | ~ = when_exp   ; <>
 
-| ~ = preceded("return", expr_all?) ; <Ast.Return>
-| ~ = preceded("loop", expr_all) ; <Ast.Loop>
+| ~ = preceded("return", expr_all?) ; <Ast.ExprReturn>
+| ~ = preceded("loop", expr_all) ; <Ast.ExprLoop>
 
-| "continue" ; {Ast.Continue}
+| "continue" ; {Ast.ExprContinue}
 
 | "label"
   ; name = "identifier"
   ; ty = preceded(":", ty)?
   ; tail = expr_all
-  ; <Ast.Label>
+  ; <Ast.ExprLabel>
 
 | "break"
   ; label = "identifier"?
   ; value = preceded("with", expr_all)?
-  ; <Ast.Break>
+  ; <Ast.ExprBreak>
 
-| ~ = top_all    ; <Ast.Top>
+| ~ = top_all    ; <Ast.ExprTop>
 
 let match_exp :=
   "match"
   ; scrutinee = expression_nw
   ; "with"
   ; cases = separated_list(",", match_case)
-  ; { Ast.Match { scrutinee ; cases } }
+  ; { Ast.ExprMatch { scrutinee ; cases } }
 
 let match_case :=
   pat = pattern
@@ -370,7 +376,7 @@ let yield_exp :=
   "yield"
   ; ~ = mode
   ; ~ = expression
-  ; <Ast.Yield>
+  ; <Ast.ExprYield>
 
 let operator :=
   ~ = "operator" ; <>
@@ -382,7 +388,7 @@ let set_exp :=
   ; lval = expression
   ; "="
   ; rval = expression
-  ; { Ast.Set { lval ; rval } }
+  ; { Ast.ExprSet { lval ; rval } }
 
 let if_exp :=
   "if"
@@ -391,7 +397,7 @@ let if_exp :=
   ; taken = expr_all
   ; "else"
   ; not_taken = expr_all
-  ; { Ast.If { condition ; taken ; not_taken } }
+  ; { Ast.ExprIf { condition ; taken ; not_taken } }
 | "if"; "let"
   ; bind = pattern
   ; ty = preceded(":", ty)?
@@ -400,7 +406,7 @@ let if_exp :=
   ; taken = expr_all
   ; "else"
   ; not_taken = expr_all
-  ; { Ast.IfLet { bind; ty; value ; taken ; not_taken } }
+  ; { Ast.ExprIfLet { bind; ty; value ; taken ; not_taken } }
 | "if"; "match"
   ; bind = pattern
   ; ty = preceded(":", ty)?
@@ -409,14 +415,14 @@ let if_exp :=
   ; taken = expr_all
   ; "else"
   ; not_taken = expr_all
-  ; { Ast.IfLet { bind; ty; value ; taken ; not_taken } }
+  ; { Ast.ExprIfMatch { bind; ty; value ; taken ; not_taken } }
 
 let while_exp :=
   "while"
   ; condition = expression
   ; "do"
   ; body = expr_all
-  ; { Ast.While { condition ; body } }
+  ; { Ast.ExprWhile { condition ; body } }
 | "while" ; "let"
   ; bind = pattern
   ; ty = preceded(":", ty)?
@@ -424,7 +430,7 @@ let while_exp :=
   ; value = expression
   ; "do"
   ; body = expr_all
-  ; { Ast.WhileLet { bind ; ty ; value ; body } }
+  ; { Ast.ExprWhileLet { bind ; ty ; value ; body } }
 | "while" ; "match"
   ; bind = pattern
   ; ty = preceded(":", ty)?
@@ -432,14 +438,14 @@ let while_exp :=
   ; value = expression
   ; "do"
   ; body = expr_all
-  ; { Ast.WhileMatch { bind ; ty ; value ; body } }
+  ; { Ast.ExprWhileMatch { bind ; ty ; value ; body } }
 
 let when_exp :=
   "when"
   ; condition = expression
   ; "do"
   ; taken = expr_all
-  ; { Ast.When { condition ; taken } }
+  ; { Ast.ExprWhen { condition ; taken } }
 | "when" ; "let"
   ; bind = pattern
   ; ty = preceded(":", ty)?
@@ -447,7 +453,7 @@ let when_exp :=
   ; value = expression
   ; "do"
   ; body = expr_all
-  ; { Ast.WhenLet { bind ; ty ; value ; body } }
+  ; { Ast.ExprWhenLet { bind ; ty ; value ; body } }
 | "when" ; "match"
   ; bind = pattern
   ; ty = preceded(":", ty)?
@@ -455,7 +461,7 @@ let when_exp :=
   ; value = expression
   ; "do"
   ; body = expr_all
-  ; { Ast.WhenLet { bind ; ty ; value ; body } }
+  ; { Ast.ExprWhenMatch { bind ; ty ; value ; body } }
 
 let expression :=
   left = expression_nw
@@ -468,123 +474,136 @@ let expression :=
       | None -> left
       | Some args ->
         let args = args
-          |> List.map (fun (Ast.FnArgument (k,m,v)) -> (Option.get k, m, v))
-        in Ast.Update (left, args) }
+          |> List.map (fun (Ast.Argument (k,m,v)) -> (Option.get k, m, v))
+        in Ast.ExprUpdate (left, args) }
 
 let expression_nw :=
-  "unsafe" ; ~ = expression_nw ; <Ast.Unsafe>
+  "unsafe" ; ~ = expression_nw ; <Ast.ExprUnsafe>
 | ~ = delimited(
     "[",
     separated_list(",", expression),
     "]"
   )
-  ; <Ast.ArrayLit>
+  ; <Ast.ExprArray>
 | ~ = msg_exp ; <>
 | "*"
   ; ~ = ptr_mut
   ; ~ = expression_nw
-  ; <Ast.Addressof>
+  ; <Ast.ExprAddressof>
 | "@"
   ; ~ = mode
   ; ~ = expression_nw
-  ; <Ast.Deref>
+  ; <Ast.ExprDeref>
 
 let msg_exp :=
   recv = expression_nomsg
   ; msgs = message*
-  ; { List.fold_left (fun r m -> Ast.Send { recv = r ; msg = m } ) recv msgs }
+  ; { List.fold_left (fun r m -> Ast.ExprSend { recv = r ; msg = m } ) recv msgs }
 | ~ = expression_nomsg
   ; tail = preceded(":", expression_nomsg)
-  ; <Ast.TailArg>
+  ; <Ast.ExprTailArg>
 
 let expression_nomsg :=
-  ~ = primary ; <>
-| callee = expression_nomsg
-  ; args = delimited("(", arglist ,")")
-  ; { Ast.FnCall { callee ; args } }
-| callee = expression_nomsg
-  ; args = delimited("[", arglist ,"]")
-  ; { Ast.FnCall { callee ; args } }
+  ~ = primary
+; <>
+
 | ~ = expression_nomsg
-  ; "as"
-  ; ~ = ty
-  ; <Ast.Cast>
+; ~ = delimited("(", arglist ,")")
+; <Ast.ExprCall>
+
+| ~ = expression_nomsg
+; ~ = delimited("[", arglist ,"]")
+; <Ast.ExprSubCall>
+
+| ~ = expression_nomsg
+; "as"
+; ~ = ty
+; <Ast.ExprCast>
 
 let arglist :=
-  ~ = separated_list(",", fn_arg) ; <>
+  ~ = separated_list(",", fn_arg)
+; <>
+
 | positional = separated_list(",", fn_arg)
-  ; ";"
-  ; keys = separated_list(",", key_fn_arg)
-  ; { List.append positional keys }
+; ";"
+; keys = separated_list(",", key_fn_arg)
+; { List.append positional keys }
 
 let primary :=
-  ~ = path      ; <Ast.Variable>
+  ~ = path      ; <Ast.ExprVariable>
 | ~ = block     ; <>
-| ~ = "integer" ; <Ast.Integer>
-| s = "string"+ ; {Ast.String (String.concat "" s)}
-| ~ = "char"    ; <Ast.Char>
-| ~ = "real"    ; <Ast.Real>
-| "true"        ; {Ast.Bool true}
-| "false"       ; {Ast.Bool false}
+| ~ = "integer" ; <Ast.ExprInteger>
+| s = "string"+ ; {Ast.ExprString (String.concat "" s)}
+| ~ = "char"    ; <Ast.ExprChar>
+| ~ = "real"    ; <Ast.ExprReal>
+| "true"        ; {Ast.ExprBool true}
+| "false"       ; {Ast.ExprBool false}
 
 let let_exp :=
   "let"
-  ; bind = pattern
-  ; ty = preceded(":", ty)?
-  ; "="
-  ; ~ = mode
-  ; value = expression
-  ; { Ast.Let { bind ; ty ; mode ; value } }
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; "="
+; ~ = mode
+; ~ = expression
+; <Ast.ExprLet>
 
 let block :=
   "("
-  ; items = separated_list(";", expr_all)
-  ; ")"
-  ; { match List.length items with
-      | 0 -> Ast.Unit
-      | 1 -> List.hd items
-      | _ -> Ast.Block items }
+; items = separated_list(";", expr_all)
+; ")"
+; { match List.length items with
+    | 0 -> Ast.ExprUnit
+    | 1 -> List.hd items
+    | _ -> Ast.ExprBlock items }
 
 let message :=
   ~ = call_message ; <>
 | ~ = op_message ; <>
 
 let mode_exp :=
-  mode = mode
-  ; value = expression_nomsg
-  ; <>
+  ~ = mode
+; ~ = expression_nomsg
+; <>
 
 let op_message :=
-  name = operator
-  ; arg = mode_exp
-  ; <Ast.MsgOp>
+  ~ = operator
+; ~ = mode_exp
+; <Ast.MsgOp>
 
 let call_message :=
-  name = path
-  ; args = delimited("(", arglist ,")")
-  ; tail = preceded(":", mode_exp)?
-  ; <Ast.MsgFn>
+  ~ = path
+; ~ = delimited("(", arglist ,")")
+; ~ = preceded(":", mode_exp)?
+; <Ast.MsgFn>
+
+| ~ = path
+; ~ = delimited("[", arglist ,"]")
+; ~ = preceded(":", mode_exp)?
+; <Ast.MsgSub>
+
 | name = path
-  ; args = delimited("[", arglist ,"]")
-  ; tail = preceded(":", mode_exp)?
-  ; <Ast.MsgSub>
-| name = path
-  ; tail = preceded(":", mode_exp)?
-  ; <Ast.MsgMember>
+; tail = preceded(":", mode_exp)?
+; <Ast.MsgMember>
+
+let some(x) == ~ = x ; <Some>
+let none == {None}
 
 let fn_arg :=
-  mode = mode
-  ; value = expression
-  ; {Ast.FnArgument (None, mode ,value) }
+  ~ = none
+; ~ = mode
+; ~ = expression
+; <Ast.Argument>
 
 let key_fn_arg :=
-  key = terminated("identifier", ":")
-  ; mode = mode
-  ; value = expression
-  ; { Ast.FnArgument (Some key, mode, value) }
+  ~ = some(terminated("identifier", ":"))
+; ~ = mode
+; ~ = expression
+; <Ast.Argument>
+
 | name = "identifier"
-  ; mode = mode
-  ; { Ast.FnArgument (
-        Some name,
-        mode,
-        Ast.(Variable (PathAtom name))) }
+; mode = mode
+; { Ast.Argument (
+      Some name,
+      mode,
+      Ast.(ExprVariable (PathAtom name))) }

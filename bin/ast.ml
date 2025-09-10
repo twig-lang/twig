@@ -37,14 +37,14 @@ and ty =
   | TyPointer of ptr_mut * ty
   | TyLambda of lambda_kind * anon_par list * ty option
 
-and fn_arg = FnArgument of string option * mode * expr
+and argument = Argument of string option * mode * expr
 (* key, mode, value *)
 
 and message =
   | MsgMember of path * (mode * expr) option (* recv path [: tail] *)
-  | MsgFn of path * fn_arg list * (mode * expr) option
+  | MsgFn of path * argument list * (mode * expr) option
     (* recv path(...) [: tail] *)
-  | MsgSub of path * fn_arg list * (mode * expr) option
+  | MsgSub of path * argument list * (mode * expr) option
     (* recv path[...] [: tail] *)
   | MsgOp of string * (mode * expr)
 (* recv op arg *)
@@ -58,109 +58,126 @@ and case = Case of pattern * expr
 and modexpr = ModBody of toplevel list | ModPath of path
 and sigexpr = SigNamed of path | SigJoin of path list
 
-and mod_arg =
+and module_argument =
   | ModArgModule of { name : string; ty : sigexpr option }
   | ModArgTy of path
 
 and expr =
-  | Variable of path
-  | Integer of int
-  | Real of float
-  | Char of Uchar.t
-  | Unit
-  | Bool of bool
-  | Block of expr list
-  (* expr : expr *)
-  | TailArg of expr * expr
-  (* NOTE: typed as () *)
-  | Let of { bind : pattern; ty : ty option; mode : mode; value : expr }
-  (* callee (args...) *)
-  | FnCall of { callee : expr; args : fn_arg list }
-  (* callee [args...] *)
-  | SubCall of { callee : expr; args : fn_arg list }
-  (* expr message* *)
-  | Send of { recv : expr; msg : message }
-  | If of { condition : expr; taken : expr; not_taken : expr }
-  | When of { condition : expr; taken : expr }
-  | Set of { lval : expr; rval : expr }
-  | While of { condition : expr; body : expr }
-  | Unsafe of expr
-  | Yield of mode * expr
-  | ArrayLit of expr list
-  | Cast of expr * ty
-  | String of string
-  | Match of { scrutinee : expr; cases : case list }
-  | Addressof of ptr_mut * expr
-  | Deref of mode * expr
-  | Top of toplevel
-  | Update of expr * (string * mode * expr) list
-  | Label of string * ty option * expr
-  | Continue
-  | Break of string option * expr option
-  | Return of expr option
-  | Loop of expr
-  | IfLet of {
+  (* literals and variables *)
+  | ExprVariable of path
+  | ExprInteger of int
+  | ExprReal of float
+  | ExprChar of Uchar.t
+  | ExprUnit
+  | ExprBool of bool
+  | ExprString of string
+  | ExprArray of expr list
+  (* method calls *)
+  | ExprTailArg of expr * expr
+  | ExprCall of expr * argument list
+  | ExprSubCall of expr * argument list
+  | ExprSend of { recv : expr; msg : message }
+  (* control flow *)
+  | ExprUnsafe of expr
+  | ExprBlock of expr list
+  | ExprIf of { condition : expr; taken : expr; not_taken : expr }
+  | ExprWhen of { condition : expr; taken : expr }
+  | ExprWhile of { condition : expr; body : expr }
+  | ExprMatch of { scrutinee : expr; cases : case list }
+  | ExprLabel of string * ty option * expr
+  | ExprLoop of expr
+  (* if/while/when let *)
+  | ExprIfLet of {
       bind : pattern;
       ty : ty option;
       value : expr;
       taken : expr;
       not_taken : expr;
     }
-  | WhileLet of { bind : pattern; ty : ty option; value : expr; body : expr }
-  | WhenLet of { bind : pattern; ty : ty option; value : expr; body : expr }
-  | IfMatch of {
+  | ExprWhileLet of {
+      bind : pattern;
+      ty : ty option;
+      value : expr;
+      body : expr;
+    }
+  | ExprWhenLet of { bind : pattern; ty : ty option; value : expr; body : expr }
+  (* if/while/when match *)
+  | ExprIfMatch of {
       bind : pattern;
       ty : ty option;
       value : expr;
       taken : expr;
       not_taken : expr;
     }
-  | WhileMatch of { bind : pattern; ty : ty option; value : expr; body : expr }
-  | WhenMatch of { bind : pattern; ty : ty option; value : expr; body : expr }
+  | ExprWhileMatch of {
+      bind : pattern;
+      ty : ty option;
+      value : expr;
+      body : expr;
+    }
+  | ExprWhenMatch of {
+      bind : pattern;
+      ty : ty option;
+      value : expr;
+      body : expr;
+    }
+  (* statements *)
+  | ExprLet of pattern * ty option * mode * expr
+  | ExprSet of { lval : expr; rval : expr }
+  | ExprContinue
+  | ExprBreak of string option * expr option
+  | ExprReturn of expr option
+  | ExprYield of mode * expr
+  (* others *)
+  | ExprCast of expr * ty
+  | ExprAddressof of ptr_mut * expr
+  | ExprDeref of mode * expr
+  | ExprUpdate of expr * (string * mode * expr) list
+  | ExprTop of toplevel
 
-and fn_parameter =
-  | FnParameter of {
-      is_label : bool;
-      mode : mode;
-      name : string;
-      ty : ty;
-      default : expr option;
-    }
+and parameter =
+  | Parameter of mode * string * ty
+  | ParameterLabel of string * ty
+  | ParameterKey of mode * string * expr option * ty
 
 and toplevel =
-  | FunctionDefinition of {
+  | TopFnDefinition of {
       unsafep : bool;
       name : fn_name;
-      pos_parameters : fn_parameter list;
-      key_parameters : fn_parameter list;
+      pos_parameters : parameter list;
+      key_parameters : parameter list;
       ty : ty option;
       value : expr option;
     }
-  | SubDefinition of {
+  | TopSubDefinition of {
       unsafep : bool;
       yields : yields;
       mode : mode;
       name : fn_name;
-      pos_parameters : fn_parameter list;
-      key_parameters : fn_parameter list;
+      pos_parameters : parameter list;
+      key_parameters : parameter list;
       ty : ty option;
       value : expr option;
     }
-  | ConstantDefinition of { name : string; ty : ty; value : expr }
-  | TypeDefinition of { name : string; ty : ty }
-  | TypeAbstract of string
-  | Extern of {
+  | TopConstDefinition of { name : string; ty : ty; value : expr }
+  | TopTypeDefinition of { name : string; ty : ty }
+  | TopTypeAbstract of string
+  | TopExtern of {
       abi : string option;
       name : string;
-      parameters : fn_parameter list;
+      parameters : parameter list;
       ty : ty option;
     }
-  | ToplevelWith of { imports : bool; path : import_path }
-  | Import of import_path
-  | ModDefinition of {
+  | TopWith of { imports : bool; path : import_path }
+  | TopImport of import_path
+  | TopModDefinition of {
       name : string;
       signature : sigexpr option;
-      args : mod_arg list;
+      args : module_argument list;
       value : modexpr;
     }
-  | SigDefinition of { name : string; args : mod_arg list; value : modexpr }
+  | TopSigDefinition of {
+      name : string;
+      args : module_argument list;
+      value : modexpr;
+    }
