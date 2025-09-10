@@ -1,5 +1,6 @@
 (menhir
- (modules parser))
+ (modules p_toplevel p_expression parser)
+ (merge_into parser))
 
 (executable
  (public_name twig)
