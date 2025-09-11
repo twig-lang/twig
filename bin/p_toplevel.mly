@@ -102,3 +102,22 @@ let mod_definition :=
 ; value = mod_expr
 ; { let args = Option.value ~default:[] args in
     Ast.TopSigDefinition { name ; args ; value }}
+
+let import_path :=
+  top = "identifier"
+; sub = preceded(".", import_path)?
+; { match sub with
+    | Some sub -> Ast.ImportMember (top ,sub)
+    | None -> Ast.ImportAtom top }
+
+| "("
+; ~ = separated_list(",", import_path)
+; ")"
+; <Ast.ImportMultiple>
+
+let fn_name :=
+  ~ = "identifier"
+; <Ast.FnNamed>
+
+| ~ = delimited("(", operator, ")")
+; <Ast.FnOperator>
