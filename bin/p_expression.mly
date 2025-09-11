@@ -30,7 +30,10 @@ let expr_all :=
 ; value = preceded("with", expr_all)?
 ; <Ast.ExprBreak>
 
+/*
+// TODO: Handle toplevel statements in blocks.
 | ~ = top_all    ; <Ast.ExprTop>
+*/
 
 let match_exp :=
   "match"
@@ -197,8 +200,7 @@ let msg_exp :=
    nor message sends. */
 %public
 let expression_nomsg :=
-  ~ = primary
-; <>
+  ~ = primary ; <>
 
 | ~ = expression_nomsg
 ; ~ = delimited("(", arglist ,")")
@@ -227,12 +229,26 @@ let arglist :=
 let primary :=
   ~ = path      ; <Ast.ExprVariable>
 | ~ = block     ; <>
+| ~ = anon_fn   ; <>
 | ~ = "integer" ; <Ast.ExprInteger>
 | s = "string"+ ; {Ast.ExprString (String.concat "" s)}
 | ~ = "char"    ; <Ast.ExprChar>
 | ~ = "real"    ; <Ast.ExprReal>
 | "true"        ; {Ast.ExprBool true}
 | "false"       ; {Ast.ExprBool false}
+
+let anon_fn :=
+  ~ = lambda_fn_kind
+; ~ = parameter_list2("(", fn_par, key_fn_par, ")")
+; ~ = preceded("->", ty)?
+; ~ = preceded("=", primary)
+; <Ast.ExprLambda>
+
+| ~ = lambda_sub_kind
+; ~ = parameter_list2("[", fn_par, key_fn_par, "]")
+; ~ = preceded("->", ty)?
+; ~ = preceded("=", primary)
+; <Ast.ExprLambda>
 
 let let_exp :=
   "let"

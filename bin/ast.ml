@@ -72,6 +72,8 @@ and expr =
   | ExprBool of bool
   | ExprString of string
   | ExprArray of expr list
+  | ExprLambda of
+      lambda_kind * (parameter list * parameter list) * ty option * expr
   (* method calls *)
   | ExprTailArg of expr * expr
   | ExprCall of expr * argument list

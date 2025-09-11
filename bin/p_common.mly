@@ -96,3 +96,15 @@ let operator :=
   ~ = "operator" ; <>
 | "*"            ; {"*"}
 | "|"            ; {"|"}
+
+/* Anonymous function kinds. */
+%public
+let lambda_fn_kind :=
+  "fn"        ; {Ast.LamFunction}
+| "fn" ; "*"  ; {Ast.LamFunctionPointer}
+
+/* Anonymous subscript kinds. */
+%public
+let lambda_sub_kind :=
+  "sub"       ; {Ast.LamSubscript}
+| "sub" ; "*" ; {Ast.LamSubscriptPointer}

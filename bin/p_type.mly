@@ -62,14 +62,6 @@ let ty :=
   | 1 -> List.hd ts
   | _ -> Ast.TyTuple ts }
 
-let lambda_fn_kind :=
-  "fn"        ; {Ast.LamFunction}
-| "fn" ; "*"  ; {Ast.LamFunctionPointer}
-
-let lambda_sub_kind :=
-  "sub"       ; {Ast.LamSubscript}
-| "sub" ; "*" ; {Ast.LamSubscriptPointer}
-
 let lambda_par :=
   ~ = boption("label")
 ; ~ = mode
