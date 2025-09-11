@@ -1,10 +1,10 @@
-sub& sub_ref | x: i64 | : i64 =
+sub& sub_ref |x: i64| -> i64 =
   yield &x;
 
-sub&mut sub_refmut | mut x: i64 | : i64 =
+sub&mut sub_refmut |mut x: i64| -> i64 =
   yield &mut x;
 
-sub sub_value | x: i64 | : i64 =
+sub sub_value |x: i64| -> i64 =
   yield x;
 
 fn main = (

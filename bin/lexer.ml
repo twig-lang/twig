@@ -48,6 +48,7 @@ let operators =
       (";", Semicolon);
       ("|", Bar);
       ("!", Bang);
+      ("->", Arrow);
     ]
   |> List.to_seq |> Hashtbl.of_seq
 

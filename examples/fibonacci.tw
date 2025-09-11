@@ -1,4 +1,4 @@
-fn fib_iter | mut x: u64 | : u64 = (
+fn fib_iter |mut x: u64| -> u64 = (
   let a = mut 1;
   let b = mut 0;
   let c = mut 0;
@@ -13,7 +13,7 @@ fn fib_iter | mut x: u64 | : u64 = (
   a
 );
 
-fn fib_rec | x: u64 | : u64 =
+fn fib_rec |x: u64| -> u64 =
  if x < 2
   then x
   else fib_rec(x - 1) + fib_rec(x - 2);

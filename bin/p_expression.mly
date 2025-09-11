@@ -194,6 +194,11 @@ let msg_exp :=
 ; ~ = preceded(":", expression_nomsg)
 ; <Ast.ExprTailArg>
 
+| ~ = expression_nomsg
+; "as"
+; ~ = ty
+; <Ast.ExprCast>
+
 /* Expressions not including `with`, trailing arguments,
    nor message sends. */
 %public
@@ -209,11 +214,6 @@ let expression_nomsg :=
 ; ~ = delimited("[", arglist ,"]")
 ; <Ast.ExprSubCall>
 
-| ~ = expression_nomsg
-; "as"
-; ~ = ty
-; <Ast.ExprCast>
-
 let arglist :=
   ~ = separated_list(",", fn_arg)
 ; <>
@@ -223,6 +223,8 @@ let arglist :=
 ; keys = separated_list(",", key_fn_arg)
 ; { List.append positional keys }
 
+/* A "primitive" expression. */
+%public
 let primary :=
   ~ = path      ; <Ast.ExprVariable>
 | ~ = block     ; <>

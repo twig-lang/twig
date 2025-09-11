@@ -2,7 +2,7 @@ type MaybeInt = enum
   None,
   Some(i64);
 
-sub& if unwrap | &opt: MaybeInt | : i64 =
+sub& if unwrap | &opt: MaybeInt | -> i64 =
   match opt with
    Some(x) = (yield x),
    _ = ();

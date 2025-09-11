@@ -2,16 +2,16 @@ mod Pointer! |type T| = (
   type t = *const T;
   type mutable = *mut T;
 
-  fn ref | &from: T | : t =
+  fn ref | &from: T | -> t =
     *const from;
 
-  unsafe sub& deref | self: t | : T =
+  unsafe sub& deref | self: t | -> T =
     yield @ & self;
 
-  fn refmut | &mut from: T | : mutable =
+  fn refmut | &mut from: T | -> mutable =
     *mut from;
 
-  unsafe sub&mut deref_mut | self: mutable | : T =
+  unsafe sub&mut deref_mut | self: mutable | -> T =
     yield @ & mut self;
 
   unsafe fn setptr | self: mutable, by: T | =

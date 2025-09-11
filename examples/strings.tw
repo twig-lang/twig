@@ -1,6 +1,6 @@
 extern "C" fn puts | text: *const u8 | : i32;
 
-fn escapes: str =
+fn escapes -> str =
   "newline: \n"
   "tab: \t"
   "quotes: \""
@@ -22,10 +22,11 @@ world!"
 
 {
 { It doesn't need to be encoded in UTF-8. }
-fn bytes: []u8 =
+fn bytes -> []u8 =
   rb#""Hello, world!","#
   b" said the program\n\0";
 }
+
 fn main = (
   let text = escapes;
   let text_ptr = text as_bytes data;

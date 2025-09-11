@@ -2,17 +2,17 @@ type Pair = struct
  left: i32,
  right: i32;
 
-fn a_struct: Pair =
+fn a_struct -> Pair =
  Pair (;left: 0, right: 1);
 
-fn another_struct: Pair = (
+fn another_struct -> Pair = (
  let left = 0;
  let right = 1;
 
  Pair (;left, right)
 );
 
-fn struct_update: Pair = (
+fn struct_update -> Pair = (
  let left = 1;
  let p = another_struct();
 

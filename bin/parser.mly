@@ -24,6 +24,7 @@
 %token Bar "|"
 %token Star "*"
 %token At "@"
+%token Arrow "->"
 
 %token As "as"
 %token Let "let"

@@ -1,9 +1,9 @@
 mod Thing = (
   type t = i32;
 
-  fn new: t = 0;
+  fn new -> t = 0;
 
-  fn method | self: t | : t = self;
+  fn method |self: t| -> t = self;
 );
 
 fn thing_example =
@@ -12,15 +12,15 @@ fn thing_example =
 mod type HotPotato = (
   type t;
 
-  fn new: t;
-  fn drop | x: t | ;
+  fn new -> t;
+  fn drop |x: t| ;
 );
 
 mod Potato: HotPotato = (
   type t = ();
 
-  fn new: t = ();
-  fn drop | _: t | = ();
+  fn new -> t = ();
+  fn drop |_: t| = ();
 );
 
 mod Game! | P: HotPotato | = (
@@ -37,7 +37,7 @@ mod type GameType! | P: HotPotato | = (
 );
 
 mod Identity! | type T | = (
-  fn f | x: T | : T = x;
+  fn f |x: T| -> T = x;
 );
 
 fn id_f32 | x: f32 | : f32 =

@@ -21,7 +21,7 @@ let fn_definition :=
 ; "fn"
 ; name = fn_name
 ; parameters = parameter_list2(fn_par, key_fn_par)
-; ty = preceded(":", ty)?
+; ty = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let (pos_parameters, key_parameters) = parameters in
     Ast.TopFnDefinition {
@@ -39,7 +39,7 @@ let sub_definition :=
 ; ~ = yields
 ; name = fn_name
 ; parameters = parameter_list2(fn_par, key_fn_par)
-; ty = preceded(":", ty)?
+; ty = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let (pos_parameters, key_parameters) = parameters in
     Ast.TopSubDefinition {
@@ -76,7 +76,7 @@ let extern :=
 ; "fn"
 ; name = "identifier"
 ; parameters = parameter_list(fn_par)
-; ty = preceded(":", ty)?
+; ty = preceded("->", ty)?
 ; { Ast.TopExtern { abi ; name ; parameters ; ty } }
 
 let top_with :=

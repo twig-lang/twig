@@ -42,9 +42,10 @@ let struct_member :=
 /* Regular types. */
 %public
 let ty :=
-  ~ = path           ; <Ast.TyNamed>
-| "[" ; "]" ; ~ = ty ; <Ast.TySlice>
+  ~ = path                   ; <Ast.TyNamed>
+| "[" ; "]" ; ~ = ty         ; <Ast.TySlice>
 | "*" ; ~ = ptr_mut ; ~ = ty ; <Ast.TyPointer>
+| ~ = lambda_ty              ; <>
 
 | ~ = delimited("[", "integer", "]")
 ; ~ = ty
@@ -61,3 +62,20 @@ let ty :=
   | 1 -> List.hd ts
   | _ -> Ast.TyTuple ts }
 
+let lambda_kind :=
+  "fn"        ; {Ast.LamFunction}
+| "fn" ; "*"  ; {Ast.LamFunctionPointer}
+| "sub"       ; {Ast.LamSubscript}
+| "sub" ; "*" ; {Ast.LamSubscriptPointer}
+
+let lambda_par :=
+  ~ = boption("label")
+; ~ = mode
+; ~ = ty
+; <Ast.AnonParameter>
+
+let lambda_ty :=
+  ~ = lambda_kind
+; ~ = parameter_list(lambda_par)
+; ~ = preceded("->", ty)?
+; <Ast.TyLambda>

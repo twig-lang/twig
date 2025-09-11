@@ -23,7 +23,7 @@ type path =
 
 and struct_member = StructMember of string * ty
 and enum_member = EnumMember of string * ty list option
-and anon_par = AnonParameter of bool * mode * ty
+and anon_par = AnonParameter of bool * mode * ty (* label? , mode , type *)
 
 and ty =
   | TyNamed of path

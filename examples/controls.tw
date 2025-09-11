@@ -1,4 +1,4 @@
-fn if_else |control: bool| : u32 =
+fn if_else |control: bool| -> u32 =
  if control then 1 else 2;
 
 fn when_do |c: bool| =
@@ -21,7 +21,7 @@ fn early_return |early: bool| = (
  ()
 );
 
-fn early_return_value |e: bool, value: u32| : u32 = (
+fn early_return_value |e: bool, value: u32| -> u32 = (
  when e do return value;
 
  0
@@ -32,12 +32,12 @@ fn continues =
   continue;
 
 { returns 0 }
-fn break_with_value : u32 =
+fn break_with_value -> u32 =
  label lab loop
   break lab with 0;
 
 { also returns 0 }
-fn also_break_w_value : u32 =
+fn also_break_w_value -> u32 =
  loop
   break with 0;
 
