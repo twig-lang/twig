@@ -62,10 +62,12 @@ let ty :=
   | 1 -> List.hd ts
   | _ -> Ast.TyTuple ts }
 
-let lambda_kind :=
+let lambda_fn_kind :=
   "fn"        ; {Ast.LamFunction}
 | "fn" ; "*"  ; {Ast.LamFunctionPointer}
-| "sub"       ; {Ast.LamSubscript}
+
+let lambda_sub_kind :=
+  "sub"       ; {Ast.LamSubscript}
 | "sub" ; "*" ; {Ast.LamSubscriptPointer}
 
 let lambda_par :=
@@ -75,7 +77,12 @@ let lambda_par :=
 ; <Ast.AnonParameter>
 
 let lambda_ty :=
-  ~ = lambda_kind
-; ~ = parameter_list(lambda_par)
+  ~ = lambda_fn_kind
+; ~ = parameter_list("(", lambda_par, ")")
+; ~ = preceded("->", ty)?
+; <Ast.TyLambda>
+
+| ~ = lambda_sub_kind
+; ~ = parameter_list("[", lambda_par, "]")
 ; ~ = preceded("->", ty)?
 ; <Ast.TyLambda>

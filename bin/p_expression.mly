@@ -21,7 +21,7 @@ let expr_all :=
 
 | "label"
 ; ~ = "identifier"
-; ~ = preceded(":", ty)?
+; ~ = preceded("->", ty)?
 ; ~ = expr_all
 ; <Ast.ExprLabel>
 
@@ -57,7 +57,6 @@ let yield_exp :=
 ; ~ = mode
 ; ~ = expression
 ; <Ast.ExprYield>
-
 
 let set_exp :=
   "set"
@@ -194,11 +193,6 @@ let msg_exp :=
 ; ~ = preceded(":", expression_nomsg)
 ; <Ast.ExprTailArg>
 
-| ~ = expression_nomsg
-; "as"
-; ~ = ty
-; <Ast.ExprCast>
-
 /* Expressions not including `with`, trailing arguments,
    nor message sends. */
 %public
@@ -213,6 +207,11 @@ let expression_nomsg :=
 | ~ = expression_nomsg
 ; ~ = delimited("[", arglist ,"]")
 ; <Ast.ExprSubCall>
+
+| ~ = expression_nomsg
+; "as"
+; ~ = ty
+; <Ast.ExprCast>
 
 let arglist :=
   ~ = separated_list(",", fn_arg)

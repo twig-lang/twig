@@ -1,12 +1,12 @@
-fn unit |a: ()| = ();
+fn unit (a: ()) = ();
 
-fn unit2 |a: (), b: ()| = ();
+fn unit2 (a: (), b: ()) = ();
 
-fn unit_key |a: () ; beta: ()| = ();
+fn unit_key (a: () ; beta: ()) = ();
 
-fn default | ; value = (): () | = ();
+fn default (; value = (): ()) = ();
 
-sub script |x: ()| = x;
+sub script [x: ()] = x;
 
 fn calls = (
  let u = ();

@@ -1,4 +1,4 @@
-fn twice |x: i32| -> i32 =
+fn twice (x: i32) -> i32 =
   2 * x;
 
 fn main = (

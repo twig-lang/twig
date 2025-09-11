@@ -1,25 +1,24 @@
 mod type Mul = (
   type t;
 
-  fn (*) |self: t, other: t| -> t;
+  fn (*) (self: t, other: t) -> t;
 );
 
 mod type Sub = (
   type t;
 
-  fn (-) |self: t, other: t| -> t;
+  fn (-) (self: t, other: t) -> t;
 );
 
-mod type From! |type T| = (
+mod type From! (type T) = (
   type t;
 
-  fn from |x: T| -> t;
+  fn from (x: T) -> t;
 );
 
-mod Lerp! |M: Mul & Sub & From!(f32)| = (
+mod Lerp! (M: Mul & Sub & From!(f32)) = (
   type t = M.t;
 
-  { I'm sure i got this wrong. }
-  fn lerp |control: f32, from: t, to: t| -> t =
+  fn lerp (control: f32, from: t, to: t) -> t =
     (M.from(control) * from) + (M.from(1.0 - control) * t);
 );

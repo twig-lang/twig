@@ -1,4 +1,4 @@
-fn setmut | &mut ref: u64, value: u64 | =
+fn setmut (&mut ref: u64, value: u64) =
   set ref = value;
 
 fn main = (

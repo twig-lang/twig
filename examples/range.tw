@@ -1,4 +1,4 @@
-sub while range | ; mut from: u64, to: u64 | -> u64 =
+sub while range [; mut from: u64, to: u64] -> u64 =
   while from < to do (
     yield from;
     set from = from + 1

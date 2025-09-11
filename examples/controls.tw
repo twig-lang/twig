@@ -1,27 +1,27 @@
-fn if_else |control: bool| -> u32 =
+fn if_else (control: bool) -> u32 =
  if control then 1 else 2;
 
-fn when_do |c: bool| =
+fn when_do (c: bool) =
  when c do
   ();
 
 fn loops =
  loop ();
 
-fn label_loop |breakout: bool| =
+fn label_loop (breakout: bool) =
  label l loop
   when breakout do break l;
 
-fn while_loop |control: bool| =
+fn while_loop (control: bool) =
  while control do ();
 
-fn early_return |early: bool| = (
+fn early_return (early: bool) = (
  when early do return;
 
  ()
 );
 
-fn early_return_value |e: bool, value: u32| -> u32 = (
+fn early_return_value (e: bool, value: u32) -> u32 = (
  when e do return value;
 
  0

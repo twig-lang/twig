@@ -61,19 +61,20 @@ let mode :=
 
 /* A list of parameters */
 %public
-let parameter_list(par) :=
-  pars = delimited("|", separated_list(",", par), "|")?
-; { Option.value ~default:[] pars }
+let parameter_list(left, par, right) :=
+  ~ = delimited(left, separated_list(",", par), right)
+; <>
 
 /* Same as `parameter_list`, but uses ';' to separate between positional and
    named parameters. */
 %public
-let parameter_list2(par, key_par) :=
+let parameter_list2(left, par, key_par, right) :=
   { ([], []) }
-| "|"
+
+| left
 ; positional = separated_list(",", par)
 ; keys = preceded(";", separated_list(",", key_par))?
-; "|"
+; right
 ; { (positional , Option.value ~default:[] keys) }
 
 /* The pointer mutability annotation (*const | *mut) */

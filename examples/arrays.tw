@@ -3,7 +3,7 @@ with import Std.(Iterator, Memory);
 type I32x23 = [23] i32;
 type I32x32 = [32] i32;
 
-fn sum_all | &input: []i32 | -> i32 = (
+fn sum_all (&input: []i32) -> i32 = (
  let result = mut 0;
 
  while let i = input each do
@@ -12,7 +12,7 @@ fn sum_all | &input: []i32 | -> i32 = (
  result
 );
 
-fn populate | &mut output: []i32 | = (
+fn populate (&mut output: []i32) = (
   let value = 0;
 
   while let value = output each_mut do (

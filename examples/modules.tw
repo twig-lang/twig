@@ -3,7 +3,7 @@ mod Thing = (
 
   fn new -> t = 0;
 
-  fn method |self: t| -> t = self;
+  fn method (self: t) -> t = self;
 );
 
 fn thing_example =
@@ -13,17 +13,17 @@ mod type HotPotato = (
   type t;
 
   fn new -> t;
-  fn drop |x: t| ;
+  fn drop (x: t);
 );
 
 mod Potato: HotPotato = (
   type t = ();
 
   fn new -> t = ();
-  fn drop |_: t| = ();
+  fn drop (_: t) = ();
 );
 
-mod Game! | P: HotPotato | = (
+mod Game! (P: HotPotato) = (
   fn play = (
     let potato = P.new;
     potato drop
@@ -32,25 +32,25 @@ mod Game! | P: HotPotato | = (
 
 mod PotatoGame = Game!(Potato);
 
-mod type GameType! | P: HotPotato | = (
+mod type GameType! (P: HotPotato) = (
   fn play;
 );
 
-mod Identity! | type T | = (
-  fn f |x: T| -> T = x;
+mod Identity! (type T) = (
+  fn f (x: T) -> T = x;
 );
 
-fn id_f32 | x: f32 | : f32 =
+fn id_f32 (x: f32) -> f32 =
   Identity!(f32).f(x);
 
 mod type DoesThing = (
   type t;
-  fn thing | &x: t | ;
+  fn thing (&x: t);
 );
 
 mod type DoesAnotherThing = (
   type t;
-  fn another_thing | &x: t | ;
+  fn another_thing (&x: t);
 );
 
-mod ThingDoer! | M: DoesThing & DoesAnotherThing |  = ();
+mod ThingDoer! (M: DoesThing & DoesAnotherThing) = ();

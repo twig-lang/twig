@@ -2,17 +2,17 @@ type Bit = enum
   Set,
   Clear;
 
-fn not |x: Bit| -> Bit =
+fn not (x: Bit) -> Bit =
  match x with
   Set = Clear,
   Clear = Set;
 
-fn and |l: Bit, r: Bit| -> Bit =
+fn and (l: Bit, r: Bit) -> Bit =
  match l with
   Set   = r,
   Clear = Clear;
 
-fn or |l: Bit, r: Bit| -> Bit =
+fn or (l: Bit, r: Bit) -> Bit =
  match l with
   Set   = Set,
   Clear = r;

@@ -2,12 +2,12 @@ type MaybeInt = enum
   None,
   Some(i64);
 
-sub& if unwrap | &opt: MaybeInt | -> i64 =
+sub& if unwrap [&opt: MaybeInt] -> i64 =
   match opt with
    Some(x) = (yield x),
    _ = ();
 
-fn print | x: i64 | = ();
+fn print (x: i64) = ();
 
 fn example = (
   let some = Some(0);

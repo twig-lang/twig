@@ -1,4 +1,4 @@
-extern "C" fn puts | text: *const u8 | : i32;
+extern "C" fn puts (text: *const u8) -> i32;
 
 fn escapes -> str =
   "newline: \n"

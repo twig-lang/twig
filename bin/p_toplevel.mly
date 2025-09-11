@@ -20,7 +20,7 @@ let fn_definition :=
   unsafep = boption("unsafe")
 ; "fn"
 ; name = fn_name
-; parameters = parameter_list2(fn_par, key_fn_par)
+; parameters = parameter_list2("(", fn_par, key_fn_par, ")")
 ; ty = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let (pos_parameters, key_parameters) = parameters in
@@ -38,7 +38,7 @@ let sub_definition :=
 ; mode = mode
 ; ~ = yields
 ; name = fn_name
-; parameters = parameter_list2(fn_par, key_fn_par)
+; parameters = parameter_list2("[", fn_par, key_fn_par, "]")
 ; ty = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let (pos_parameters, key_parameters) = parameters in
@@ -75,7 +75,7 @@ let extern :=
 ; abi = "string"?
 ; "fn"
 ; name = "identifier"
-; parameters = parameter_list(fn_par)
+; parameters = loption(parameter_list("(", fn_par, ")"))
 ; ty = preceded("->", ty)?
 ; { Ast.TopExtern { abi ; name ; parameters ; ty } }
 
@@ -88,7 +88,7 @@ let top_with :=
 let mod_definition :=
   "mod"
 ; name = "identifier"
-; args = preceded("!", parameter_list(mod_arg))?
+; args = preceded("!", parameter_list("(", mod_par, ")"))?
 ; signature = preceded(":", sig_expr)?
 ; "="
 ; value = mod_expr
@@ -97,7 +97,7 @@ let mod_definition :=
 
 | "mod" ; "type"
 ; name = "identifier"
-; args = preceded("!", parameter_list(mod_arg))?
+; args = preceded("!", parameter_list("(", mod_par, ")"))?
 ; "="
 ; value = mod_expr
 ; { let args = Option.value ~default:[] args in

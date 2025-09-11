@@ -4,7 +4,7 @@
 
 /* A module argument. */
 %public
-let mod_arg :=
+let mod_par :=
   name = "identifier"
 ; ty = preceded(":", sig_expr)?
 ; { Ast.ModArgModule { name ; ty }}
