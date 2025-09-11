@@ -2,16 +2,20 @@
 
 %%
 
+let parameter_name :=
+  ~ = "identifier" ; <>
+| "_"              ; {"_"}
+
 /* Function parameters. */
 %public
 let fn_par :=
   ~ = mode
-; ~ = "identifier"
+; ~ = parameter_name
 ; ~ = preceded(":", ty)
 ; <Ast.Parameter>
 
 | "label"
-; ~ = "identifier"
+; ~ = parameter_name
 ; ~ = preceded(":", ty)
 ; <Ast.ParameterLabel>
 
@@ -19,13 +23,13 @@ let fn_par :=
 %public
 let key_fn_par :=
   ~ = mode
-; ~ = "identifier"
+; ~ = parameter_name
 ; ~ = preceded("=", expression_nomsg)?
 ; ~ = preceded(":", ty)
 ; <Ast.ParameterKey>
 
 | "label"
-; ~ = "identifier"
+; ~ = parameter_name
 ; ty = preceded(":", ty)
 ; <Ast.ParameterLabel>
 

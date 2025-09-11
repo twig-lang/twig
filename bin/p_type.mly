@@ -2,6 +2,12 @@
 
 %%
 
+/* Regular types, and an "inference" annotation with _ */
+%public
+let ty_sink :=
+  ~ = ty ; <>
+| "_"    ; {Ast.TySink}
+
 /* Regular types, and types appearing on `type` definitions. */
 %public
 let ty_all :=

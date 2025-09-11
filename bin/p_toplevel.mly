@@ -8,12 +8,16 @@ let toplevel :=
 
 %public
 let top_all :=
+  ~ = top_definition ; <>
+| ~ = extern         ; <>
+| ~ = top_with       ; <>
+
+%public
+let top_definition :=
   ~ = fn_definition    ; <>
 | ~ = sub_definition   ; <>
 | ~ = const_definition ; <>
 | ~ = type_definition  ; <>
-| ~ = extern           ; <>
-| ~ = top_with         ; <>
 | ~ = mod_definition   ; <>
 
 let fn_definition :=

@@ -1,6 +1,7 @@
 let keywords =
   Parser.
     [
+      ("_", Sink);
       ("as", As);
       ("break", Break);
       ("const", Const);

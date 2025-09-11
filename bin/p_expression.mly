@@ -21,7 +21,7 @@ let expr_all :=
 
 | "label"
 ; ~ = "identifier"
-; ~ = preceded("->", ty)?
+; ~ = preceded("->", ty_sink)?
 ; ~ = expr_all
 ; <Ast.ExprLabel>
 
@@ -30,10 +30,18 @@ let expr_all :=
 ; value = preceded("with", expr_all)?
 ; <Ast.ExprBreak>
 
-/*
-// TODO: Handle toplevel statements in blocks.
-| ~ = top_all    ; <Ast.ExprTop>
-*/
+let let_exp :=
+  "let"
+; ~ = pattern
+; ~ = preceded(":", ty)?
+; "="
+; ~ = mode
+; ~ = expression
+; <Ast.ExprLet>
+
+| "let"
+; ~ = top_definition
+; <Ast.ExprTop>
 
 let match_exp :=
   "match"
@@ -54,6 +62,8 @@ let pattern :=
 ; { match args with
     | None -> Ast.PatNamed name
     | Some args -> Ast.PatArgs (name, args) }
+
+| "_" ; {Ast.PatSink}
 
 let yield_exp :=
   "yield"
@@ -249,15 +259,6 @@ let anon_fn :=
 ; ~ = preceded("->", ty)?
 ; ~ = preceded("=", primary)
 ; <Ast.ExprLambda>
-
-let let_exp :=
-  "let"
-; ~ = pattern
-; ~ = preceded(":", ty)?
-; "="
-; ~ = mode
-; ~ = expression
-; <Ast.ExprLet>
 
 let block :=
   items = delimited("(",

@@ -2,6 +2,7 @@
 
 %token Eof "eof"
 
+%token Sink "_"
 %token<string> Identifier "identifier"
 %token<string> Operator "operator"
 %token<int> Integer "integer"

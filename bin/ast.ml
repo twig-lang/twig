@@ -36,6 +36,7 @@ and ty =
   | TySlice of ty
   | TyPointer of ptr_mut * ty
   | TyLambda of lambda_kind * anon_par list * ty option
+  | TySink
 
 and argument = Argument of string option * mode * expr
 (* key, mode, value *)
