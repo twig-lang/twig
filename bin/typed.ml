@@ -27,13 +27,34 @@ type ty =
   | TyArray of int * ty
   | TySlice of ty
   | TyTuple of ty list
+  | TyUnknown of ty ref
 (* Types *)
 
 type expr = EVariable of path
 (* Expressions *)
 
-type t = |
+type env =
+  | Env of {
+      name : string;
+      parent : env option;
+      children : env list;
+      bindings : (unit, unit) Hashtbl.t;
+    }
 
-let from_ast a : t =
-  ignore a;
-  failwith "to be done"
+
+
+let from_ast_toplevel =
+  let open Ast in
+  function
+  | TopImport _i -> failwith "cannot import"
+  | TopWith _w -> ()
+  | TopFnDefinition _f -> ()
+  | TopSubDefinition _s -> ()
+  | TopConstDefinition _c -> ()
+  | TopTypeAbstract _t -> ()
+  | TopTypeDefinition _t -> ()
+  | TopExtern _e -> ()
+  | TopModDefinition _m -> ()
+  | TopSigDefinition _s -> ()
+
+let from_ast_toplevels = List.map from_ast_toplevel
