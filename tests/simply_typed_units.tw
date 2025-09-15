@@ -1,0 +1,10 @@
+{ Checking inference on unit values. }
+
+fn unit = ();
+
+fn let_bind = (
+  let u = ();
+  let u2 : () = u;
+
+  u2
+);

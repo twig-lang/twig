@@ -5,9 +5,35 @@ and path =
   | PathCall of path * path_argument list
   | PathMember of path * string
 
+type ty_primitive =
+  | T_unit
+  | T_bool
+  | T_u8
+  | T_u16
+  | T_u32
+  | T_u64
+  | T_i8
+  | T_i16
+  | T_i32
+  | T_i64
+  | T_f32
+  | T_f64
+(* Built-in, base types *)
+
+(* ty_primitive -> is_signed option *)
+let is_int_ty_primitive = function
+  | T_u8 | T_u16 | T_u32 | T_u64 -> Some false
+  | T_i8 | T_i16 | T_i32 | T_i64 -> Some true
+  | _ -> None
+
+(* ty_primitive -> is_f32 option *)
+let is_real_ty_primitive = function
+  | T_f32 -> Some true
+  | T_f64 -> Some false
+  | _ -> None
+
 type ty =
-  (* TODO: Use something else here *)
-  | TyPrimitive of string
+  | TyPrimitive of ty_primitive
   (* NOTE:
     In theory, the type of integer and real literals unify to a corresponding
     int/float type, OR they otherwise unify to i32/f32 respectively.
@@ -19,6 +45,8 @@ type ty =
   *)
   | TyInteger
   | TyReal
+  (* The ! type. Unifies with any other type. *)
+  | TyBottom
   | TyNamed of path
   | TyPointer of ty
   | TyArray of int * ty
@@ -39,21 +67,26 @@ type expr =
   | EVariable of ty * path
   | EIf of ty * expr * expr * expr
   | EWhen of expr * expr
+  | EReturn of expr
+  (* returned type, non-returned values (of type ()) and returned value *)
+  | EBlock of ty * expr list * expr
 (* Expressions *)
 
-type env =
-  | Env of {
-      name : string;
-      parent : env option;
-      children : env list;
-      bindings : (unit, unit) Hashtbl.t;
-    }
+type mod_item = Function of { name : string; return_type : ty; value : expr }
+
+type mod_env = {
+  parent : mod_env option;
+  bindings : (string, mod_item) Hashtbl.t;
+}
+
+let create_mod_env () = { parent = None; bindings = Hashtbl.create 0 }
+
+let create_sub_mod_env parent =
+  { parent = Some parent; bindings = Hashtbl.create 0 }
 
 (* matches two types, and returns an "unified" type. *)
 let rec must l r =
-  let must_prim l r =
-    if not @@ String.equal l r then failwith "type mismatch"
-  in
+  let must_prim l r = if l <> r then failwith "type mismatch" in
 
   let rec path_equal l r =
     match (l, r) with
@@ -67,13 +100,15 @@ let rec must l r =
   | TyPrimitive a, TyPrimitive b ->
       must_prim a b;
       l
-  | TyUnknown l, r -> (
+  | TyBottom, _ -> r
+  | _, TyBottom -> l
+  | TyUnknown l, _ -> (
       match !l with
       | None ->
           l := Some r;
           r
       | Some t -> must t r)
-  | r, TyUnknown l -> (
+  | _, TyUnknown l -> (
       match !l with
       | None ->
           l := Some r;
@@ -103,39 +138,84 @@ let rec must l r =
   | TyTuple tl, TyTuple tr -> TyTuple (List.map2 must tl tr)
   | _ -> failwith "type mismatch"
 
-(* returns a pair of type, annotated expr *)
-let rec infer a : ty * expr =
-  match a with
-  | Ast.ExprUnit -> (TyPrimitive "unit", EUnit)
-  | Ast.ExprBool b -> (TyPrimitive "bool", EBool b)
-  | Ast.ExprInteger n -> (TyInteger, EInt n)
-  | Ast.ExprReal f -> (TyReal, EReal f)
-  | Ast.ExprIf (c, t, f) ->
-      let tc, c = infer c in
-      let tt, t = infer t in
-      let tf, f = infer f in
+type infer_env = InferEnv of { expected_return : ty }
 
-      let _ = must tc (TyPrimitive "bool") in
+(* returns a tuple of type, annotated expr, new env *)
+let rec infer env =
+  let rec infer_block env a = function
+    | [] -> (env, TyPrimitive T_unit, a, EUnit)
+    | t :: [] ->
+        let tt, t, env = infer env t in
+        (env, tt, List.rev a, t)
+    | t :: ts ->
+        let tt, t, env = infer env t in
+        let _ = must tt (TyPrimitive T_unit) in
+        infer_block env (t :: a) ts
+  in
+
+  function
+  | Ast.ExprUnit -> (TyPrimitive T_unit, EUnit, env)
+  | Ast.ExprBool b -> (TyPrimitive T_bool, EBool b, env)
+  | Ast.ExprInteger n -> (TyInteger, EInt n, env)
+  | Ast.ExprReal f -> (TyReal, EReal f, env)
+  | Ast.ExprIf (c, t, f) ->
+      let tc, c, env = infer env c in
+      let tt, t, env = infer env t in
+      let tf, f, env = infer env f in
+
+      let _ = must tc (TyPrimitive T_bool) in
       let ti = must tt tf in
 
-      (ti, EIf (ti, c, t, f))
+      (ti, EIf (ti, c, t, f), env)
   | Ast.ExprWhen (c, b) ->
-      let tc, c = infer c in
-      let tb, b = infer b in
+      let tc, c, env = infer env c in
+      let tb, b, env = infer env b in
 
-      let _ = must tc (TyPrimitive "bool") in
-      let _ = must tb (TyPrimitive "unit") in
+      let _ = must tc (TyPrimitive T_bool) in
+      let _ = must tb (TyPrimitive T_unit) in
 
-      (tb, EWhen (c, b))
+      (tb, EWhen (c, b), env)
+  | Ast.ExprReturn None -> (TyBottom, EReturn EUnit, env)
+  | Ast.ExprReturn (Some v) ->
+      let _, v, env = infer env v in
+      (* TODO: match with the function's return type *)
+      (TyBottom, EReturn v, env)
+  | Ast.ExprBlock items ->
+      let env, returned, units, value = infer_block env [] items in
+      (returned, EBlock (returned, units, value), env)
   | _ -> failwith "uh oh"
 
-(* TODO: pass an env here *)
-let of_ast_toplevel =
+let translate_ast_type = function
+  | Ast.TyUnit -> TyPrimitive T_unit
+  | _ -> failwith "unknown type"
+
+let of_ast_toplevel top_env =
   let open Ast in
   function
   | TopImport _i -> failwith "cannot import"
   | TopWith _w -> failwith "also cannot import"
-  | TopFnDefinition _f -> failwith "functions"
+  | TopFnDefinition f ->
+      let fn_value = f.value in
+      let fn_returns = f.ty in
+      let _fn_name = f.name in
+
+      let returns = Option.value ~default:Ast.TyUnit fn_returns in
+
+      let t = translate_ast_type returns in
+      let env = InferEnv { expected_return = t } in
+
+      let value = Option.value ~default:Ast.ExprUnit fn_value in
+      let vt, v, _env = infer env value in
+
+      let _ = (must vt, t) in
+
+      let binding =
+        Function { name = "fn_name"; return_type = vt; value = v }
+      in
+
+      Hashtbl.add top_env.bindings "fn_name" binding;
+
+      top_env
   | TopSubDefinition _s -> failwith "subscripts"
   | TopConstDefinition _c -> failwith "constants"
   | TopTypeAbstract _t -> failwith "abstract types"
@@ -153,4 +233,6 @@ let of_ast_toplevel =
 
   Then go through every function definition?
 *)
-let of_ast = List.map of_ast_toplevel
+let of_ast ast =
+  let env = create_mod_env () in
+  List.fold_left of_ast_toplevel env ast
