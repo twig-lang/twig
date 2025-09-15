@@ -19,7 +19,7 @@ mod Pointer! (type T) = (
 );
 
 fn pointer_example = (
-  mod Ptr = Pointer!(i32);
+  let mod Ptr = Pointer!(i32);
 
   let five = 5;
   let fmut = mut 5;

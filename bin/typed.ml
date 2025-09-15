@@ -5,32 +5,30 @@ and path =
   | PathCall of path * path_argument list
   | PathMember of path * string
 
-type ty_primitive =
-  | T_unit
-  | T_bool
-  | T_u8
-  | T_u16
-  | T_u32
-  | T_u64
-  | T_i8
-  | T_i16
-  | T_i32
-  | T_i64
-  | T_f32
-  | T_f64
-(* Built-in, base types *)
-
 type ty =
-  | TyPrimitive of ty_primitive
+  | TyPrimitive of string
+  | TyInteger
+  | TyReal
   | TyNamed of path
   | TyPointer of ty
   | TyArray of int * ty
   | TySlice of ty
   | TyTuple of ty list
-  | TyUnknown of ty ref
+  | TyUnknown of ty option ref
 (* Types *)
 
-type expr = EVariable of path
+type expr =
+  | EUnit
+  | EInt of int
+  | EReal of float
+  | EBool of bool
+  | EString of string
+  | EChar of Uchar.t
+  | ETuple of ty * expr list
+  | EList of ty * expr list
+  | EVariable of ty * path
+  | EIf of ty * expr * expr * expr
+  | EWhen of expr * expr
 (* Expressions *)
 
 type env =
@@ -41,7 +39,85 @@ type env =
       bindings : (unit, unit) Hashtbl.t;
     }
 
+(* matches two types, and returns an "unified" type. *)
+let rec must l r =
+  let must_prim l r =
+    if not @@ String.equal l r then failwith "type mismatch"
+  in
 
+  let rec path_equal l r =
+    match (l, r) with
+    | PathAtom a, PathAtom b -> String.equal a b
+    | PathMember (aa, ad), PathMember (ba, bd) ->
+        path_equal aa ba && String.equal ad bd
+    | _ -> false
+  in
+
+  match (l, r) with
+  | TyPrimitive a, TyPrimitive b ->
+      must_prim a b;
+      l
+  | TyUnknown l, r -> (
+      match !l with
+      | None ->
+          l := Some r;
+          r
+      | Some t -> must t r)
+  | r, TyUnknown l -> (
+      match !l with
+      | None ->
+          l := Some r;
+          r
+      | Some t -> must t r)
+  | TyPointer l, TyPointer r -> TyPointer (must l r)
+  | TySlice l, TySlice r -> TySlice (must l r)
+  (* NOTE: proper path checks require an env, cf:
+    mod Mod = ( type t = (); );
+
+    fn aliasing = (
+      let mod Alias = Mod;
+
+      { Mod.t == Alias.t }
+      let absolute : Mod.t = ();
+      let aliased : Alias.t = ();
+
+      { thus both are valid }
+      let valid : Mod.t = aliased;
+      let also_valid : Alias.t = valid;
+
+      ()
+    );
+  *)
+  | TyNamed nl, TyNamed nr ->
+      if path_equal nl nr then l else failwith "type mismatch"
+  | TyTuple tl, TyTuple tr -> TyTuple (List.map2 must tl tr)
+  | _ -> failwith "type mismatch"
+
+(* returns a pair of type, annotated expr *)
+let rec infer a : ty * expr =
+  match a with
+  | Ast.ExprUnit -> (TyPrimitive "unit", EUnit)
+  | Ast.ExprBool b -> (TyPrimitive "bool", EBool b)
+  | Ast.ExprInteger n -> (TyInteger, EInt n)
+  | Ast.ExprReal f -> (TyReal, EReal f)
+  | Ast.ExprIf (c, t, f) ->
+      let tc, c = infer c in
+      let tt, t = infer t in
+      let tf, f = infer f in
+
+      let _ = must tc (TyPrimitive "bool") in
+      let ti = must tt tf in
+
+      (ti, EIf (ti, c, t, f))
+  | Ast.ExprWhen (c, b) ->
+      let tc, c = infer c in
+      let tb, b = infer b in
+
+      let _ = must tc (TyPrimitive "bool") in
+      let _ = must tb (TyPrimitive "unit") in
+
+      (tb, EWhen (c, b))
+  | _ -> failwith "uh oh"
 
 let from_ast_toplevel =
   let open Ast in
@@ -57,4 +133,13 @@ let from_ast_toplevel =
   | TopModDefinition _m -> ()
   | TopSigDefinition _s -> ()
 
+(* TODO:
+  Maybe pass through toplevels twice to try to implement
+  lifting? (i.e. avoid needing to have declarations), cf:
+
+    fn left = right(); { no need to declare right() }
+    fn right = ();
+
+  Then go through every function definition?
+*)
 let from_ast_toplevels = List.map from_ast_toplevel
