@@ -6,7 +6,17 @@ and path =
   | PathMember of path * string
 
 type ty =
+  (* TODO: Use something else here *)
   | TyPrimitive of string
+  (* NOTE:
+    In theory, the type of integer and real literals unify to a corresponding
+    int/float type, OR they otherwise unify to i32/f32 respectively.
+
+    This should allow typechecking:
+
+      fn example: f64 = 0.0;
+      { else it might fail to unify f32 and f64 }
+  *)
   | TyInteger
   | TyReal
   | TyNamed of path
@@ -119,27 +129,28 @@ let rec infer a : ty * expr =
       (tb, EWhen (c, b))
   | _ -> failwith "uh oh"
 
-let from_ast_toplevel =
+(* TODO: pass an env here *)
+let of_ast_toplevel =
   let open Ast in
   function
   | TopImport _i -> failwith "cannot import"
-  | TopWith _w -> ()
-  | TopFnDefinition _f -> ()
-  | TopSubDefinition _s -> ()
-  | TopConstDefinition _c -> ()
-  | TopTypeAbstract _t -> ()
-  | TopTypeDefinition _t -> ()
-  | TopExtern _e -> ()
-  | TopModDefinition _m -> ()
-  | TopSigDefinition _s -> ()
+  | TopWith _w -> failwith "also cannot import"
+  | TopFnDefinition _f -> failwith "functions"
+  | TopSubDefinition _s -> failwith "subscripts"
+  | TopConstDefinition _c -> failwith "constants"
+  | TopTypeAbstract _t -> failwith "abstract types"
+  | TopTypeDefinition _t -> failwith "typedefs"
+  | TopExtern _e -> failwith "externs"
+  | TopModDefinition _m -> failwith "mods"
+  | TopSigDefinition _s -> failwith "sigs"
 
 (* TODO:
   Maybe pass through toplevels twice to try to implement
-  lifting? (i.e. avoid needing to have declarations), cf:
+  hoisting? i.e. avoid needing to have declarations), cf:
 
     fn left = right(); { no need to declare right() }
     fn right = ();
 
   Then go through every function definition?
 *)
-let from_ast_toplevels = List.map from_ast_toplevel
+let of_ast = List.map of_ast_toplevel
