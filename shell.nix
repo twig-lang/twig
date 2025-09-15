@@ -8,8 +8,11 @@ pkgs.mkShell {
     ocamlformat
     ocaml-lsp
     findlib
+
     menhir
     menhirLib
     sedlex
+
+    cmdliner
   ]);
 }

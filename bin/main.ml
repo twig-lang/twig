@@ -1,29 +1,25 @@
-let subcommandp = ref true
-let subcommands = [ ("check", []) ] |> List.to_seq |> Hashtbl.of_seq
-let specs = ref []
-let files = ref []
-
-let anon s =
-  if !subcommandp then (
-    subcommandp := false;
-    try specs := Hashtbl.find subcommands s
-    with Not_found -> failwith ("unknown command: " ^ s))
-  else files := s :: !files
-
-let translate_to_modname p =
-  let p = String.map (function '/' -> '.' | x -> x) p in
-  if String.ends_with ~suffix:".tw" p then String.sub p 0 (String.length p - 3)
-  else failwith ""
+open Cmdliner
+open Cmdliner.Term.Syntax
 
 let process_file path =
-  let modname = translate_to_modname path in
-  Printf.printf "%s\n" modname;
   let input = In_channel.open_text path in
   let raw_ast = Option.get @@ Parse.parse_chan ~fname:path input in
   let ty_ast = Typed.of_ast raw_ast in
   ignore ty_ast;
   ()
 
-let () =
-  Arg.parse_dynamic specs anon "";
-  List.iter process_file !files
+let check_input =
+  let doc = "File to process" in
+  Arg.(value & pos 0 string "default?" & info [] ~doc ~docv:"PATH")
+
+let check_cmd =
+  Cmd.v (Cmd.info "check")
+  @@
+  let+ check_input = check_input in
+  process_file check_input
+
+let cmd =
+  let info = Cmd.info "twig" in
+  Cmd.group info [ check_cmd ]
+
+let () = exit (Cmd.eval cmd)

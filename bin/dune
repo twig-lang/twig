@@ -11,6 +11,6 @@
 (executable
  (public_name twig)
  (name main)
- (libraries menhirLib)
+ (libraries menhirLib cmdliner)
  (preprocess
   (pps sedlex.ppx)))
