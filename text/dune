@@ -1,0 +1,9 @@
+(menhir
+ (modules p_common p_toplevel p_expression p_module p_type parser)
+ (merge_into parser))
+
+(library
+ (name text)
+ (libraries menhirLib cmdliner)
+ (preprocess
+  (pps sedlex.ppx)))

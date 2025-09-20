@@ -1,10 +1,4 @@
-(menhir
- (modules p_common p_toplevel p_expression p_module p_type parser)
- (merge_into parser))
-
 (executable
  (public_name twig)
  (name main)
- (libraries menhirLib cmdliner)
- (preprocess
-  (pps sedlex.ppx)))
+ (libraries text cmdliner))

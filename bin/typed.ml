@@ -1,3 +1,5 @@
+open Text
+
 type path_argument = PArgPath of path
 
 and path =

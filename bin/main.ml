@@ -3,7 +3,7 @@ open Cmdliner.Term.Syntax
 
 let process_file path =
   let input = In_channel.open_text path in
-  let raw_ast = Option.get @@ Parse.parse_chan ~fname:path input in
+  let raw_ast = Option.get @@ Text.Parse.parse_chan ~fname:path input in
   let output = Typed.of_ast raw_ast in
   ignore output;
   ()
