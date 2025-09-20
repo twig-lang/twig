@@ -1,11 +1,5 @@
 (menhir
- (modules
-   p_common
-   p_toplevel
-   p_expression
-   p_module
-   p_type
-   parser)
+ (modules p_common p_toplevel p_expression p_module p_type parser)
  (merge_into parser))
 
 (executable

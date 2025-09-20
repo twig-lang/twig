@@ -5,6 +5,14 @@ and path =
   | PathCall of path * path_argument list
   | PathMember of path * string
 
+module Mode = struct
+  type t = bool * bool (* mutable? , reference? *)
+
+  let create ?(mut = false) ?(reference = false) () = (mut, reference)
+  let is_mutable (m : t) = fst m
+  let is_reference (m : t) = snd m
+end
+
 type ty_primitive =
   | T_unit
   | T_bool
@@ -138,7 +146,12 @@ let rec must l r =
   | TyTuple tl, TyTuple tr -> TyTuple (List.map2 must tl tr)
   | _ -> failwith "type mismatch"
 
-type infer_env = InferEnv of { expected_return : ty }
+module StringMap = Map.Make (String)
+
+type infer_env = {
+  expected_return : ty;
+  bindings : (ty * Mode.t * expr) StringMap.t;
+}
 
 (* returns a tuple of type, annotated expr, new env *)
 let rec infer env =
@@ -183,13 +196,31 @@ let rec infer env =
   | Ast.ExprBlock items ->
       let env, returned, units, value = infer_block env [] items in
       (returned, EBlock (returned, units, value), env)
+  | Ast.ExprLet (pat, _ty, _mode, value) ->
+      let env =
+        match pat with
+        | PatNamed (Ast.PathAtom name) ->
+            let t, e, env = infer env value in
+            let binds =
+              StringMap.add name (t, Mode.create (), e) env.bindings
+            in
+            { env with bindings = binds }
+        | _ -> failwith "unsupported pattern"
+      in
+      (TyPrimitive T_unit, EUnit, env)
+  | Ast.ExprVariable path -> (
+      match path with
+      | Ast.PathAtom atom ->
+          let ty, _, value = StringMap.find atom env.bindings in
+          (ty, value, env)
+      | _ -> failwith "unsupported path")
   | _ -> failwith "uh oh"
 
 let translate_ast_type = function
   | Ast.TyUnit -> TyPrimitive T_unit
   | _ -> failwith "unknown type"
 
-let of_ast_toplevel top_env =
+let of_ast_toplevel (top_env : mod_env) =
   let open Ast in
   function
   | TopImport _i -> failwith "cannot import"
@@ -202,7 +233,8 @@ let of_ast_toplevel top_env =
       let returns = Option.value ~default:Ast.TyUnit fn_returns in
 
       let t = translate_ast_type returns in
-      let env = InferEnv { expected_return = t } in
+
+      let env = { expected_return = t; bindings = StringMap.empty } in
 
       let value = Option.value ~default:Ast.ExprUnit fn_value in
       let vt, v, _env = infer env value in
