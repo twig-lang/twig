@@ -3,7 +3,7 @@ This should test type checking and inference on simply typed programs.
 - Typecheck a function returning unit.
 
   $ cat >function_unit.tw <<EOF
-  > fn unit = ();
+  > fn unit -> i32 = ();
   > EOF
 
   $ twig check function_unit.tw
@@ -21,3 +21,30 @@ This should test type checking and inference on simply typed programs.
   > EOF
 
   $ twig check function_int.tw
+
+- Typecheck a block expression returning unit.
+  $ cat >block.tw <<EOF
+  > fn block = (
+  >   ();
+  >   ()
+  > );
+  > EOF
+
+  $ twig check block.tw
+
+- Typecheck a block expression returning an int.
+  $ cat >block_int.tw <<EOF
+  > fn block_int -> i32 = (
+  >   ();
+  >   1
+  > );
+  > EOF
+
+  $ twig check block_int.tw
+
+- Typecheck a constant integer.
+  $ cat >const.tw <<EOF
+  > const TWO: i32 = 2;
+  > EOF
+
+  $ twig check const.tw

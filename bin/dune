@@ -1,4 +1,4 @@
 (executable
  (public_name twig)
  (name main)
- (libraries text cmdliner))
+ (libraries text frontend cmdliner))

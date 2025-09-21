@@ -30,6 +30,23 @@ type ty_primitive =
   | T_f64
 (* Built-in, base types *)
 
+let ty_prim_equal l r =
+  match (l, r) with
+  | T_unit, T_unit
+  | T_bool, T_bool
+  | T_u8, T_u8
+  | T_u16, T_u16
+  | T_u32, T_u32
+  | T_u64, T_u64
+  | T_i8, T_i8
+  | T_i16, T_i16
+  | T_i32, T_i32
+  | T_i64, T_i64
+  | T_f32, T_f32
+  | T_f64, T_f64 ->
+      true
+  | _ -> false
+
 (* ty_primitive -> is_signed option *)
 let is_int_ty_primitive = function
   | T_u8 | T_u16 | T_u32 | T_u64 -> Some false
@@ -50,7 +67,7 @@ type ty =
 
     This should allow typechecking:
 
-      fn example: f64 = 0.0;
+      fn example -> f64 = 0.0;
       { else it might fail to unify f32 and f64 }
   *)
   | TyInteger
@@ -82,17 +99,11 @@ type expr =
   | EBlock of ty * expr list * expr
 (* Expressions *)
 
-type fn_item = { name : string; return_type : ty; value : expr }
-type ty_item = ty
-
-type mod_item =
-  | Function of { name : string; return_type : ty; value : expr }
-  | Type of ty
-
 type item =
   | FnItem of { name : string; return : ty; value : expr }
   | TyItem of ty
   | ModItem of mod_env
+  | ConstItem of { name : string; ty : ty; value : expr }
 
 and mod_env = { parent : mod_env option; items : (string, item) Hashtbl.t }
 
@@ -116,22 +127,25 @@ let rec translate_path = function
   | Ast.PathMember (parent, child) -> PathMember (translate_path parent, child)
   | _ -> failwith "cannot translate path"
 
+let rec path_equal l r =
+  match (l, r) with
+  | PathAtom a, PathAtom b -> String.equal a b
+  | PathMember (aa, ad), PathMember (ba, bd) ->
+      path_equal aa ba && String.equal ad bd
+  | _ -> false
+
 (* matches two types, and returns an "unified" type. *)
 let rec must l r =
-  let must_prim l r = if l <> r then failwith "type mismatch" in
-
-  let rec path_equal l r =
-    match (l, r) with
-    | PathAtom a, PathAtom b -> String.equal a b
-    | PathMember (aa, ad), PathMember (ba, bd) ->
-        path_equal aa ba && String.equal ad bd
-    | _ -> false
+  let must_prim l r =
+    if not @@ ty_prim_equal l r then failwith "type mismatch"
   in
 
   match (l, r) with
   | TyPrimitive a, TyPrimitive b ->
       must_prim a b;
       l
+  | TyInteger, TyPrimitive p when Option.is_some @@ is_int_ty_primitive p -> r
+  | TyPrimitive p, TyInteger when Option.is_some @@ is_int_ty_primitive p -> r
   | TyBottom, _ -> r
   | _, TyBottom -> l
   | TyUnknown l, _ -> (
@@ -173,7 +187,7 @@ let rec must l r =
 module StringMap = Map.Make (String)
 
 type infer_env = {
-  expected_return : ty;
+  expected_return : ty option;
   bindings : (ty * Mode.t * expr) StringMap.t;
 }
 
@@ -212,10 +226,15 @@ let rec infer env =
       let _ = must tb (TyPrimitive T_unit) in
 
       (tb, EWhen (c, b), env)
-  | Ast.ExprReturn None -> (TyBottom, EReturn EUnit, env)
+  | Ast.ExprReturn None ->
+      ignore @@ must (TyPrimitive T_unit) @@ Option.get env.expected_return;
+
+      (TyBottom, EReturn EUnit, env)
   | Ast.ExprReturn (Some v) ->
-      let _, v, env = infer env v in
-      (* TODO: match with the function's return type *)
+      let ty, v, env = infer env v in
+
+      ignore @@ must ty @@ Option.get env.expected_return;
+
       (TyBottom, EReturn v, env)
   | Ast.ExprBlock items ->
       let env, returned, units, value = infer_block env [] items in
@@ -241,6 +260,7 @@ let rec infer env =
   | _ -> failwith "uh oh"
 
 let must_item = function TyItem it -> it | _ -> failwith "expected a type!"
+let add_item env = Hashtbl.add env.items
 
 let translate_ast_type (menv : mod_env) = function
   | Ast.TyUnit -> TyPrimitive T_unit
@@ -261,7 +281,7 @@ let of_ast_toplevel (top_env : mod_env) =
 
       let t = translate_ast_type top_env returns in
 
-      let env = { expected_return = t; bindings = StringMap.empty } in
+      let env = { expected_return = Some t; bindings = StringMap.empty } in
 
       let value = Option.value ~default:Ast.ExprUnit fn_value in
       let vt, v, _env = infer env value in
@@ -274,7 +294,17 @@ let of_ast_toplevel (top_env : mod_env) =
 
       top_env
   | TopSubDefinition _s -> failwith "subscripts"
-  | TopConstDefinition _c -> failwith "constants"
+  | TopConstDefinition { name; ty; value } ->
+      let ty = translate_ast_type top_env ty in
+      let env = { expected_return = None; bindings = StringMap.empty } in
+      let vt, value, _env = infer env value in
+
+      let ty = must vt ty in
+
+      let item = ConstItem { name; ty; value } in
+      add_item top_env name item;
+
+      top_env
   | TopTypeAbstract _t -> failwith "abstract types"
   | TopTypeDefinition _t -> failwith "typedefs"
   | TopExtern _e -> failwith "externs"
@@ -290,8 +320,6 @@ let of_ast_toplevel (top_env : mod_env) =
 
   Then go through every function definition?
 *)
-
-let add_item env = Hashtbl.add env.items
 
 let of_ast ast =
   let env = create_mod_env () in
