@@ -36,25 +36,20 @@ let key_fn_par :=
 /* A path... */
 %public
 let path :=
-  path = separated_nonempty_list(".", path_atom)
-; { match path with
-    | a :: xs -> List.fold_right (fun a x -> Ast.PathMember (a, x)) xs a
-    | [] -> failwith "unreachable" }
+  ~ = "identifier" ; <Ast.PathAtom>
 
-let path_atom :=
-  name = "identifier"
-; args = preceded(
-  "!",
-  delimited(
+| ~ = path
+; "!"
+; ~ = delimited(
     "(",
     separated_list(",", path),
     ")"
   )
-)?
-; { Option.fold
-    ~none:(Ast.PathAtom name)
-    ~some:(fun a->Ast.PathCall (name, a))
-    args }
+; <Ast.PathCall>
+
+| ~ = path
+; ~ = preceded(".", "identifier")
+; <Ast.PathMember>
 
 /* A parameter-passing mode. */
 %public

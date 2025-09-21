@@ -82,17 +82,39 @@ type expr =
   | EBlock of ty * expr list * expr
 (* Expressions *)
 
-type mod_item = Function of { name : string; return_type : ty; value : expr }
+type fn_item = { name : string; return_type : ty; value : expr }
+type ty_item = ty
 
-type mod_env = {
-  parent : mod_env option;
-  bindings : (string, mod_item) Hashtbl.t;
-}
+type mod_item =
+  | Function of { name : string; return_type : ty; value : expr }
+  | Type of ty
 
-let create_mod_env () = { parent = None; bindings = Hashtbl.create 0 }
+type item =
+  | FnItem of { name : string; return : ty; value : expr }
+  | TyItem of ty
+  | ModItem of mod_env
+
+and mod_env = { parent : mod_env option; items : (string, item) Hashtbl.t }
+
+let create_mod_env () = { parent = None; items = Hashtbl.create 0 }
 
 let create_sub_mod_env parent =
-  { parent = Some parent; bindings = Hashtbl.create 0 }
+  let env = create_mod_env () in
+  { env with parent = Some parent }
+
+let must_mod = function ModItem e -> e | _ -> failwith "expected a module!"
+
+let rec lookup env = function
+  | PathAtom atom -> Hashtbl.find env.items atom
+  | PathMember (mem, item) ->
+      let env = must_mod @@ lookup env mem in
+      Hashtbl.find env.items item
+  | _ -> failwith "unsupported path"
+
+let rec translate_path = function
+  | Ast.PathAtom atom -> PathAtom atom
+  | Ast.PathMember (parent, child) -> PathMember (translate_path parent, child)
+  | _ -> failwith "cannot translate path"
 
 (* matches two types, and returns an "unified" type. *)
 let rec must l r =
@@ -218,8 +240,11 @@ let rec infer env =
       | _ -> failwith "unsupported path")
   | _ -> failwith "uh oh"
 
-let translate_ast_type = function
+let must_item = function TyItem it -> it | _ -> failwith "expected a type!"
+
+let translate_ast_type (menv : mod_env) = function
   | Ast.TyUnit -> TyPrimitive T_unit
+  | Ast.TyNamed path -> must_item @@ lookup menv (translate_path path)
   | _ -> failwith "unknown type"
 
 let of_ast_toplevel (top_env : mod_env) =
@@ -234,7 +259,7 @@ let of_ast_toplevel (top_env : mod_env) =
 
       let returns = Option.value ~default:Ast.TyUnit fn_returns in
 
-      let t = translate_ast_type returns in
+      let t = translate_ast_type top_env returns in
 
       let env = { expected_return = t; bindings = StringMap.empty } in
 
@@ -243,11 +268,9 @@ let of_ast_toplevel (top_env : mod_env) =
 
       let _ = (must vt, t) in
 
-      let binding =
-        Function { name = "fn_name"; return_type = vt; value = v }
-      in
+      let binding = FnItem { name = "fn_name"; return = vt; value = v } in
 
-      Hashtbl.add top_env.bindings "fn_name" binding;
+      Hashtbl.add top_env.items "fn_name" binding;
 
       top_env
   | TopSubDefinition _s -> failwith "subscripts"
@@ -267,6 +290,12 @@ let of_ast_toplevel (top_env : mod_env) =
 
   Then go through every function definition?
 *)
+
+let add_item env = Hashtbl.add env.items
+
 let of_ast ast =
   let env = create_mod_env () in
+
+  add_item env "i32" (TyItem (TyPrimitive T_i32));
+
   List.fold_left of_ast_toplevel env ast

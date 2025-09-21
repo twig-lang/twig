@@ -17,9 +17,9 @@ type lambda_kind =
   | LamSubscriptPointer
 
 type path =
-  | PathMember of path * path
+  | PathMember of path * string
   | PathAtom of string
-  | PathCall of string * path list
+  | PathCall of path * path list
 
 and struct_member = StructMember of string * ty
 and enum_member = EnumMember of string * ty list option
