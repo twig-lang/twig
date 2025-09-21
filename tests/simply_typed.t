@@ -48,3 +48,13 @@ This should test type checking and inference on simply typed programs.
   > EOF
 
   $ twig check const.tw
+
+- Typecheck a function call.
+  $ cat >call.tw <<EOF
+  > fn unit (left: ()) -> () = left;
+  > fn example -> () =
+  >   unit(());
+  > EOF
+
+TODO: Desugar, then check function calls.
+#  $ twig check call.tw
