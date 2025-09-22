@@ -206,7 +206,21 @@ let default_toplevel () =
   let open T in
   let env = T.empty in
 
-  let types = [ ("i32", TyPrimitive T_i32) ] in
+  let types =
+    [
+      ("bool", TyPrimitive T_bool);
+      ("i8", TyPrimitive T_i8);
+      ("i16", TyPrimitive T_i16);
+      ("i32", TyPrimitive T_i32);
+      ("i64", TyPrimitive T_i64);
+      ("u8", TyPrimitive T_u8);
+      ("u16", TyPrimitive T_u16);
+      ("u32", TyPrimitive T_u32);
+      ("u64", TyPrimitive T_u64);
+      ("f32", TyPrimitive T_f32);
+      ("f64", TyPrimitive T_f64);
+    ]
+  in
 
   let env =
     List.fold_right
