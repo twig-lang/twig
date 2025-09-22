@@ -11,3 +11,14 @@ let rec equal l r =
   | Call (lp, la), Call (rp, ra) ->
       equal lp rp && List.for_all2 equal_argument la ra
   | _ -> false
+
+let rec fmt f =
+  let open Printf in
+  function
+  | Atom a -> fprintf f "%s" a
+  | Member (p, a) ->
+      fmt f p;
+      fprintf f ".%s" a
+  | Call (p, _a) ->
+      fmt f p;
+      fprintf f "!(...)"

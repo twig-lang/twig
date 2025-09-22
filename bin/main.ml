@@ -4,9 +4,11 @@ open Cmdliner.Term.Syntax
 let process_file path =
   let input = In_channel.open_text path in
   let raw_ast = Option.get @@ Text.Parse.parse_chan ~fname:path input in
-  let output = Typed.of_ast raw_ast in
-  ignore output;
-  ()
+  ignore
+    (try Frontend.Of_ast.of_ast raw_ast
+     with e ->
+       let bt = Printexc.get_raw_backtrace () in
+       Printexc.raise_with_backtrace e bt)
 
 let check_input =
   let doc = "File to process" in

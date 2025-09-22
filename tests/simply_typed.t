@@ -3,7 +3,7 @@ This should test type checking and inference on simply typed programs.
 - Typecheck a function returning unit.
 
   $ cat >function_unit.tw <<EOF
-  > fn unit -> i32 = ();
+  > fn unit = ();
   > EOF
 
   $ twig check function_unit.tw
