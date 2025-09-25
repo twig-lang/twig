@@ -170,7 +170,7 @@ let expression :=
     | None -> left
     | Some args ->
       let args = args
-        |> List.map (fun (Ast.Argument (k,m,v)) -> (Option.get k, m, v))
+        |> List.map (fun (Ast.NamedArgument (k,m,v)) -> (k, m, v))
       in Ast.ExprUpdate (left, args) }
 
 let expression_nw :=
@@ -202,23 +202,35 @@ let msg_exp :=
 ; msgs = message*
 ; { List.fold_left (fun r m -> Ast.ExprSend(r,m)) recv msgs }
 
-| ~ = expression_nomsg
-; ~ = preceded(":", expression_nomsg)
-; <Ast.ExprTailArg>
-
 /* Expressions not including `with`, trailing arguments,
    nor message sends. */
 %public
 let expression_nomsg :=
   ~ = primary ; <>
 
-| ~ = expression_nomsg
-; ~ = delimited("(", arglist ,")")
-; <Ast.ExprCall>
+| r = expression_nomsg
+; pn = delimited("(", arglist ,")")
+; t = preceded(":", tail_fn_arg)?
+; { let (positional, named) = pn in
 
-| ~ = expression_nomsg
-; ~ = delimited("[", arglist ,"]")
-; <Ast.ExprSubCall>
+    let positional = match t with
+    | Some a -> positional @ [a]
+    | None -> positional
+    in
+
+    Ast.ExprCall (r, positional, named)}
+
+| r = expression_nomsg
+; pn = delimited("[", arglist ,"]")
+; t = preceded(":", tail_fn_arg)?
+; { let (positional, named) = pn in
+
+    let positional = match t with
+    | Some a -> positional @ [a]
+    | None -> positional
+    in
+
+    Ast.ExprSubCall (r, positional, named)}
 
 | ~ = expression_nomsg
 ; "as"
@@ -226,13 +238,13 @@ let expression_nomsg :=
 ; <Ast.ExprCast>
 
 let arglist :=
-  ~ = separated_list(",", fn_arg)
-; <>
+  positional = separated_list(",", fn_arg)
+; { (positional, []) }
 
 | positional = separated_list(",", fn_arg)
 ; ";"
 ; keys = separated_list(",", key_fn_arg)
-; { List.append positional keys }
+; { (positional, keys) }
 
 /* A "primitive" expression. */
 %public
@@ -284,38 +296,52 @@ let op_message :=
 ; <Ast.MsgOp>
 
 let call_message :=
-  ~ = path
-; ~ = delimited("(", arglist ,")")
-; ~ = preceded(":", mode_exp)?
-; <Ast.MsgFn>
+  r = path
+; pn = delimited("(", arglist ,")")
+; t = preceded(":", mode_exp)?
+; { let (positional, named) = pn in
 
-| ~ = path
-; ~ = delimited("[", arglist ,"]")
-; ~ = preceded(":", mode_exp)?
-; <Ast.MsgSub>
+    let positional = match t with
+    | Some (m, v) -> positional @ [Ast.Argument (m, v)]
+    | None -> positional
+    in
+
+    Ast.MsgFn (r,  positional, named)}
+
+| r = path
+; pn = delimited("[", arglist ,"]")
+; t = preceded(":", mode_exp)?
+; { let (positional, named) = pn in
+
+    let positional = match t with
+    | Some (m, v) -> positional @ [Ast.Argument (m, v)]
+    | None -> positional
+    in
+
+    Ast.MsgSub (r,  positional, named)}
 
 | name = path
-; tail = preceded(":", mode_exp)?
 ; <Ast.MsgMember>
 
-let some(x) == ~ = x ; <Some>
-let none == {None}
+let tail_fn_arg :=
+  ~ = mode
+; ~ = primary
+; <Ast.Argument>
 
 let fn_arg :=
-  ~ = none
-; ~ = mode
+  ~ = mode
 ; ~ = expression
 ; <Ast.Argument>
 
 let key_fn_arg :=
-  ~ = some(terminated("identifier", ":"))
+  ~ = terminated("identifier", ":")
 ; ~ = mode
 ; ~ = expression
-; <Ast.Argument>
+; <Ast.NamedArgument>
 
 | name = "identifier"
 ; mode = mode
-; { Ast.Argument (
-      Some name,
+; { Ast.NamedArgument (
+      name,
       mode,
       Ast.(ExprVariable (PathAtom name))) }

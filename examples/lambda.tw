@@ -1,6 +1,6 @@
 fn pass (value: i32,
           to: fn (i32) -> i32) =
- to: value;
+ to(): value;
 
 fn passed -> i32 = (
  let lambda = fn (x: i32) = (2*x);
@@ -17,10 +17,10 @@ fn has_capture -> i32 = (
 );
 
 fn fn_pointer (f: fn* (i32)) =
- f: 0;
+ f(): 0;
 
 fn passed_pointer = (
  { function pointers cannot capture variables }
  let lambda = fn* (_: i32) = ();
- fn_pointer: lambda
+ fn_pointer(): lambda
 );

@@ -38,15 +38,14 @@ and ty =
   | TyLambda of lambda_kind * anon_par list * ty option
   | TySink
 
-and argument = Argument of string option * mode * expr
+and argument = Argument of mode * expr
+and named_argument = NamedArgument of string * mode * expr
 (* key, mode, value *)
 
 and message =
-  | MsgMember of path * (mode * expr) option (* recv path [: tail] *)
-  | MsgFn of path * argument list * (mode * expr) option
-    (* recv path(...) [: tail] *)
-  | MsgSub of path * argument list * (mode * expr) option
-    (* recv path[...] [: tail] *)
+  | MsgMember of path (* recv path *)
+  | MsgFn of path * argument list * named_argument list (* recv path(...) *)
+  | MsgSub of path * argument list * named_argument list (* recv path[...] *)
   | MsgOp of string * (mode * expr)
 (* recv op arg *)
 
@@ -60,7 +59,7 @@ and modexpr = ModBody of toplevel list | ModPath of path
 and sigexpr = SigNamed of path | SigJoin of path list
 
 and module_argument =
-  | ModArgModule of { name : string; ty : sigexpr option }
+  | ModArgModule of string * sigexpr option
   | ModArgTy of path
 
 and expr =
@@ -76,9 +75,8 @@ and expr =
   | ExprLambda of
       lambda_kind * (parameter list * parameter list) * ty option * expr
   (* method calls *)
-  | ExprTailArg of expr * expr
-  | ExprCall of expr * argument list
-  | ExprSubCall of expr * argument list
+  | ExprCall of expr * argument list * named_argument list
+  | ExprSubCall of expr * argument list * named_argument list
   | ExprSend of expr * message
   (* control flow *)
   | ExprUnsafe of expr

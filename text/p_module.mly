@@ -7,7 +7,7 @@
 let mod_par :=
   name = "identifier"
 ; ty = preceded(":", sig_expr)?
-; { Ast.ModArgModule { name ; ty }}
+; <Ast.ModArgModule>
 
 | "type" ; ~ = path ; <Ast.ModArgTy>
 

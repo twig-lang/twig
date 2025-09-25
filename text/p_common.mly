@@ -24,7 +24,7 @@ let fn_par :=
 let key_fn_par :=
   ~ = mode
 ; ~ = parameter_name
-; ~ = preceded("=", expression_nomsg)?
+; ~ = preceded("=", primary)?
 ; ~ = preceded(":", ty)
 ; <Ast.ParameterKey>
 

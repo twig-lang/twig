@@ -12,20 +12,20 @@ fn calls = (
  let u = ();
 
  unit(u);
- u unit;
+ u unit();
 
- unit: u;
+ unit(): u;
 
  unit2(u, u);
  u unit2(u);
- u unit2: u;
+ u unit2(): u;
  unit2(u): u;
 
- u unit2: u
-   unit2: u;
+ u unit2(): u
+   unit2(): u;
 
  u unit2(u)
-   unit2: u;
+   unit2(): u;
 
  unit_key(u; beta: u);
 
@@ -33,7 +33,7 @@ fn calls = (
 
  u unit
    unit2(u)
-   unit2: u
+   unit2(): u
    unit_key(;beta: u);
 
  default();
