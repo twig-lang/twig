@@ -3,6 +3,8 @@ module Stage :
 struct
   type ty_variable_proof = unit
   type variable_name = Path.t
+
+  let fmt_variable_name = Path.fmt
 end
 
 module T = Tree.TreeS (Stage)
@@ -10,15 +12,21 @@ module T = Tree.TreeS (Stage)
 type infer_env = {
   context : T.m;
   return : T.ty option;
+  yield : T.ty option;
   bindings : (T.ty * Mode.t * T.expr) Env.t;
 }
 
-let create_infer_env ~context ?return () =
-  { context; return; bindings = Env.empty }
+let create_infer_env ~context ?return ?yield () =
+  { context; return; yield; bindings = Env.empty }
+
+exception TypeMismatch of T.ty * T.ty
 
 let rec unify l r =
   let open T in
-  let unify_primitives l r = if l <> r then failwith "type mismatch" in
+  let mismatch l r = raise @@ TypeMismatch (l, r) in
+  let unify_primitives l r =
+    if l <> r then mismatch (TyPrimitive l) (TyPrimitive r)
+  in
 
   (* ty_primitive -> is_signed option *)
   let is_int_ty_primitive = function
@@ -58,10 +66,9 @@ let rec unify l r =
       | Some t -> unify t r)
   | TyPointer l, TyPointer r -> TyPointer (unify l r)
   | TySlice l, TySlice r -> TySlice (unify l r)
-  | TyNamed nl, TyNamed nr ->
-      if Path.equal nl nr then l else failwith "type mismatch"
+  | TyNamed nl, TyNamed nr -> if Path.equal nl nr then l else mismatch l r
   | TyTuple tl, TyTuple tr -> TyTuple (List.map2 unify tl tr)
-  | _ -> failwith "type mismatch"
+  | _ -> mismatch l r
 
 let rec infer (env : infer_env) =
   let open Text.Ast in

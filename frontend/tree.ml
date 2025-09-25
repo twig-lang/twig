@@ -4,6 +4,8 @@ module type STAGE = sig
 
   (* The type of variable names. *)
   type variable_name
+
+  val fmt_variable_name : out_channel -> variable_name -> unit
 end
 
 module StringMap = Map.Make (String)
@@ -48,6 +50,45 @@ module TreeS (S : STAGE) = struct
     | TyTuple of ty list
     | TyUnknown of ty_variable
   (* Types *)
+
+  let rec fmt_ty f =
+    let open Printf in
+    function
+    | TyPrimitive p ->
+        fprintf f
+          (match p with
+          | T_unit -> "()"
+          | T_bool -> "bool"
+          | T_u8 -> "u8"
+          | T_u16 -> "u16"
+          | T_u32 -> "u32"
+          | T_u64 -> "u64"
+          | T_i8 -> "i8"
+          | T_i16 -> "i16"
+          | T_i32 -> "i32"
+          | T_i64 -> "i64"
+          | T_f32 -> "f32"
+          | T_f64 -> "f64")
+    | TyReal -> fprintf f "{real}"
+    | TyInteger -> fprintf f "{integer}"
+    | TyBottom -> fprintf f "!"
+    | TyNamed name -> fprintf f "%a" S.fmt_variable_name name
+    | TyPointer p -> fprintf f "* %a" fmt_ty p
+    | TyArray (n, i) -> fprintf f "[%d] %a" n fmt_ty i
+    | TySlice i -> fprintf f "[] %a" fmt_ty i
+    | TyUnknown (_, r) -> (
+        match !r with
+        | Some t -> fprintf f "?<%a>" fmt_ty t
+        | None -> fprintf f "?")
+    | TyTuple is ->
+        let rec f' c = function
+          | x :: [] -> fprintf c "%a" fmt_ty x
+          | x :: xs ->
+              fprintf c "%a, " fmt_ty x;
+              f' c xs
+          | [] -> ()
+        in
+        fprintf f "(%a)" f' is
 
   type expr =
     | EUnit

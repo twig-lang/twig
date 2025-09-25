@@ -1,24 +1,36 @@
 open Cmdliner
-open Cmdliner.Term.Syntax
 
-let process_file path =
+let process_file path (fails : bool) =
   let input = In_channel.open_text path in
   let raw_ast = Option.get @@ Text.Parse.parse_chan ~fname:path input in
-  ignore
-    (try Frontend.Of_ast.of_ast raw_ast
-     with e ->
-       let bt = Printexc.get_raw_backtrace () in
-       Printexc.raise_with_backtrace e bt)
+
+  let passed =
+    try
+      let _ = Frontend.Of_ast.of_ast raw_ast in
+      not @@ fails
+    with
+    | Frontend.Of_ast.TypeMismatch (l, r) ->
+        Frontend.Of_ast.T.(
+          Printf.eprintf "type mismatch: %a != %a\n" fmt_ty l fmt_ty r);
+        fails
+    | _ ->
+        Printexc.print_backtrace Out_channel.stdout;
+        fails
+  in
+
+  if not @@ passed then failwith "check failed"
 
 let check_input =
   let doc = "File to process" in
   Arg.(value & pos 0 string "default?" & info [] ~doc ~docv:"PATH")
 
+let should_fail =
+  let doc = "This check should fail" in
+  Arg.(value & flag & info [ "failing" ] ~doc)
+
 let check_cmd =
   Cmd.v (Cmd.info "check")
-  @@
-  let+ check_input = check_input in
-  process_file check_input
+  @@ Term.(const process_file $ check_input $ should_fail)
 
 let cmd =
   let info = Cmd.info "twig" in
