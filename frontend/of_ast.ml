@@ -186,11 +186,9 @@ and infer (env : infer_env) =
           (ty, Tree.EVariable (ty, translate_path path), env)
       | _ -> failwith "unsupported path")
   | ExprCall (fn, positional, named) ->
-      let _, fn, env = infer env fn in
-
       let name =
         match fn with
-        | Tree.EVariable (_, p) -> p
+        | ExprVariable path -> translate_path path
         | _ -> failwith "unsupported callee"
       in
 
@@ -198,7 +196,9 @@ and infer (env : infer_env) =
 
       let env, positional, named = must_args env s positional named in
 
-      (s.return, Tree.ECall (fn, positional, named), env)
+      ( s.return,
+        Tree.ECall (Tree.EVariable (s.return, name), positional, named),
+        env )
   | _ -> failwith "unsupported AST node"
 
 let translate_type env =
