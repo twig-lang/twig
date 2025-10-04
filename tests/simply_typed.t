@@ -57,3 +57,16 @@ This should test type checking and inference on simply typed programs.
   > EOF
 
   $ twig check call.tw
+
+- Typecheck a more complex example.
+  $ cat >six.tw <<EOF
+  > const ONE : i32 = 1;
+  > const TWO : i32 = ONE + ONE;
+  > fn three -> i32 =
+  >   ONE + TWO;
+  > fn three_times(x: i32) -> i32 =
+  >   three() * x;
+  > fn six -> i32 = three_times(): 2;
+  > EOF
+
+  $ twig check six.tw
