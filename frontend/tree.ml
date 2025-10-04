@@ -79,7 +79,17 @@ let rec fmt_ty f =
       in
       fprintf f "(%a)" f' is
 
-type expr =
+type positional_param = Value of Mode.t * string * ty | Label of string * ty
+
+type named_param =
+  | Value of Mode.t * string * ty
+  | Label of string * ty
+  | Key of Mode.t * string * ty * expr
+
+and positional_arg = Value of Mode.t * expr
+and named_arg = NamedValue of Mode.t * string * expr
+
+and expr =
   | EUnit
   | EInt of int
   | EReal of float
@@ -94,13 +104,17 @@ type expr =
   | EReturn of expr
   (* returned type, non-returned values (of type ()) and returned value *)
   | EBlock of ty * expr list * expr
+  (* returned type, function, positional, named *)
+  | ECall of expr * positional_arg list * named_arg list
+
 (* Expressions *)
 
-type fn_definition = { return : ty; value : expr }
-type fn_signature = { return : ty }
+type param_list = positional_param list * named_param list
 type ty_definition = { ty : ty }
-type const_definition = { ty : ty; value : expr }
+type fn_signature = { return : ty; arguments : param_list }
 type const_signature = { ty : ty }
+type fn_definition = { s : fn_signature; value : expr }
+type const_definition = { s : const_signature; value : expr }
 
 type m = {
   parent : m option;

@@ -56,5 +56,4 @@ This should test type checking and inference on simply typed programs.
   >   unit(());
   > EOF
 
-TODO: Desugar, then check function calls.
-#  $ twig check call.tw
+  $ twig check call.tw

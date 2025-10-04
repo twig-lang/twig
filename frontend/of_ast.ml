@@ -1,12 +1,42 @@
+let rec translate_path =
+  let open Text.Ast in
+  function
+  | PathAtom atom -> Path.Atom atom
+  | PathMember (p, c) ->
+      let p = translate_path p in
+      Path.Member (p, c)
+  | _ -> failwith "cannot translate path"
+
 type infer_env = {
   context : Tree.m;
   return : Tree.ty option;
   yield : Tree.ty option;
-  bindings : (Tree.ty * Mode.t * Tree.expr) Env.t;
+  bindings : (Tree.ty * Mode.t) Env.t;
 }
+
+let pos_param_name : Tree.positional_param -> string = function
+  | Tree.Value (_, n, _) -> n
+  | _ -> failwith "not implemented yet"
+
+let pos_param_ty : Tree.positional_param -> 'a = function
+  | Tree.Value (m, _, t) -> (t, m)
+  | _ -> failwith "not implemented yet"
 
 let create_infer_env ~context ?return ?yield () =
   { context; return; yield; bindings = Env.empty }
+
+let add_paramlist env l =
+  let env =
+    List.fold_right
+      (fun (p : Tree.positional_param) e ->
+        {
+          e with
+          bindings = Env.create (pos_param_name p) (pos_param_ty p) e.bindings;
+        })
+      (fst l) env
+  in
+
+  env
 
 exception TypeMismatch of Tree.ty * Tree.ty
 
@@ -59,7 +89,38 @@ let rec unify l r =
   | TyTuple tl, TyTuple tr -> TyTuple (List.map2 unify tl tr)
   | _ -> mismatch l r
 
-let rec infer (env : infer_env) =
+let translate_mode (Text.Ast.Mode (r, m)) = Mode.create ~mut:m ~reference:r ()
+
+let rec must_args (env : infer_env) (s : Tree.fn_signature) p n =
+  let open Text.Ast in
+  let must_pos_arg (spos : Tree.positional_param) (pos : argument) (env, a) =
+    match (spos, pos) with
+    | Tree.Value (mp, _, tv), Argument (ma, e) ->
+        let ma = translate_mode ma in
+
+        if not @@ Mode.(mp >: ma) then failwith "incompatible modes";
+
+        let te, v, env = infer env e in
+        ignore @@ unify tv te;
+
+        (env, Tree.Value (mp, v) :: a)
+    | _ -> failwith "argument mismatch"
+  in
+  let must_named_arg (snam : Tree.named_param) (nam : named_argument) (_env, _a)
+      =
+    match (snam, nam) with _ -> failwith "argument mismatch"
+  in
+
+  let env, positional =
+    List.fold_right2 must_pos_arg (fst s.arguments) p (env, [])
+  in
+  let env, named =
+    List.fold_right2 must_named_arg (snd s.arguments) n (env, [])
+  in
+
+  (env, List.rev positional, List.rev named)
+
+and infer (env : infer_env) =
   let open Text.Ast in
   let open Tree in
   let rec infer_block env a = function
@@ -112,8 +173,8 @@ let rec infer (env : infer_env) =
       let env =
         match pat with
         | PatNamed (PathAtom name) ->
-            let t, e, env = infer env value in
-            let binds = Env.create name (t, Mode.create (), e) env.bindings in
+            let t, _, env = infer env value in
+            let binds = Env.create name (t, Mode.create ()) env.bindings in
             { env with bindings = binds }
         | _ -> failwith "unsupported pattern"
       in
@@ -121,19 +182,24 @@ let rec infer (env : infer_env) =
   | ExprVariable path -> (
       match path with
       | PathAtom atom ->
-          let ty, _, value = Env.read atom env.bindings in
-          (ty, value, env)
+          let ty, _ = Env.read atom env.bindings in
+          (ty, Tree.EVariable (ty, translate_path path), env)
       | _ -> failwith "unsupported path")
-  | _ -> failwith "unsupported AST node"
+  | ExprCall (fn, positional, named) ->
+      let _, fn, env = infer env fn in
 
-let rec translate_path =
-  let open Text.Ast in
-  function
-  | PathAtom atom -> Path.Atom atom
-  | PathMember (p, c) ->
-      let p = translate_path p in
-      Path.Member (p, c)
-  | _ -> failwith "cannot translate path"
+      let name =
+        match fn with
+        | Tree.EVariable (_, p) -> p
+        | _ -> failwith "unsupported callee"
+      in
+
+      let s = Tree.get_fnsig name env.context in
+
+      let env, positional, named = must_args env s positional named in
+
+      (s.return, Tree.ECall (fn, positional, named), env)
+  | _ -> failwith "unsupported AST node"
 
 let translate_type env =
   let open Text.Ast in
@@ -146,35 +212,78 @@ let translate_type env =
       def.ty
   | _ -> failwith "cannot translate type"
 
+let translate_param_list env p n : Tree.param_list =
+  let open Text.Ast in
+  let translate_pos_param env : parameter -> Tree.positional_param = function
+    | Parameter (Mode (r, m), name, ty) ->
+        let mode = Mode.create ~mut:m ~reference:r () in
+        let ty = translate_type env ty in
+        Tree.Value (mode, name, ty)
+    | ParameterLabel (name, ty) ->
+        let ty = translate_type env ty in
+        Tree.Label (name, ty)
+    | ParameterKey _ -> failwith "named argument in positional argument list"
+  in
+  let rec translate_named_param env = function
+    | Parameter (Mode (r, m), name, ty) ->
+        let mode = Mode.create ~mut:m ~reference:r () in
+        let ty = translate_type env ty in
+        (Tree.Value (mode, name, ty) : Tree.named_param)
+    | ParameterLabel (name, ty) ->
+        let ty = translate_type env ty in
+        Tree.Label (name, ty)
+    | ParameterKey (Mode (r, m), name, default, ty') -> (
+        let mode = Mode.create ~mut:m ~reference:r () in
+        let ty = translate_type env ty' in
+
+        match default with
+        | Some e ->
+            let ienv : infer_env = create_infer_env ~context:env () in
+
+            let vt, v, _ = infer ienv e in
+            ignore @@ unify ty vt;
+
+            Tree.Key (mode, name, ty, v)
+        | None -> translate_named_param env (Parameter (Mode (r, m), name, ty'))
+        )
+  in
+
+  let positional = List.map (translate_pos_param env) p in
+  let named = List.map (translate_named_param env) n in
+  (positional, named)
+
 let of_toplevel top env =
   let open Text.Ast in
   let open Tree in
   match top with
-  | TopFnDefinition { name; ty; value; _ } -> (
+  | TopFnDefinition { name; ty; value; pos_parameters; key_parameters; _ } -> (
       let return =
         match ty with
         | None -> TyPrimitive T_unit
         | Some t -> translate_type env t
       in
 
+      let arguments = translate_param_list env pos_parameters key_parameters in
+
       let ienv : infer_env = create_infer_env ~context:env ~return () in
+
+      let ienv = add_paramlist ienv arguments in
+
+      let s : Tree.fn_signature = { return; arguments } in
+
+      let env =
+        { env with fn_signatures = Env.create name s env.fn_signatures }
+      in
 
       match value with
       | Some value ->
           let value_type, value, _ = infer ienv value in
           ignore @@ unify value_type return;
 
-          let def : Tree.fn_definition = { return; value } in
-          let s : Tree.fn_signature = { return } in
+          let def : Tree.fn_definition = { s; value } in
 
-          {
-            env with
-            fn_definitions = Env.create name def env.fn_definitions;
-            fn_signatures = Env.create name s env.fn_signatures;
-          }
-      | None ->
-          let s : Tree.fn_signature = { return } in
-          { env with fn_signatures = Env.create name s env.fn_signatures })
+          { env with fn_definitions = Env.create name def env.fn_definitions }
+      | None -> env)
   | TopConstDefinition { name; ty; value } ->
       let ty = translate_type env ty in
 
@@ -184,8 +293,8 @@ let of_toplevel top env =
 
       ignore @@ unify ty value_type;
 
-      let def = { ty; value } in
       let s = { ty } in
+      let def = { s; value } in
 
       {
         env with
@@ -226,4 +335,4 @@ let default_toplevel () =
 
 let of_ast ast =
   let env = default_toplevel () in
-  List.fold_right of_toplevel ast env
+  List.fold_left (fun t e -> of_toplevel e t) env ast

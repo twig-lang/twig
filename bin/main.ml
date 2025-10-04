@@ -6,6 +6,7 @@ let process_file path (fails : bool) =
 
   let passed =
     try
+      Printexc.record_backtrace true;
       let _ = Frontend.Of_ast.of_ast raw_ast in
       not @@ fails
     with
@@ -13,8 +14,9 @@ let process_file path (fails : bool) =
         Frontend.Tree.(
           Printf.eprintf "type mismatch: %a != %a\n" fmt_ty l fmt_ty r);
         fails
-    | _ ->
-        Printexc.print_backtrace Out_channel.stdout;
+    | Failure message ->
+        Printf.eprintf "failwith: %s\n" message;
+        Printexc.print_backtrace Out_channel.stderr;
         fails
   in
 
