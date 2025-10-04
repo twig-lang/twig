@@ -259,6 +259,11 @@ let primary :=
 | "true"        ; {Ast.ExprBool true}
 | "false"       ; {Ast.ExprBool false}
 
+| msg = "unary"
+; rhs = primary
+; { let msg = Ast.MsgUnary msg in
+   Ast.ExprSend (rhs, msg) }
+
 let anon_fn :=
   ~ = lambda_fn_kind
 ; ~ = parameter_list2("(", fn_par, key_fn_par, ")")

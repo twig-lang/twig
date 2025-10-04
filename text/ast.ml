@@ -8,7 +8,6 @@ type mode = Mode of bool * bool
 
 type yields = YieldNone | YieldIf | YieldWhile
 type ptr_mut = PtrConst | PtrMut
-type fn_name = FnNamed of string | FnOperator of string
 
 type lambda_kind =
   | LamFunction
@@ -47,7 +46,8 @@ and message =
   | MsgFn of path * argument list * named_argument list (* recv path(...) *)
   | MsgSub of path * argument list * named_argument list (* recv path[...] *)
   | MsgOp of string * (mode * expr)
-(* recv op arg *)
+  (* recv op arg *)
+  | MsgUnary of string (* op recv *)
 
 and pattern =
   | PatNamed of path (* path *)
@@ -117,7 +117,7 @@ and parameter =
 and toplevel =
   | TopFnDefinition of {
       unsafep : bool;
-      name : fn_name;
+      name : string;
       pos_parameters : parameter list;
       key_parameters : parameter list;
       ty : ty option;
@@ -127,7 +127,7 @@ and toplevel =
       unsafep : bool;
       yields : yields;
       mode : mode;
-      name : fn_name;
+      name : string;
       pos_parameters : parameter list;
       key_parameters : parameter list;
       ty : ty option;

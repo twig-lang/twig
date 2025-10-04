@@ -56,8 +56,9 @@ let operators =
 let id2kw id =
   Option.value ~default:(Parser.Identifier id) @@ Hashtbl.find_opt keywords id
 
-let op2kw op =
-  Option.value ~default:(Parser.Operator op) @@ Hashtbl.find_opt operators op
+let op2kw unaryp op =
+  Option.value ~default:(if unaryp then Parser.Unary op else Parser.Operator op)
+  @@ Hashtbl.find_opt operators op
 
 let digit = [%sedlex.regexp? '0' .. '9']
 let number = [%sedlex.regexp? Plus digit]
@@ -117,7 +118,9 @@ and lexer' lexbuf =
   | '[' -> Parser.LBrac
   | ']' -> Parser.RBrac
   | Plus (Chars "+*/-,.;:!@#$%&=?!<>^" | math | other_math) ->
-      op2kw (Sedlexing.Utf8.lexeme lexbuf)
+      op2kw false (Sedlexing.Utf8.lexeme lexbuf)
+  | Plus (Chars "~?!" | math | other_math) ->
+      op2kw true (Sedlexing.Utf8.lexeme lexbuf)
   | flt -> Parser.Real (float_of_string @@ Sedlexing.Utf8.lexeme lexbuf)
   | number -> Parser.Integer (int_of_string @@ Sedlexing.Utf8.lexeme lexbuf)
   | '"' -> lex_str (Buffer.create 16) lexbuf

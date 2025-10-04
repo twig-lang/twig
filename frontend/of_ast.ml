@@ -162,10 +162,6 @@ let of_toplevel top env =
   let open T in
   match top with
   | TopFnDefinition { name; ty; value; _ } -> (
-      let name =
-        match name with FnNamed plain -> plain | FnOperator op -> op
-      in
-
       let return =
         match ty with
         | None -> TyPrimitive T_unit

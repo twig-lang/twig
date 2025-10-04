@@ -121,7 +121,10 @@ let import_path :=
 
 let fn_name :=
   ~ = "identifier"
-; <Ast.FnNamed>
+; <>
 
 | ~ = delimited("(", operator, ")")
-; <Ast.FnOperator>
+; <>
+
+| ~ = delimited("(", "unary", ")")
+; <>

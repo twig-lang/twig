@@ -5,6 +5,7 @@
 %token Sink "_"
 %token<string> Identifier "identifier"
 %token<string> Operator "operator"
+%token <string> Unary "unary"
 %token<int> Integer "integer"
 %token<float> Real "real"
 %token<string> String "string"
