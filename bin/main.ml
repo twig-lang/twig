@@ -10,7 +10,7 @@ let process_file path (fails : bool) =
       not @@ fails
     with
     | Frontend.Of_ast.TypeMismatch (l, r) ->
-        Frontend.Of_ast.T.(
+        Frontend.Tree.(
           Printf.eprintf "type mismatch: %a != %a\n" fmt_ty l fmt_ty r);
         fails
     | _ ->

@@ -1,28 +1,17 @@
-module Stage :
-  Tree.STAGE with type ty_variable_proof = unit with type variable_name = Path.t =
-struct
-  type ty_variable_proof = unit
-  type variable_name = Path.t
-
-  let fmt_variable_name = Path.fmt
-end
-
-module T = Tree.TreeS (Stage)
-
 type infer_env = {
-  context : T.m;
-  return : T.ty option;
-  yield : T.ty option;
-  bindings : (T.ty * Mode.t * T.expr) Env.t;
+  context : Tree.m;
+  return : Tree.ty option;
+  yield : Tree.ty option;
+  bindings : (Tree.ty * Mode.t * Tree.expr) Env.t;
 }
 
 let create_infer_env ~context ?return ?yield () =
   { context; return; yield; bindings = Env.empty }
 
-exception TypeMismatch of T.ty * T.ty
+exception TypeMismatch of Tree.ty * Tree.ty
 
 let rec unify l r =
-  let open T in
+  let open Tree in
   let mismatch l r = raise @@ TypeMismatch (l, r) in
   let unify_primitives l r =
     if l <> r then mismatch (TyPrimitive l) (TyPrimitive r)
@@ -52,13 +41,13 @@ let rec unify l r =
   | TyPrimitive p, TyReal when Option.is_some @@ is_real_ty_primitive p -> r
   | TyBottom, _ -> r
   | _, TyBottom -> l
-  | TyUnknown (_, l), _ -> (
+  | TyUnknown l, _ -> (
       match !l with
       | None ->
           l := Some r;
           r
       | Some t -> unify t r)
-  | _, TyUnknown (_, l) -> (
+  | _, TyUnknown l -> (
       match !l with
       | None ->
           l := Some r;
@@ -72,7 +61,7 @@ let rec unify l r =
 
 let rec infer (env : infer_env) =
   let open Text.Ast in
-  let open T in
+  let open Tree in
   let rec infer_block env a = function
     | [] -> (env, TyPrimitive T_unit, a, EUnit)
     | t :: [] ->
@@ -148,7 +137,7 @@ let rec translate_path =
 
 let translate_type env =
   let open Text.Ast in
-  let open T in
+  let open Tree in
   function
   | TyUnit -> TyPrimitive T_unit
   | TyNamed name ->
@@ -159,7 +148,7 @@ let translate_type env =
 
 let of_toplevel top env =
   let open Text.Ast in
-  let open T in
+  let open Tree in
   match top with
   | TopFnDefinition { name; ty; value; _ } -> (
       let return =
@@ -175,8 +164,8 @@ let of_toplevel top env =
           let value_type, value, _ = infer ienv value in
           ignore @@ unify value_type return;
 
-          let def : T.fn_definition = { return; value } in
-          let s : T.fn_signature = { return } in
+          let def : Tree.fn_definition = { return; value } in
+          let s : Tree.fn_signature = { return } in
 
           {
             env with
@@ -184,7 +173,7 @@ let of_toplevel top env =
             fn_signatures = Env.create name s env.fn_signatures;
           }
       | None ->
-          let s : T.fn_signature = { return } in
+          let s : Tree.fn_signature = { return } in
           { env with fn_signatures = Env.create name s env.fn_signatures })
   | TopConstDefinition { name; ty; value } ->
       let ty = translate_type env ty in
@@ -206,8 +195,8 @@ let of_toplevel top env =
   | _ -> failwith "unsupported as of now!"
 
 let default_toplevel () =
-  let open T in
-  let env = T.empty in
+  let open Tree in
+  let env = Tree.empty in
 
   let types =
     [
