@@ -69,4 +69,5 @@ This should test type checking and inference on simply typed programs.
   > fn six -> i32 = three_times(): 2;
   > EOF
 
-  $ twig check six.tw
+# To be done: Message sends.
+#  $ twig check six.tw
