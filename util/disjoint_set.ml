@@ -9,6 +9,8 @@ let add set item =
   Dynarray.add_last set (ref length, item);
   length
 
+let get set item = snd @@ Dynarray.get set item
+
 let rec find set item =
   let repr item = fst (Dynarray.get set item) in
 
