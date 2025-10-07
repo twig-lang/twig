@@ -147,7 +147,7 @@ and infer (env : infer_env) =
       let _ = unify tc (TyPrimitive T_bool) in
       let ti = unify tt tf in
 
-      (ti, EIf (ti, c, t, f), env)
+      (ti, EIf (c, t, f), env)
   | ExprWhen (c, b) ->
       let tc, c, env = infer env c in
       let tb, b, env = infer env b in
@@ -168,7 +168,7 @@ and infer (env : infer_env) =
       (TyBottom, EReturn v, env)
   | ExprBlock items ->
       let env, returned, units, value = infer_block env [] items in
-      (returned, EBlock (returned, units, value), env)
+      (returned, EBlock (units, value), env)
   | ExprLet (pat, _ty, _mode, value) ->
       let env =
         match pat with
@@ -183,7 +183,7 @@ and infer (env : infer_env) =
       match path with
       | PathAtom atom ->
           let ty, _ = Env.read atom env.bindings in
-          (ty, Tree.EVariable (ty, translate_path path), env)
+          (ty, Tree.EVariable (translate_path path), env)
       | _ -> failwith "unsupported path")
   | ExprCall (fn, positional, named) ->
       let name =
@@ -196,9 +196,7 @@ and infer (env : infer_env) =
 
       let env, positional, named = must_args env s positional named in
 
-      ( s.return,
-        Tree.ECall (Tree.EVariable (s.return, name), positional, named),
-        env )
+      (s.return, Tree.ECall (Tree.EVariable name, positional, named), env)
   | _ -> failwith "unsupported AST node"
 
 let translate_type env =

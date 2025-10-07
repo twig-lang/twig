@@ -96,14 +96,14 @@ and expr =
   | EBool of bool
   | EString of string
   | EChar of Uchar.t
-  | ETuple of ty * expr list
-  | EList of ty * expr list
-  | EVariable of ty * Path.t
-  | EIf of ty * expr * expr * expr
+  | ETuple of expr list
+  | EList of expr list
+  | EVariable of Path.t
+  | EIf of expr * expr * expr
   | EWhen of expr * expr
   | EReturn of expr
   (* returned type, non-returned values (of type ()) and returned value *)
-  | EBlock of ty * expr list * expr
+  | EBlock of expr list * expr
   (* returned type, function, positional, named *)
   | ECall of expr * positional_arg list * named_arg list
 
