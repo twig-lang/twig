@@ -6,15 +6,20 @@
 %public
 let expr_all :=
   ~ = expression ; <>
-| ~ = let_exp    ; <>
 | ~ = if_exp     ; <>
+/*
+| ~ = let_exp    ; <>
 | ~ = set_exp    ; <>
 | ~ = while_exp  ; <>
 | ~ = yield_exp  ; <>
 | ~ = match_exp  ; <>
 | ~ = when_exp   ; <>
+*/
 
-| ~ = preceded("return", expr_all?) ; <Ast.ExprReturn>
+| value = preceded("return", expr_all?)
+; { let value = Option.value ~default:(Tree.EUnit) value in
+    Tree.EReturn value }
+/*
 | ~ = preceded("loop", expr_all) ; <Ast.ExprLoop>
 
 | "continue" ; {Ast.ExprContinue}
@@ -43,6 +48,7 @@ let let_exp :=
 ; ~ = top_definition
 ; <Ast.ExprTop>
 
+
 let match_exp :=
   "match"
 ; ~ = expression_nw
@@ -55,6 +61,7 @@ let match_case :=
 ; "="
 ; ~ = expression
 ; <Ast.Case>
+
 
 let pattern :=
   name = path
@@ -77,6 +84,7 @@ let set_exp :=
 ; "="
 ; r = expression
 ; <Ast.ExprSet>
+*/
 
 let if_exp :=
   "if"
@@ -85,8 +93,9 @@ let if_exp :=
 ; t = expr_all
 ; "else"
 ; f = expr_all
-; <Ast.ExprIf>
+; <Tree.EIf>
 
+/*
 | "if"; "let"
 ; ~ = pattern
 ; ~ = preceded(":", ty)?
@@ -156,11 +165,13 @@ let when_exp :=
 ; "do"
 ; ~ = expr_all
 ; <Ast.ExprWhenMatch>
+*/
 
 /* Message sends and `value with (...)` */
 %public
 let expression :=
   left = expression_nw
+/*
 ; args = preceded("with",
     delimited("(",
       separated_list(",",key_fn_arg),
@@ -172,10 +183,11 @@ let expression :=
       let args = args
         |> List.map (fun (Ast.NamedArgument (k,m,v)) -> (k, m, v))
       in Ast.ExprUpdate (left, args) }
-
+*/ ; <>
 let expression_nw :=
   ~ = msg_exp ; <>
 
+/*
 | "unsafe"
 ; ~ = expression_nw
 ; <Ast.ExprUnsafe>
@@ -196,11 +208,14 @@ let expression_nw :=
 ; ~ = mode
 ; ~ = expression_nw
 ; <Ast.ExprDeref>
+*/
 
 let msg_exp :=
   recv = expression_nomsg
+/*
 ; msgs = message*
 ; { List.fold_left (fun r m -> Ast.ExprSend(r,m)) recv msgs }
+*/ ; <>
 
 /* Expressions not including `with`, trailing arguments,
    nor message sends. */
@@ -208,6 +223,7 @@ let msg_exp :=
 let expression_nomsg :=
   ~ = primary ; <>
 
+/*
 | r = expression_nomsg
 ; pn = delimited("(", arglist ,")")
 ; t = preceded(":", tail_fn_arg)?
@@ -236,6 +252,7 @@ let expression_nomsg :=
 ; "as"
 ; ~ = ty
 ; <Ast.ExprCast>
+*/
 
 let arglist :=
   positional = separated_list(",", fn_arg)
@@ -249,16 +266,19 @@ let arglist :=
 /* A "primitive" expression. */
 %public
 let primary :=
-  ~ = path      ; <Ast.ExprVariable>
+  ~ = path      ; <Tree.EVariable>
 | ~ = block     ; <>
+/*
 | ~ = anon_fn   ; <>
-| ~ = "integer" ; <Ast.ExprInteger>
-| s = "string"+ ; {Ast.ExprString (String.concat "" s)}
-| ~ = "char"    ; <Ast.ExprChar>
-| ~ = "real"    ; <Ast.ExprReal>
-| "true"        ; {Ast.ExprBool true}
-| "false"       ; {Ast.ExprBool false}
+*/
+| ~ = "integer" ; <Tree.EInt>
+| s = "string"+ ; {Tree.EString (String.concat "" s)}
+| ~ = "char"    ; <Tree.EChar>
+| ~ = "real"    ; <Tree.EReal>
+| "true"        ; {Tree.EBool true}
+| "false"       ; {Tree.EBool false}
 
+/*
 | msg = "unary"
 ; rhs = primary
 ; { let msg = Ast.MsgUnary msg in
@@ -276,15 +296,19 @@ let anon_fn :=
 ; ~ = preceded("->", ty)?
 ; ~ = preceded("=", primary)
 ; <Ast.ExprLambda>
-
+*/
 let block :=
   items = delimited("(",
     separated_list(";", expr_all),
   ")")
-; { match List.length items with
-    | 0 -> Ast.ExprUnit
+; { let length = List.length items in
+    match length with
+    | 0 -> Tree.EUnit
     | 1 -> List.hd items
-    | _ -> Ast.ExprBlock items }
+    | _ ->
+      let units = List.take (length - 1) items in
+      let value = List.nth items (length - 1) in
+      Tree.EBlock (units, value) }
 
 let message :=
   ~ = call_message ; <>

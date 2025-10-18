@@ -9,33 +9,40 @@ let toplevel :=
 %public
 let top_all :=
   ~ = top_definition ; <>
+/*
 | ~ = extern         ; <>
 | ~ = top_with       ; <>
+*/
 
 %public
 let top_definition :=
   ~ = fn_definition    ; <>
-| ~ = sub_definition   ; <>
+/*
 | ~ = const_definition ; <>
+| ~ = sub_definition   ; <>
 | ~ = type_definition  ; <>
 | ~ = mod_definition   ; <>
+*/
 
 let fn_definition :=
-  unsafep = boption("unsafe")
-; "fn"
+  /* unsafep = boption("unsafe")
+; */
+"fn"
 ; name = fn_name
-; parameters = parameter_list2("(", fn_par, key_fn_par, ")")
-; ty = preceded("->", ty)?
+; arguments = parameter_list2("(", fn_par, key_fn_par, ")")
+; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
-; { let (pos_parameters, key_parameters) = parameters in
-    Ast.TopFnDefinition {
-      unsafep ;
-      name ;
-      pos_parameters ;
-      key_parameters ;
-      ty ;
-      value } }
+; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
+    let s : Infer.variable Tree.fn_signature = {
+      return;
+      arguments
+    } in
+    match value with
+    | Some value -> Tree.FnDefinition (name, { s; value })
+    | None -> Tree.FnDeclaration (name, s)
+    }
 
+/*
 let sub_definition :=
   unsafep = boption("unsafe")
 ; "sub"
@@ -118,6 +125,7 @@ let import_path :=
 ; ~ = separated_list(",", import_path)
 ; ")"
 ; <Ast.ImportMultiple>
+*/
 
 let fn_name :=
   ~ = "identifier"

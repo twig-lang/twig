@@ -1,3 +1,4 @@
+(*
 let rec translate_path =
   let open Text.Ast in
   function
@@ -334,3 +335,4 @@ let default_toplevel () =
 let of_ast ast =
   let env = default_toplevel () in
   List.fold_left (fun t e -> of_toplevel e t) env ast
+*)

@@ -1,5 +1,3 @@
-module StringMap = Map.Make (String)
-
 type primitive_type =
   | T_unit
   | T_bool
@@ -79,51 +77,55 @@ let rec fmt_ty f =
       in
       fprintf f "(%a)" f' is
 
-type positional_param = Value of Mode.t * string * ty | Label of string * ty
+type 'tv positional_param =
+  | Value of Mode.t * string * 'tv Ty.t
+  | Label of string * 'tv Ty.t
 
-type named_param =
-  | Value of Mode.t * string * ty
-  | Label of string * ty
-  | Key of Mode.t * string * ty * expr
+type 'tv named_param =
+  | Value of Mode.t * string * 'tv Ty.t
+  | Label of string * 'tv Ty.t
+  | Key of Mode.t * string * 'tv Ty.t * 'tv expr
 
-and positional_arg = Value of Mode.t * expr
-and named_arg = NamedValue of Mode.t * string * expr
+and 'tv positional_arg = Value of Mode.t * 'tv expr
+and 'tv named_arg = NamedValue of Mode.t * string * 'tv expr
 
-and expr =
+and 'tv expr =
   | EUnit
   | EInt of int
   | EReal of float
   | EBool of bool
   | EString of string
   | EChar of Uchar.t
-  | ETuple of expr list
-  | EList of expr list
+  | ETuple of 'tv expr list
+  | EList of 'tv expr list
   | EVariable of Path.t
-  | EIf of expr * expr * expr
-  | EWhen of expr * expr
-  | EReturn of expr
+  | EIf of 'tv expr * 'tv expr * 'tv expr
+  | EReturn of 'tv expr
   (* returned type, non-returned values (of type ()) and returned value *)
-  | EBlock of expr list * expr
+  | EBlock of 'tv expr list * 'tv expr
   (* returned type, function, positional, named *)
-  | ECall of expr * positional_arg list * named_arg list
-
+  | ECall of 'tv expr * 'tv positional_arg list * 'tv named_arg list
 (* Expressions *)
 
-type param_list = positional_param list * named_param list
-type ty_definition = { ty : ty }
-type fn_signature = { return : ty; arguments : param_list }
-type const_signature = { ty : ty }
-type fn_definition = { s : fn_signature; value : expr }
-type const_definition = { s : const_signature; value : expr }
+type 'tv param_list = 'tv positional_param list * 'tv named_param list
+type 'tv ty_definition = { ty : 'tv Ty.t }
+type 'tv fn_signature = { return : 'tv Ty.t; arguments : 'tv param_list }
+type 'tv const_signature = { ty : 'tv Ty.t }
+type 'tv fn_definition = { s : 'tv fn_signature; value : 'tv expr }
+type 'tv const_definition = { s : 'tv const_signature; value : 'tv expr }
 
-type m = {
-  parent : m option;
-  fn_definitions : fn_definition Env.t;
-  const_definitions : const_definition Env.t;
-  types : ty_definition Env.t;
-  modules : m Env.t;
-  fn_signatures : fn_signature Env.t;
-  const_signatures : const_signature Env.t;
+type 'tv definition =
+  | FnDefinition of string * 'tv fn_definition
+  | FnDeclaration of string * 'tv fn_signature
+
+type 'tv m = {
+  parent : 'tv m option;
+  fn_definitions : 'tv fn_definition Env.t;
+  const_definitions : 'tv const_definition Env.t;
+  types : 'tv ty_definition Env.t;
+  modules : 'tv m Env.t;
+  fn_signatures : 'tv fn_signature Env.t;
+  const_signatures : 'tv const_signature Env.t;
 }
 
 let empty =

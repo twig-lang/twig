@@ -4,6 +4,6 @@
 
 (library
  (name text)
- (libraries menhirLib cmdliner)
+ (libraries menhirLib cmdliner frontend)
  (preprocess
   (pps sedlex.ppx)))

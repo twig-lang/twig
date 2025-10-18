@@ -6,56 +6,58 @@
 %public
 let ty_sink :=
   ~ = ty ; <>
-| "_"    ; {Ast.TySink}
+| "_"    ; { Ty.Infer.fresh () }
 
 /* Regular types, and types appearing on `type` definitions. */
 %public
 let ty_all :=
-  ~ = ty        ; <>
-| ~ = struct_ty ; <>
-| ~ = enum_ty   ; <>
+  ~ = ty         ; <>
+| ~ = struct_ty  ; <>
+| ~ = enum_ty    ; <>
 | ~ = union_ty   ; <>
 
 let enum_ty :=
   "enum"
-; ~ = separated_list(",", enum_member)
-; <Ast.TyEnum>
+; members = separated_list(",", enum_member)
+; { Ty.(Extension (Enumeration members)) }
 
 let enum_member :=
-  name = "identifier"
-; args = delimited(
+  name      = "identifier"
+; arguments = delimited(
   "(",
   separated_list(",", ty),
   ")"
 )?
-; <Ast.EnumMember>
+; <>
 
 let struct_ty :=
   "struct"
-; ~ = separated_list(",", struct_member)
-; <Ast.TyStruct>
+; members = separated_list(",", struct_member)
+; { Ty.(Extension (Structure members)) }
 
 let union_ty :=
   "union"
-; ~ = separated_list(",", struct_member)
-; <Ast.TyUnion>
+; members = separated_list(",", struct_member)
+; { Ty.(Extension (Union members )) }
 
 let struct_member :=
   ~ = "identifier"
 ; ~ = preceded(":", ty)
-; <Ast.StructMember>
+; <>
 
 /* Regular types. */
 %public
 let ty :=
-  ~ = path                   ; <Ast.TyNamed>
-| "[" ; "]" ; ~ = ty         ; <Ast.TySlice>
-| "*" ; ~ = ptr_mut ; ~ = ty ; <Ast.TyPointer>
+  ~ = path                   ; <Ty.Named>
+| "[" ; "]" ; ~ = ty         ; <Ty.Slice>
+| "*" ; ~ = ptr_mut ; ~ = ty ; <Ty.Pointer>
+/*
 | ~ = lambda_ty              ; <>
+*/
 
 | ~ = delimited("[", "integer", "]")
 ; ~ = ty
-; <Ast.TyArray>
+; <Ty.Array>
 
 | ts = delimited(
     "(",
@@ -64,10 +66,11 @@ let ty :=
   )
 ; {
   match List.length ts with
-  | 0 -> Ast.TyUnit
+  | 0 -> Ty.Primitive Ty.Unit
   | 1 -> List.hd ts
-  | _ -> Ast.TyTuple ts }
+  | _ -> Ty.Tuple ts }
 
+/*
 let lambda_par :=
   ~ = boption("label")
 ; ~ = mode
@@ -84,3 +87,4 @@ let lambda_ty :=
 ; ~ = parameter_list("[", lambda_par, "]")
 ; ~ = preceded("->", ty)?
 ; <Ast.TyLambda>
+*/

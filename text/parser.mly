@@ -1,5 +1,9 @@
 // Here be dragons.
 
+%{
+open Frontend
+%}
+
 %token Eof "eof"
 
 %token Sink "_"
@@ -61,9 +65,9 @@
 %token Label "label"
 
 %start main
-%type<Ast.toplevel list> main
+%type<Infer.variable Tree.definition list> main
 
-%type<Ast.expr> block
+%type<Infer.variable Tree.expr> block
 
 %%
 

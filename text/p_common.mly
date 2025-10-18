@@ -1,5 +1,8 @@
 /* Miscellaneous and general things. */
 
+%type<Infer.variable Tree.positional_param> fn_par
+%type<Infer.variable Tree.named_param> key_fn_par
+
 %%
 
 let parameter_name :=
@@ -12,51 +15,57 @@ let fn_par :=
   ~ = mode
 ; ~ = parameter_name
 ; ~ = preceded(":", ty)
-; <Ast.Parameter>
+; <Tree.Value>
 
 | "label"
 ; ~ = parameter_name
 ; ~ = preceded(":", ty)
-; <Ast.ParameterLabel>
+; <Tree.Label>
 
 /* Key function parameters. Note the optional default value. */
 %public
 let key_fn_par :=
-  ~ = mode
-; ~ = parameter_name
-; ~ = preceded("=", primary)?
-; ~ = preceded(":", ty)
-; <Ast.ParameterKey>
+  mode = mode
+; name = parameter_name
+; value = preceded("=", primary)?
+; ty = preceded(":", ty)
+; { match value with
+    | Some value -> Tree.Key (mode, name, ty, value)
+    | None -> Tree.Value (mode, name, ty) }
 
 | "label"
 ; ~ = parameter_name
 ; ty = preceded(":", ty)
-; <Ast.ParameterLabel>
+; <Tree.Label>
 
 /* A path... */
 %public
 let path :=
-  ~ = "identifier" ; <Ast.PathAtom>
+  ~ = "identifier" ; <Path.Atom>
 
-| ~ = path
+| path = path
 ; "!"
-; ~ = delimited(
+; arguments = delimited(
     "(",
     separated_list(",", path),
     ")"
   )
-; <Ast.PathCall>
+; { let arguments = List.map (fun x -> Path.Argument x) arguments in
+    Path.Call (path, arguments) }
 
 | ~ = path
 ; ~ = preceded(".", "identifier")
-; <Ast.PathMember>
+; <Path.Member>
 
 /* A parameter-passing mode. */
 %public
 let mode :=
   is_ref = boption("&")
 ; is_mut = boption("mut")
-; <Ast.Mode>
+; { let open Mode in
+    let m = if is_mut then Mutable else Immutable in
+    let r = if is_ref then Reference else Value in
+    (m, r) : Mode.t }
 
 /* A list of parameters */
 %public
@@ -79,8 +88,8 @@ let parameter_list2(left, par, key_par, right) :=
 /* The pointer mutability annotation (*const | *mut) */
 %public
 let ptr_mut :=
-  "const" ; {Ast.PtrConst}
-| "mut"   ; {Ast.PtrMut}
+  "const" ; { Mode.Immutable }
+| "mut"   ; { Mode.Mutable }
 
 /* A yielding annotation for subscripts. */
 %public

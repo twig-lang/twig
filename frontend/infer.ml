@@ -1,6 +1,15 @@
 open Util
 
-type context = { this_module : Tree.m; variables : Tree.ty Disjoint_set.t }
+type variable = Variable of variable Ty.t option ref
+
+let fresh () = Variable (ref None)
+let get (Variable var) = !var
+let set (Variable var) x = var := Some x
+
+type context = {
+  this_module : variable Tree.m;
+  variables : variable Ty.t Disjoint_set.t;
+}
 
 type env = {
   super : env option;
