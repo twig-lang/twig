@@ -67,8 +67,6 @@ open Frontend
 %start main
 %type<Infer.variable Tree.definition list> main
 
-%type<Infer.variable Tree.expr> block
-
 %%
 
 let main := ~ = toplevel* ; Eof ; <>

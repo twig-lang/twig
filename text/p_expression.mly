@@ -17,8 +17,8 @@ let expr_all :=
 */
 
 | value = preceded("return", expr_all?)
-; { let value = Option.value ~default:(Tree.EUnit) value in
-    Tree.EReturn value }
+; { let value = Option.value ~default:(Expr.Unit) value in
+    Expr.Return value }
 /*
 | ~ = preceded("loop", expr_all) ; <Ast.ExprLoop>
 
@@ -93,7 +93,7 @@ let if_exp :=
 ; t = expr_all
 ; "else"
 ; f = expr_all
-; <Tree.EIf>
+; <Expr.If>
 
 /*
 | "if"; "let"
@@ -266,17 +266,17 @@ let arglist :=
 /* A "primitive" expression. */
 %public
 let primary :=
-  ~ = path      ; <Tree.EVariable>
+  ~ = path      ; <Expr.Variable>
 | ~ = block     ; <>
 /*
 | ~ = anon_fn   ; <>
 */
-| ~ = "integer" ; <Tree.EInt>
-| s = "string"+ ; {Tree.EString (String.concat "" s)}
-| ~ = "char"    ; <Tree.EChar>
-| ~ = "real"    ; <Tree.EReal>
-| "true"        ; {Tree.EBool true}
-| "false"       ; {Tree.EBool false}
+| ~ = "integer" ; <Expr.Int>
+| s = "string"+ ; {Expr.String (String.concat "" s)}
+| ~ = "char"    ; <Expr.Char>
+| ~ = "real"    ; <Expr.Real>
+| "true"        ; {Expr.Bool true}
+| "false"       ; {Expr.Bool false}
 
 /*
 | msg = "unary"
@@ -303,12 +303,12 @@ let block :=
   ")")
 ; { let length = List.length items in
     match length with
-    | 0 -> Tree.EUnit
+    | 0 -> Expr.Unit
     | 1 -> List.hd items
     | _ ->
       let units = List.take (length - 1) items in
       let value = List.nth items (length - 1) in
-      Tree.EBlock (units, value) }
+      Expr.Block (units, value) }
 
 let message :=
   ~ = call_message ; <>

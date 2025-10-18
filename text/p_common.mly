@@ -1,8 +1,5 @@
 /* Miscellaneous and general things. */
 
-%type<Infer.variable Tree.positional_param> fn_par
-%type<Infer.variable Tree.named_param> key_fn_par
-
 %%
 
 let parameter_name :=
@@ -15,12 +12,12 @@ let fn_par :=
   ~ = mode
 ; ~ = parameter_name
 ; ~ = preceded(":", ty)
-; <Tree.Value>
+; <Expr.PPValue>
 
 | "label"
 ; ~ = parameter_name
 ; ~ = preceded(":", ty)
-; <Tree.Label>
+; <Expr.PPLabel>
 
 /* Key function parameters. Note the optional default value. */
 %public
@@ -30,13 +27,13 @@ let key_fn_par :=
 ; value = preceded("=", primary)?
 ; ty = preceded(":", ty)
 ; { match value with
-    | Some value -> Tree.Key (mode, name, ty, value)
-    | None -> Tree.Value (mode, name, ty) }
+    | Some value -> Expr.PNKey (mode, name, ty, value)
+    | None -> Expr.PNValue (mode, name, ty) }
 
 | "label"
 ; ~ = parameter_name
 ; ty = preceded(":", ty)
-; <Tree.Label>
+; <Expr.PNLabel>
 
 /* A path... */
 %public
@@ -65,7 +62,7 @@ let mode :=
 ; { let open Mode in
     let m = if is_mut then Mutable else Immutable in
     let r = if is_ref then Reference else Value in
-    (m, r) : Mode.t }
+    Mode.Mode (m, r) }
 
 /* A list of parameters */
 %public
