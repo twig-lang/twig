@@ -2,22 +2,28 @@ open Cmdliner
 
 let process_file path (fails : bool) =
   let input = In_channel.open_text path in
-  let _raw_ast = Option.get @@ Text.Parse.parse_chan ~fname:path input in
+  let definitions = Option.get @@ Text.Parse.parse_chan ~fname:path input in
 
   let passed =
     try
       Printexc.record_backtrace true;
-      (*let _ = Frontend.Of_ast.of_ast raw_ast in*)
+      let m = Frontend.Infer.tree_of_toplevels definitions in
+      let _resolved = Frontend.Infer.resolve_module ~parent:None m in
       not @@ fails
     with
-    (* )| Frontend.Of_ast.TypeMismatch (l, r) ->
-        Frontend.Tree.(
-          Printf.eprintf "type mismatch: %a != %a\n" fmt_ty l fmt_ty r);
-        fails *)
+    | Frontend.Infer.TypeMismatch (l, r) ->
+        let fmt_tv tv =
+          let tv = Frontend.Infer.get tv in
+          match tv with Some _ -> "<resolved>" | None -> "<unresolved>"
+        in
+        Frontend.Ty.(
+          Printf.eprintf "type mismatch: %a != %a\n" (fmt ~tv:fmt_tv) l
+            (fmt ~tv:fmt_tv) r);
+        fails
     | Failure message ->
-      Printf.eprintf "failwith: %s\n" message;
-      Printexc.print_backtrace Out_channel.stderr;
-      fails
+        Printf.eprintf "failwith: %s\n" message;
+        Printexc.print_backtrace Out_channel.stderr;
+        fails
   in
 
   if not @@ passed then failwith "check failed"

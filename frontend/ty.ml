@@ -17,6 +17,10 @@ let is_primitive_integer = function
   | U8 | U16 | U32 | U64 | I8 | I16 | I32 | I64 -> true
   | _ -> false
 
+let is_primitive_signed = function
+  | I8 | I16 | I32 | I64 | F32 | F64 -> true
+  | _ -> false
+
 let is_primitive_real = function F32 | F64 -> true | _ -> false
 
 let equal_prim l r =
@@ -110,7 +114,7 @@ let rec map_tv map =
   | Tuple ts -> Tuple (List.map (map_tv map) ts)
   | Extension e -> Extension (match_tv_ext map e)
 
-let rec fmt ?(tv = Util.Combinator.const "<>") f =
+let rec fmt ?(tv = fun _ -> "<>") f =
   let open Printf in
   function
   | Primitive p ->

@@ -30,7 +30,7 @@ let empty =
       const_signatures = empty;
     }
 
-let rec add m def =
+let add m def =
   match def with
   | FnDeclaration (name, s) ->
       let fn_signatures = Env.create name s m.fn_signatures in
