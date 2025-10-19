@@ -8,12 +8,12 @@ type 'tv definition =
   | FnDefinition of string * 'tv fn_definition
   | FnDeclaration of string * 'tv fn_signature
 
-type 'tv m = {
-  parent : 'tv m option;
+type 'tv t = {
+  parent : 'tv t option;
   fn_definitions : 'tv fn_definition Env.t;
   const_definitions : 'tv const_definition Env.t;
   types : 'tv ty_definition Env.t;
-  modules : 'tv m Env.t;
+  modules : 'tv t Env.t;
   fn_signatures : 'tv fn_signature Env.t;
   const_signatures : 'tv const_signature Env.t;
 }
@@ -29,6 +29,16 @@ let empty =
       fn_signatures = empty;
       const_signatures = empty;
     }
+
+let rec add m def =
+  match def with
+  | FnDeclaration (name, s) ->
+      let fn_signatures = Env.create name s m.fn_signatures in
+      { m with fn_signatures }
+  | FnDefinition (name, d) ->
+      (* TODO: Check and maybe populate the function signature? *)
+      let fn_definitions = Env.create name d m.fn_definitions in
+      { m with fn_definitions }
 
 let rec get_rec_module p m =
   match p with

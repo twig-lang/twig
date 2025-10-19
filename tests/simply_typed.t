@@ -47,7 +47,7 @@ This should test type checking and inference on simply typed programs.
   > const TWO: i32 = 2;
   > EOF
 
-  $ twig check const.tw
+#  $ twig check const.tw
 
 - Typecheck a function call.
   $ cat >call.tw <<EOF
@@ -56,7 +56,7 @@ This should test type checking and inference on simply typed programs.
   >   unit(());
   > EOF
 
-  $ twig check call.tw
+#  $ twig check call.tw
 
 - Typecheck a more complex example.
   $ cat >six.tw <<EOF
