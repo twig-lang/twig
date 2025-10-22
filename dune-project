@@ -15,5 +15,5 @@
 
 (package
  (name twig)
- (depends ocaml sedlex menhirLib cmdliner)
+ (depends ocaml sedlex menhirLib cmdliner alcotest)
  (tags ()))

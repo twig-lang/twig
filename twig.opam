@@ -11,6 +11,7 @@ depends: [
   "sedlex"
   "menhirLib"
   "cmdliner"
+  "alcotest"
   "odoc" {with-doc}
 ]
 build: [

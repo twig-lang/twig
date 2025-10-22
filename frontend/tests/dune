@@ -1,0 +1,8 @@
+(executables
+ (names mode)
+ (libraries frontend alcotest)
+)
+
+(rule (alias runtest)
+ (action
+  (run %{dep:mode.exe})))

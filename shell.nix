@@ -14,5 +14,6 @@ pkgs.mkShell {
     sedlex
 
     cmdliner
+    alcotest
   ]);
 }

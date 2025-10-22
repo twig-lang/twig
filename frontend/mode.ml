@@ -20,6 +20,18 @@ let ( <: ) parameter argument =
   equal_sharing && implies (is_reference parameter) par_mut_implies_arg_mut
 
 let ( >: ) = Util.Combinator.flip ( <: )
+let equal l r = l == r
+
+let pp fmt (Mode (m, s)) =
+  Format.pp_print_string fmt "Mode(";
+  (match m with
+  | Immutable -> Format.pp_print_string fmt "immutable"
+  | Mutable -> Format.pp_print_string fmt "mutable");
+  Format.pp_print_string fmt ", ";
+  (match s with
+  | Value -> Format.pp_print_string fmt "value"
+  | Reference -> Format.pp_print_string fmt "reference");
+  Format.pp_print_string fmt ")"
 
 let fmt_mutability f m =
   let m = match m with Immutable -> "immutable" | Mutable -> "mutable" in
