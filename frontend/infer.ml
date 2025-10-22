@@ -59,6 +59,11 @@ let rec unify ~context (l : variable Ty.t) (r : variable Ty.t) =
   (* Bottom unifies with any other type *)
   | Ty.Bottom, _ -> r
   | _, Ty.Bottom -> l
+  (* literal types unify with their fixed-width counterparts *)
+  | Ty.Integer, Ty.Primitive p when Ty.is_primitive_integer p -> r
+  | Ty.Primitive p, Ty.Integer when Ty.is_primitive_integer p -> l
+  | Ty.Real, Ty.Primitive p when Ty.is_primitive_real p -> r
+  | Ty.Primitive p, Ty.Real when Ty.is_primitive_real p -> l
   (* Variables get populated if empty, unified if not *)
   | Ty.Variable l, _ -> (
       match get l with
@@ -115,9 +120,9 @@ and infer (env : variable env) (expr : variable Expr.t) : variable Ty.t =
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
 
-let rec decay ?(resolve_variables = true) = function
-  | Ty.Integer -> Ty.Primitive Ty.I32
-  | Ty.Real -> Ty.Primitive Ty.F32
+let rec decay ?(resolve_variables = true) ?(resolve_literals = false) = function
+  | Ty.Integer when resolve_literals -> Ty.Primitive Ty.I32
+  | Ty.Real when resolve_literals -> Ty.Primitive Ty.F32
   | Ty.Variable (Variable var) when resolve_variables -> (
       match !var with
       | Some t -> decay t
@@ -125,7 +130,8 @@ let rec decay ?(resolve_variables = true) = function
   | x -> x
 
 let rec resolve (tv : variable Ty.t) : resolved Ty.t =
-  Ty.map_tv (fun (Variable var) -> resolve @@ Option.get !var) @@ decay tv
+  Ty.map_tv (fun (Variable var) -> resolve @@ Option.get !var)
+  @@ decay ~resolve_literals:true tv
 
 let resolve_tree ?parent m =
   ignore m;

@@ -67,6 +67,38 @@ This should test type checking and inference on simply typed programs.
   $ twig check --failing call_fail_return.tw
   type mismatch: () != i32
 
+- Number literal types can "decay" into fixed-width versions.
+  $ cat >num_decay.tw <<EOF
+  > const I8: i8 = 0;
+  > const I16: i16 = 0;
+  > const I32: i32 = 0;
+  > const I64: i64 = 0;
+  > const U8: u8 = 0;
+  > const U16: u16 = 0;
+  > const U32: u32 = 0;
+  > const U64: u64 = 0;
+  > const F32: f32 = 0.0;
+  > const F64: f64 = 0.0;
+  > EOF
+
+  $ twig check num_decay.tw
+
+- Real number literals do not have an integer type.
+  $ cat >num_real_not_int.tw <<EOF
+  > const Real: i32 = 0.0;
+  > EOF
+
+  $ twig check --failing num_real_not_int.tw
+  type mismatch: {real} != i32
+
+- Integer literals do not have a float type.
+  $ cat >num_int_not_real.tw <<EOF
+  > const Int: f32 = 0;
+  > EOF
+
+  $ twig check --failing num_int_not_real.tw
+  type mismatch: {integer} != f32
+
 - Typecheck a more complex example.
   $ cat >six.tw <<EOF
   > const ONE : i32 = 1;
