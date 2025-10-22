@@ -31,12 +31,13 @@ let empty =
       const_signatures = empty;
     }
 
-let add m def =
+let rec add m def =
   match def with
   | FnDeclaration (name, s) ->
       let fn_signatures = Env.create name s m.fn_signatures in
       { m with fn_signatures }
   | FnDefinition (name, d) ->
+      let m = add m (FnDeclaration (name, d.s)) in
       (* TODO: Check and maybe populate the function signature? *)
       let fn_definitions = Env.create name d m.fn_definitions in
       { m with fn_definitions }

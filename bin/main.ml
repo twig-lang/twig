@@ -5,7 +5,9 @@ let process_file path (fails : bool) =
   let passed =
     try
       let definitions = Text.Parse.parse_chan ~fname:path input in
-      Printexc.record_backtrace true;
+
+      if not fails then Printexc.record_backtrace true;
+
       let m = Frontend.Infer.tree_of_toplevels definitions in
       let _resolved = Frontend.Infer.f m in
       not @@ fails

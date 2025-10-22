@@ -17,16 +17,16 @@ type 'tv env =
     }
   | Child of { super : 'tv env; bound : ('tv Ty.t * Mode.t) Env.t }
 
-let create_env ?expect_return ?expect_yield context =
-  Root { context; expect_return; expect_yield; bound = Env.empty }
+let create_env ?expect_return ?expect_yield ?(bound = Env.empty) context =
+  Root { context; expect_return; expect_yield; bound }
 
 let create_subenv ~super = Child { super; bound = Env.empty }
 
-let rec lookup env binding =
+let rec lookup_variable env binding =
   match env with
   | Root { bound; _ } -> Env.read binding bound
   | Child { bound; super; _ } -> (
-      try Env.read binding bound with _ -> lookup super binding)
+      try Env.read binding bound with _ -> lookup_variable super binding)
 
 let rec context_of = function
   | Root { context; _ } -> context
@@ -87,6 +87,15 @@ let rec infer_block (env : variable env) valued = function
       infer_block env valued xs
   | [] -> infer env valued
 
+and check_arguments _env (p, n) positional named =
+  (* TODO: handle labels later on *)
+  (* TODO: at least type check this *)
+  List.iter2 (fun _param _arg -> ()) p positional;
+
+  List.iter2 (fun _param _arg -> ()) n named;
+
+  ()
+
 (* infer the type of an expression *)
 and infer (env : variable env) (expr : variable Expr.t) : variable Ty.t =
   match expr with
@@ -94,6 +103,14 @@ and infer (env : variable env) (expr : variable Expr.t) : variable Ty.t =
   | Expr.Int _ -> Ty.Integer
   | Expr.Real _ -> Ty.Real
   | Expr.Block (units, valued) -> infer_block env valued units
+  | Expr.Call (Expr.Variable name, positional, named) ->
+      (* TODO: support actual callable values *)
+      let fn = Tree.get_fnsig name (context_of env) in
+      check_arguments env fn.arguments positional named;
+      fn.return
+  | Expr.Variable (Path.Atom name) ->
+      let ty, _mode = lookup_variable env name in
+      ty
   | _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
@@ -119,11 +136,36 @@ let resolve_tree ?parent m =
 
 (*( Apply inference and resolution to the whole module )*)
 
+let infer_add_arguments (pos, named) =
+  let env = Env.empty in
+
+  let env =
+    List.fold_left
+      (fun a param ->
+        match param with
+        | Expr.PPValue (mode, name, ty) -> Env.create name (ty, mode) a
+        | Expr.PPLabel (_name, _ty) ->
+            failwith "label parameters not yet supported")
+      env pos
+  in
+
+  List.fold_left
+    (fun a param ->
+      match param with
+      | Expr.PNValue (mode, name, ty) -> Env.create name (ty, mode) a
+      | Expr.PNKey (mode, name, ty, _) -> Env.create name (ty, mode) a
+      | Expr.PNLabel (_name, _ty) ->
+          failwith "label parameters not yet supported")
+    env named
+
 let infer_fn_definition (context : variable Tree.t) (_name : string)
     (def : variable Tree.fn_definition) =
   let returns = def.s.return in
 
-  let env = create_env ~expect_return:returns context in
+  let bound = infer_add_arguments def.s.arguments in
+
+  let env = create_env ~expect_return:returns ~bound context in
+
   let inferred = def.value |> infer env |> decay ~resolve_variables:false in
   check ~context inferred returns
 

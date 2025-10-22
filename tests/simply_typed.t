@@ -58,6 +58,15 @@ This should test type checking and inference on simply typed programs.
 
   $ twig check call.tw
 
+- Fail to typecheck a mismatched return type.
+  $ cat >call_fail_return.tw <<EOF
+  > fn unit = ();
+  > fn num -> i32 = unit();
+  > EOF
+
+  $ twig check --failing call_fail_return.tw
+  type mismatch: () != i32
+
 - Typecheck a more complex example.
   $ cat >six.tw <<EOF
   > const ONE : i32 = 1;
