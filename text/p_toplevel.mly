@@ -17,8 +17,8 @@ let top_all :=
 %public
 let top_definition :=
   ~ = fn_definition    ; <>
-/*
 | ~ = const_definition ; <>
+/*
 | ~ = sub_definition   ; <>
 | ~ = type_definition  ; <>
 | ~ = mod_definition   ; <>
@@ -62,14 +62,16 @@ let sub_definition :=
       key_parameters ;
       ty ;
       value } }
-
+*/
 let const_definition :=
   "const"
 ; name = "identifier"
 ; ty = preceded(":", ty)
 ; value = preceded("=", expression)
-; { Ast.TopConstDefinition { name ; ty ; value } }
-
+; { let s : Infer.variable Tree.const_signature = {
+      ty
+    } in Tree.ConstDefinition (name, { s; value }) }
+/*
 let type_definition :=
   "type"
 ; name = "identifier"

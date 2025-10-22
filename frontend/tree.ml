@@ -7,6 +7,7 @@ type 'tv const_definition = { s : 'tv const_signature; value : 'tv Expr.t }
 type 'tv definition =
   | FnDefinition of string * 'tv fn_definition
   | FnDeclaration of string * 'tv fn_signature
+  | ConstDefinition of string * 'tv const_definition
 
 type 'tv t = {
   parent : 'tv t option;
@@ -39,6 +40,10 @@ let add m def =
       (* TODO: Check and maybe populate the function signature? *)
       let fn_definitions = Env.create name d m.fn_definitions in
       { m with fn_definitions }
+  | ConstDefinition (name, d) ->
+      (* Also the signature here? *)
+      let const_definitions = Env.create name d m.const_definitions in
+      { m with const_definitions }
 
 let rec get_rec_module p m =
   match p with

@@ -127,6 +127,14 @@ let infer_fn_definition (context : variable Tree.t) (_name : string)
   let inferred = def.value |> infer env |> decay ~resolve_variables:false in
   check ~context inferred returns
 
+let infer_const_definition (context : variable Tree.t) (_name : string)
+    (def : variable Tree.const_definition) =
+  let returns = def.s.ty in
+
+  let env = create_env ~expect_return:returns context in
+  let inferred = def.value |> infer env |> decay ~resolve_variables:false in
+  check ~context inferred returns
+
 let infer_mod (m : variable Tree.t) =
   let primitive_types =
     [
@@ -153,7 +161,8 @@ let infer_mod (m : variable Tree.t) =
       m primitive_types
   in
 
-  Env.iter (infer_fn_definition context) context.fn_definitions
+  Env.iter (infer_fn_definition context) context.fn_definitions;
+  Env.iter (infer_const_definition context) context.const_definitions
 
 let f ?parent m =
   infer_mod m;
