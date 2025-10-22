@@ -22,8 +22,8 @@ let is_primitive_signed = function
   | _ -> false
 
 let is_primitive_real = function F32 | F64 -> true | _ -> false
-
-let equal_prim l r =
+let equal_prim l r = l == r
+(*
   match (l, r) with
   | Unit, Unit
   | Bool, Bool
@@ -38,7 +38,7 @@ let equal_prim l r =
   | F32, F32
   | F64, F64 ->
       true
-  | _ -> false
+  | _ -> false*)
 
 type 'v ext =
   | Enumeration of (string * 'v t list) list
@@ -135,7 +135,7 @@ let rec fmt ?(tv = fun _ -> "<>") f =
   | Real -> fprintf f "{real}"
   | Integer -> fprintf f "{integer}"
   | Bottom -> fprintf f "!"
-  | Named name -> fprintf f "%a" Path.fmt name
+  | Named name -> fprintf f "{named:%a}" Path.fmt name
   | Pointer (m, p) -> fprintf f "* %a %a" Mode.fmt_mutability m (fmt ~tv) p
   | Array (n, i) -> fprintf f "[%d] %a" n (fmt ~tv) i
   | Slice i -> fprintf f "[] %a" (fmt ~tv) i

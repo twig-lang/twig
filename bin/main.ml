@@ -8,7 +8,7 @@ let process_file path (fails : bool) =
     try
       Printexc.record_backtrace true;
       let m = Frontend.Infer.tree_of_toplevels definitions in
-      let _resolved = Frontend.Infer.resolve_module ~parent:None m in
+      let _resolved = Frontend.Infer.f m in
       not @@ fails
     with
     | Frontend.Infer.TypeMismatch (l, r) ->
@@ -19,6 +19,7 @@ let process_file path (fails : bool) =
         Frontend.Ty.(
           Printf.eprintf "type mismatch: %a != %a\n" (fmt ~tv:fmt_tv) l
             (fmt ~tv:fmt_tv) r);
+        Printexc.print_backtrace Out_channel.stderr;
         fails
     | Failure message ->
         Printf.eprintf "failwith: %s\n" message;
