@@ -223,19 +223,19 @@ let msg_exp :=
 let expression_nomsg :=
   ~ = primary ; <>
 
-/*
-| r = expression_nomsg
-; pn = delimited("(", arglist ,")")
-; t = preceded(":", tail_fn_arg)?
-; { let (positional, named) = pn in
+| recv = expression_nomsg
+; arguments = delimited("(", arglist ,")")
+; tail = preceded(":", tail_fn_arg)?
+; { let (positional, named) = arguments in
 
-    let positional = match t with
+    let positional = match tail with
     | Some a -> positional @ [a]
     | None -> positional
     in
 
-    Ast.ExprCall (r, positional, named)}
+    Expr.Call (recv, positional, named)}
 
+/*
 | r = expression_nomsg
 ; pn = delimited("[", arglist ,"]")
 ; t = preceded(":", tail_fn_arg)?
@@ -310,6 +310,7 @@ let block :=
       let value = List.nth items (length - 1) in
       Expr.Block (units, value) }
 
+/*
 let message :=
   ~ = call_message ; <>
 | ~ = op_message ; <>
@@ -351,26 +352,23 @@ let call_message :=
 
 | name = path
 ; <Ast.MsgMember>
-
+*/
 let tail_fn_arg :=
   ~ = mode
 ; ~ = primary
-; <Ast.Argument>
+; <Expr.AValue>
 
 let fn_arg :=
   ~ = mode
 ; ~ = expression
-; <Ast.Argument>
+; <Expr.AValue>
 
 let key_fn_arg :=
   ~ = terminated("identifier", ":")
 ; ~ = mode
 ; ~ = expression
-; <Ast.NamedArgument>
+; <Expr.ANamedValue>
 
 | name = "identifier"
 ; mode = mode
-; { Ast.NamedArgument (
-      name,
-      mode,
-      Ast.(ExprVariable (PathAtom name))) }
+; { Expr.ANamedValue (name, mode, (Expr.Variable (Path.Atom name))) }

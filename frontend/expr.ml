@@ -8,7 +8,7 @@ type 'tv named_parameter =
   | PNKey of Mode.t * string * 'tv Ty.t * 'tv t
 
 and 'tv positional_argument = AValue of Mode.t * 'tv t
-and 'tv named_argument = ANamedValue of Mode.t * string * 'tv t
+and 'tv named_argument = ANamedValue of string * Mode.t * 'tv t
 
 and 'tv t =
   | Unit

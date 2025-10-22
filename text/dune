@@ -10,14 +10,18 @@
   (pps sedlex.ppx)))
 
 (rule
- (action (with-stdout-to messages.ml
-  (run menhir
-   %{dep:parser.mly}
-   %{dep:p_common.mly}
-   %{dep:p_toplevel.mly}
-   %{dep:p_expression.mly}
-   %{dep:p_module.mly}
-   %{dep:p_type.mly}
-   --base %{dep:parser.mly}
-   --compile-errors %{dep:parser.messages}
-  ))))
+ (action
+  (with-stdout-to
+   messages.ml
+   (run
+    menhir
+    %{dep:parser.mly}
+    %{dep:p_common.mly}
+    %{dep:p_toplevel.mly}
+    %{dep:p_expression.mly}
+    %{dep:p_module.mly}
+    %{dep:p_type.mly}
+    --base
+    %{dep:parser.mly}
+    --compile-errors
+    %{dep:parser.messages}))))

@@ -1,7 +1,8 @@
 module I = Parser.MenhirInterpreter
 module E = MenhirLib.ErrorReports
 
-exception Error of string
+(* file name, line, column * message *)
+exception Error of string * int * int * string
 
 let rec loop lexer lexbuf (checkpoint : 'a I.checkpoint) =
   match checkpoint with
@@ -18,8 +19,12 @@ let rec loop lexer lexbuf (checkpoint : 'a I.checkpoint) =
   | I.HandlingError env ->
       let state = I.current_state_number env in
       let message = Messages.message state in
+      let position = Sedlexing.lexing_bytes_position_curr lexbuf in
+      let file = position.pos_fname in
+      let line = position.pos_lnum in
+      let column = position.pos_cnum - position.pos_bol in
       Printf.eprintf "on state %d\n" state;
-      raise (Error message)
+      raise (Error (file, line, column, message))
   | I.Accepted x -> x
   | I.Rejected -> failwith "input rejected"
 
