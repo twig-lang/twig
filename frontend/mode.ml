@@ -1,11 +1,11 @@
 type mutability = Immutable | Mutable
 type sharing = Data | Reference
 type projection = Value | Projection
-
-(* NOTE: reference implies a projection, but not vice-versa *)
 type t = Mode of projection * mutability * sharing
 
 let create ~(project : projection) ~(mut : mutability) ~(share : sharing) () =
+  (* references are always projections *)
+  let project = if share == Reference then Projection else project in
   Mode (project, mut, share)
 
 let is_mutable (Mode (_, m, _)) = m == Mutable
