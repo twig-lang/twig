@@ -8,15 +8,18 @@ module Mode_testable : Alcotest.TESTABLE = struct
 end
 
 (* modes are used a lot, so this avoids too much copy-paste *)
-let mode ?(m : unit option) ?(s : unit option) () =
-  let m =
+let mode ?(p : unit option) ?(m : unit option) ?(s : unit option) () =
+  let mut =
     Option.value ~default:Mode.Immutable @@ Option.map (fun _ -> Mode.Mutable) m
   in
-  let s =
-    Option.value ~default:Mode.Value @@ Option.map (fun _ -> Mode.Reference) s
+  let share =
+    Option.value ~default:Mode.Data @@ Option.map (fun _ -> Mode.Reference) s
+  in
+  let project =
+    Option.value ~default:Mode.Value @@ Option.map (fun _ -> Mode.Projection) p
   in
 
-  Mode.Mode (m, s)
+  Mode.create ~project ~mut ~share ()
 
 let m = ()
 let s = ()

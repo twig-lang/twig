@@ -60,9 +60,10 @@ let mode :=
   is_ref = boption("&")
 ; is_mut = boption("mut")
 ; { let open Mode in
-    let m = if is_mut then Mutable else Immutable in
-    let r = if is_ref then Reference else Value in
-    Mode.Mode (m, r) }
+    let project = if is_ref then Projection else Value in
+    let mut = if is_mut then Mutable else Immutable in
+    let share = if is_ref then Reference else Data in
+    Mode.create ~project ~mut ~share () }
 
 /* A list of parameters */
 %public
