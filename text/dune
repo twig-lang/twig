@@ -1,5 +1,6 @@
 (menhir
  (modules p_common p_toplevel p_expression p_module p_type parser)
+ (flags --table)
  (merge_into parser))
 
 (library
@@ -7,3 +8,16 @@
  (libraries menhirLib cmdliner frontend)
  (preprocess
   (pps sedlex.ppx)))
+
+(rule
+ (action (with-stdout-to messages.ml
+  (run menhir
+   %{dep:parser.mly}
+   %{dep:p_common.mly}
+   %{dep:p_toplevel.mly}
+   %{dep:p_expression.mly}
+   %{dep:p_module.mly}
+   %{dep:p_type.mly}
+   --base %{dep:parser.mly}
+   --compile-errors %{dep:parser.messages}
+  ))))

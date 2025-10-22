@@ -1,3 +1,5 @@
-__pycache__/
 /tmp
 /_build
+
+# Ignore for now
+text/parser.messages

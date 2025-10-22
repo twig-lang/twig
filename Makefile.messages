@@ -1,0 +1,39 @@
+# NOTE: invoke as `make <TARGET> -f Makefile.messages` from the base directory.
+
+# Use `update` for updating the messages file, and `strip` to remove the
+# comments on the generated files.
+
+.PHONY: update strip complete clean dry all
+
+clean:
+	rm -f text/parser.messages
+
+update: $(shell find text/ -name '*.mly')
+	touch text/parser.messages
+	cp -f text/parser.messages parser.messages.tmp
+	dune exec menhir -- $^ \
+	  --base text/parser.mly \
+	  --update-errors text/parser.messages \
+	  > parser.messages.updated
+	mv parser.messages.updated text/parser.messages
+
+strip: text/parser.messages
+	sed -e '/^##/d' text/parser.messages
+
+complete: $(shell find text/ -name '*.mly')
+	touch text/parser.messages
+	dune exec menhir -- $^ \
+	  --base text/parser.mly \
+	  --list-errors \
+	  > parser.messages.auto
+	dune exec menhir -- $^ \
+	  --base text/parser.mly \
+	  --merge-errors parser.messages.auto \
+	  --merge-errors text/parser.messages \
+	  > parser.messages.merged
+	mv parser.messages.merged text/parser.messages
+	rm parser.messages.auto
+
+dry: clean complete
+
+all: update
