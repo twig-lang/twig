@@ -11,6 +11,7 @@ val ( <: ) : t -> t -> bool
 val ( >: ) : t -> t -> bool
 val try_project : t -> t -> t option
 val project : t -> t -> t
+val unproject : t -> t
 val equal : t -> t -> bool
 val pp : Format.formatter -> t -> unit
 val fmt_mutability : out_channel -> mutability -> unit

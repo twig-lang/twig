@@ -41,6 +41,7 @@ let try_project target source =
   else None
 
 let project target source = Option.get @@ try_project target source
+let unproject (Mode (_, m, s)) = Mode (Value, m, s)
 let equal l r = l == r
 
 let pp fmt (Mode (p, m, s)) =
