@@ -47,8 +47,7 @@ let path :=
     separated_list(",", path),
     ")"
   )
-; { let arguments = List.map (fun x -> Path.Argument x) arguments in
-    Path.Call (path, arguments) }
+; { Path.Call (path, arguments) }
 
 | ~ = path
 ; ~ = preceded(".", "identifier")
