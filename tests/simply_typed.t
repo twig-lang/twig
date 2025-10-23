@@ -99,6 +99,37 @@ This should test type checking and inference on simply typed programs.
   $ twig check --failing num_int_not_real.tw
   type mismatch: {integer} != f32
 
+- Fail to typecheck mismatched parameter types.
+  $ cat >fail_mismatch_parameters.tw <<EOF
+  > fn id(x: f32) -> f32 = x;
+  > fn fail -> f32 = id(42);
+  > EOF
+
+  $ twig check --failing fail_mismatch_parameters.tw
+  type mismatch: f32 != {integer}
+
+- Check with constants.
+  $ cat >check_const.tw <<EOF
+  > const ONE : i32 = 1;
+  > fn one -> i32 = ONE;
+  > EOF
+
+  $ twig check check_const.tw
+
+- Typecheck return expressions.
+  $ cat >return.tw <<EOF
+  > fn ret_one -> i32 = return 0;
+  > EOF
+
+  $ twig check return.tw
+
+- Typecheck if expressions.
+  $ cat >if.tw <<EOF
+  > fn ret_when(cond: bool) -> i32 = if cond then 1 else 2;
+  > EOF
+
+  $ twig check if.tw
+
 - Typecheck a more complex example.
   $ cat >six.tw <<EOF
   > const ONE : i32 = 1;

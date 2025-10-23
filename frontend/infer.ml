@@ -7,30 +7,37 @@ let fresh () = Variable (ref None)
 let get (Variable var) = !var
 let set (Variable var) x = var := Some x
 
+type 'tv expect = { return : 'tv Ty.t option; yield : 'tv Ty.t option }
+
 (* this environment's "local context"*)
 type 'tv env =
   | Root of {
       context : variable Tree.t;
-      expect_return : 'tv Ty.t option;
-      expect_yield : 'tv Ty.t option;
-      bound : ('tv Ty.t * Mode.t) Env.t;
+      expect : 'tv expect;
+      variables : ('tv Ty.t * Mode.t) Env.t;
     }
   | Child of { super : 'tv env; bound : ('tv Ty.t * Mode.t) Env.t }
 
-let create_env ?expect_return ?expect_yield ?(bound = Env.empty) context =
-  Root { context; expect_return; expect_yield; bound }
+let create_env ?return ?yield ?(variables = Env.empty) context =
+  let expect = { return; yield } in
+  Root { context; expect; variables }
 
 let create_subenv ~super = Child { super; bound = Env.empty }
 
 let rec lookup_variable env binding =
   match env with
-  | Root { bound; _ } -> Env.read binding bound
+  | Root { variables; _ } -> Env.read_opt binding variables
   | Child { bound; super; _ } -> (
-      try Env.read binding bound with _ -> lookup_variable super binding)
+      try Some (Env.read binding bound)
+      with _ -> lookup_variable super binding)
 
 let rec context_of = function
   | Root { context; _ } -> context
   | Child { super; _ } -> context_of super
+
+let rec expect_of = function
+  | Root { expect; _ } -> expect
+  | Child { super; _ } -> expect_of super
 
 (* Create a Tree from a list of toplevel statements *)
 let tree_of_toplevels tops = List.fold_left Tree.add Tree.empty tops
@@ -64,6 +71,9 @@ let rec unify ~context (l : variable Ty.t) (r : variable Ty.t) =
   | Ty.Primitive p, Ty.Integer when Ty.is_primitive_integer p -> l
   | Ty.Real, Ty.Primitive p when Ty.is_primitive_real p -> r
   | Ty.Primitive p, Ty.Real when Ty.is_primitive_real p -> l
+  (* literal types are also equal to themselves *)
+  | Ty.Integer, Ty.Integer -> l
+  | Ty.Real, Ty.Real -> l
   (* Variables get populated if empty, unified if not *)
   | Ty.Variable l, _ -> (
       match get l with
@@ -92,11 +102,21 @@ let rec infer_block (env : variable env) valued = function
       infer_block env valued xs
   | [] -> infer env valued
 
-and check_arguments _env (p, n) positional named =
+and check_arguments env (p, n) positional named =
   (* TODO: handle labels later on *)
   (* TODO: at least type check this *)
-  List.iter2 (fun _param _arg -> ()) p positional;
+  List.iter2
+    (fun param (Expr.AValue (am, av)) ->
+      match param with
+      | Expr.PPValue (m, _, t) ->
+          let at = infer env av in
+          ignore @@ Mode.project m am;
+          check ~context:(context_of env) t at
+      | Expr.PPLabel _ -> failwith "label parameters not supported yet")
+    p positional;
 
+  (* TODO: named arguments are not checked in order,
+    maybe turn them from a list into an Env.t? *)
   List.iter2 (fun _param _arg -> ()) n named;
 
   ()
@@ -113,9 +133,26 @@ and infer (env : variable env) (expr : variable Expr.t) : variable Ty.t =
       let fn = Tree.get_fnsig name (context_of env) in
       check_arguments env fn.arguments positional named;
       fn.return
-  | Expr.Variable (Path.Atom name) ->
-      let ty, _mode = lookup_variable env name in
-      ty
+  | Expr.Variable (Path.Atom name) -> (
+      match lookup_variable env name with
+      | Some (ty, _) -> ty
+      | None ->
+          let s = Tree.get_ksig (Path.Atom name) (context_of env) in
+          s.ty)
+  | Expr.Return value -> (
+      let exp = expect_of env in
+      let tv = infer env value in
+      match exp.return with
+      | Some ty ->
+          check ~context:(context_of env) ty tv;
+          Ty.Bottom
+      | None -> failwith "unexpected return expression")
+  | Expr.If (condition, t, f) ->
+      let tc = infer env condition in
+      let tt = infer env t in
+      let tf = infer env f in
+      check ~context:(context_of env) (Ty.Primitive Ty.Bool) tc;
+      unify ~context:(context_of env) tt tf
   | _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
@@ -166,22 +203,20 @@ let infer_add_arguments (pos, named) =
 
 let infer_fn_definition (context : variable Tree.t) (_name : string)
     (def : variable Tree.fn_definition) =
-  let returns = def.s.return in
+  let return = def.s.return in
 
-  let bound = infer_add_arguments def.s.arguments in
+  let variables = infer_add_arguments def.s.arguments in
 
-  let env = create_env ~expect_return:returns ~bound context in
+  let env = create_env ~return ~variables context in
 
   let inferred = def.value |> infer env |> decay ~resolve_variables:false in
-  check ~context inferred returns
+  check ~context inferred return
 
 let infer_const_definition (context : variable Tree.t) (_name : string)
     (def : variable Tree.const_definition) =
-  let returns = def.s.ty in
-
-  let env = create_env ~expect_return:returns context in
+  let env = create_env context in
   let inferred = def.value |> infer env |> decay ~resolve_variables:false in
-  check ~context inferred returns
+  check ~context inferred def.s.ty
 
 let infer_mod (m : variable Tree.t) =
   let primitive_types =

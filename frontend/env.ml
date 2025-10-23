@@ -11,6 +11,8 @@ let create name item env =
   let bindings = M.add name item env.bindings in
   { bindings }
 
+let read_opt name env = try Some (M.find name env.bindings) with _ -> None
+
 let read name env =
   try M.find name env.bindings with Stdlib.Not_found -> raise (Not_found name)
 
