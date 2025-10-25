@@ -59,8 +59,10 @@ let project target source =
   | Some m -> m
   | None -> raise (ProjectionFailure (target, source))
 
-let unproject (Mode (_, m, s)) = Mode (Value, m, s)
-let equal l r = l == r
+let unproject (Mode (_, m, s)) =
+  match s with Reference -> Mode (Value, m, Data) | Data -> Mode (Value, m, s)
+
+let equal l r = l = r
 
 let pp fmt (Mode (p, m, s)) =
   Format.pp_print_string fmt "Mode(";
@@ -73,7 +75,7 @@ let pp fmt (Mode (p, m, s)) =
   | Mutable -> Format.pp_print_string fmt "mutable");
   Format.pp_print_string fmt ", ";
   (match s with
-  | Data -> Format.pp_print_string fmt "value"
+  | Data -> Format.pp_print_string fmt "data"
   | Reference -> Format.pp_print_string fmt "reference");
   Format.pp_print_string fmt ")"
 
@@ -82,7 +84,7 @@ let fmt_mutability f m =
   Printf.fprintf f "%s" m
 
 let fmt_sharing f (s : sharing) =
-  let s = match s with Data -> "value" | Reference -> "reference" in
+  let s = match s with Data -> "data" | Reference -> "reference" in
   Printf.fprintf f "%s" s
 
 let fmt_projection f (p : projection) =

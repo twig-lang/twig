@@ -150,7 +150,12 @@ and infer (env : env) expr : env * Mode.t * variable Ty.t =
           literal_ty s.ty)
   | Expr.Return value -> (
       let exp = expect_of env in
-      let env, _, tv = infer env value in
+      let env, m, tv = infer env value in
+
+      (* forbid returning projected values *)
+      if not Mode.(equal (unproject m) m) then
+        raise @@ Mode.ProjectionFailure (Mode.unproject m, m);
+
       match exp.return with
       | Some ty ->
           check ~context:(context_of env) ty tv;
@@ -168,7 +173,7 @@ and infer (env : env) expr : env * Mode.t * variable Ty.t =
       ignore @@ Mode.project mode m;
       check ~context:(context_of env) ty tv;
       let env = add_var env name mode tv in
-      (env, m, Ty.Primitive Ty.Unit)
+      (env, Mode.create (), Ty.Primitive Ty.Unit)
   | _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
@@ -227,7 +232,12 @@ let infer_fn_definition (context : variable Tree.t) (_name : string)
   let env = create_env ~return context in
   let env = add_vars env variables in
 
-  let _, _, inferred = infer env def.value in
+  let _, m, inferred = infer env def.value in
+
+  (* forbid returning projected values *)
+  if not Mode.(equal (unproject m) m) then
+    raise @@ Mode.ProjectionFailure (Mode.unproject m, m);
+
   let decayed = decay ~resolve_variables:false inferred in
   check ~context decayed return
 
