@@ -2,9 +2,7 @@
 
 (name twig)
 
-(generate_opam_files true)
-
-(source (github nqr2/twig))
+(source (github twig-lang/twig))
 
 (authors "nqr2 <naqr2@proton.me>")
 (maintainers "nqr2 <naqr2@proton.me>")
@@ -15,5 +13,5 @@
 
 (package
  (name twig)
- (depends ocaml sedlex menhirLib cmdliner alcotest)
+ (depends ocaml sedlex menhirLib cmdliner alcotest wasm)
  (tags ()))
