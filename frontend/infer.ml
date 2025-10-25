@@ -1,47 +1,13 @@
-type variable = Variable of variable Ty.t option ref
-type resolved = |
+type variable = Env.variable
+type resolved = Env.resolved
+
+open Env
 
 exception TypeMismatch of variable Ty.t * variable Ty.t
 
 let fresh () = Variable (ref None)
 let get (Variable var) = !var
 let set (Variable var) x = var := Some x
-
-type expect = { return : variable Ty.t option; yield : variable Ty.t option }
-
-(* this environment's "local context"*)
-type env =
-  | Root of { context : variable Tree.t; expect : expect }
-  | Var of { super : env; name : string; mode : Mode.t; ty : variable Ty.t }
-  | Vars of { super : env; binds : (Mode.t * variable Ty.t) Map.t }
-
-let create_env ?return ?yield context =
-  let expect = { return; yield } in
-  Root { context; expect }
-
-let rec context_of = function
-  | Root { context; _ } -> context
-  | Var { super; _ } -> context_of super
-  | Vars { super; _ } -> context_of super
-
-let rec find_variable ctx vname =
-  match ctx with
-  | Root _ -> None
-  | Var { super; name; ty; mode } ->
-      if String.equal name vname then Some (mode, ty)
-      else find_variable super vname
-  | Vars { super; binds } -> (
-      match Map.read_opt vname binds with
-      | Some p -> Some p
-      | None -> find_variable super vname)
-
-let add_var ctx name mode ty = Var { super = ctx; name; mode; ty }
-let add_vars ctx binds = Vars { super = ctx; binds }
-
-let rec expect_of = function
-  | Root { expect; _ } -> expect
-  | Var { super; _ } -> expect_of super
-  | Vars { super; _ } -> expect_of super
 
 (* Create a Tree from a list of toplevel statements *)
 let tree_of_toplevels tops = List.fold_left Tree.add Tree.empty tops
@@ -98,7 +64,7 @@ let rec unify ~context (l : variable Ty.t) (r : variable Ty.t) =
 (* only perform the type check *)
 let check ~context l r = ignore @@ unify ~context l r
 
-let rec infer_block (env : env) valued = function
+let rec infer_block (env : Env.t) valued = function
   | x :: xs ->
       let env, _, tx = infer env x in
       check ~context:(context_of env) (Ty.Primitive Ty.Unit) tx;
@@ -126,7 +92,7 @@ and check_arguments env (p, n) positional named =
   ()
 
 (* infer the type of an expression *)
-and infer (env : env) expr : env * Mode.t * variable Ty.t =
+and infer (env : Env.t) expr : Env.t * Mode.t * variable Ty.t =
   let literal_mode = Mode.create ~mut:Mode.Mutable () in
 
   let literal_ty ty = (env, literal_mode, ty) in
