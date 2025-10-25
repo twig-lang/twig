@@ -8,9 +8,10 @@ let expr_all :=
   ~ = expression ; <>
 | ~ = if_exp     ; <>
 | ~ = let_exp    ; <>
+| ~ = while_exp  ; <>
+| ~ = preceded("loop", expr_all) ; <Expr.Loop>
 /*
 | ~ = set_exp    ; <>
-| ~ = while_exp  ; <>
 | ~ = yield_exp  ; <>
 | ~ = match_exp  ; <>
 | ~ = when_exp   ; <>
@@ -20,7 +21,6 @@ let expr_all :=
 ; { let value = Option.value ~default:(Expr.Unit) value in
     Expr.Return value }
 /*
-| ~ = preceded("loop", expr_all) ; <Ast.ExprLoop>
 
 | "continue" ; {Ast.ExprContinue}
 
@@ -116,14 +116,15 @@ let if_exp :=
 ; "else"
 ; f = expr_all
 ; <Ast.ExprIfMatch>
-
+*/
 let while_exp :=
   "while"
 ; ~ = expression
 ; "do"
 ; ~ = expr_all
-; <Ast.ExprWhile>
+; <Expr.While>
 
+/*
 | "while" ; "let"
 ; ~ = pattern
 ; ~ = preceded(":", ty)?

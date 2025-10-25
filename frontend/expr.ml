@@ -28,6 +28,8 @@ and 'tv t =
   | Call of 'tv t * 'tv positional_argument list * 'tv named_argument list
   (* name, mode, declared type, value *)
   | Let of string * Mode.t * 'tv Ty.t option * 'tv t
+  | While of 'tv t * 'tv t
+  | Loop of 'tv t
 (* Expressions *)
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter list

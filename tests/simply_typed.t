@@ -166,6 +166,18 @@ This should test type checking and inference on simply typed programs.
 
   $ twig check let_project.tw
 
+- Typecheck loop and while expressions.
+  $ cat >repeats.tw <<EOF
+  > const TRUE : bool = true;
+  > fn f_loop = loop ();
+  > fn f_while -> i32 = (
+  >   while TRUE do ();
+  >   0
+  > );
+  > EOF
+
+  $ twig check repeats.tw
+
 - Typecheck a more complex example.
   $ cat >six.tw <<EOF
   > const ONE : i32 = 1;

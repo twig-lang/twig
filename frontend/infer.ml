@@ -7,12 +7,11 @@ let fresh () = Variable (ref None)
 let get (Variable var) = !var
 let set (Variable var) x = var := Some x
 
-type 'tv expect = { return : 'tv Ty.t option; yield : 'tv Ty.t option }
-type expect2 = { return : variable Ty.t option; yield : variable Ty.t option }
+type expect = { return : variable Ty.t option; yield : variable Ty.t option }
 
 (* this environment's "local context"*)
 type env =
-  | Root of { context : variable Tree.t; expect : expect2 }
+  | Root of { context : variable Tree.t; expect : expect }
   | Var of { super : env; name : string; mode : Mode.t; ty : variable Ty.t }
   | Vars of { super : env; binds : (Mode.t * variable Ty.t) Env.t }
 
@@ -136,18 +135,21 @@ and infer (env : env) expr : env * Mode.t * variable Ty.t =
   | Expr.Unit -> literal_ty (Ty.Primitive Ty.Unit)
   | Expr.Int _ -> literal_ty Ty.Integer
   | Expr.Real _ -> literal_ty Ty.Real
+  | Expr.Bool _ -> literal_ty (Ty.Primitive Ty.Bool)
   | Expr.Block (units, valued) -> infer_block env valued units
   | Expr.Call (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
       let fn = Tree.get_fnsig name (context_of env) in
       check_arguments env fn.arguments positional named;
       literal_ty fn.return
+  | Expr.Call _ -> failwith "unsupported callee"
   | Expr.Variable (Path.Atom name) -> (
       match find_variable env name with
       | Some (m, ty) -> (env, m, ty)
       | None ->
           let s = Tree.get_ksig (Path.Atom name) (context_of env) in
           literal_ty s.ty)
+  | Expr.Variable _ -> failwith "unsupported variable path"
   | Expr.Return value -> (
       let exp = expect_of env in
       let env, m, tv = infer env value in
@@ -174,6 +176,16 @@ and infer (env : env) expr : env * Mode.t * variable Ty.t =
       check ~context:(context_of env) ty tv;
       let env = add_var env name mode tv in
       (env, Mode.create (), Ty.Primitive Ty.Unit)
+  | Expr.Loop body ->
+      let _, _, tb = infer env body in
+      check ~context:(context_of env) (Ty.Primitive Ty.Unit) tb;
+      literal_ty Ty.Bottom
+  | Expr.While (condition, body) ->
+      let _, _, tc = infer env condition in
+      let _, _, tb = infer env body in
+      check ~context:(context_of env) (Ty.Primitive Ty.Bool) tc;
+      check ~context:(context_of env) (Ty.Primitive Ty.Unit) tb;
+      literal_ty (Ty.Primitive Ty.Unit)
   | _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
