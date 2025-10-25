@@ -3,7 +3,11 @@ type sharing = Data | Reference
 type projection = Value | Projection
 type t
 
-val create : ?project:projection -> ?mut:mutability -> ?share:sharing -> unit -> t
+exception ProjectionFailure of t * t
+
+val create :
+  ?project:projection -> ?mut:mutability -> ?share:sharing -> unit -> t
+
 val is_mutable : t -> bool
 val is_reference : t -> bool
 val is_projection : t -> bool

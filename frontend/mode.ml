@@ -3,6 +3,8 @@ type sharing = Data | Reference
 type projection = Value | Projection
 type t = Mode of projection * mutability * sharing
 
+exception ProjectionFailure of t * t
+
 let create ?(project : projection = Value) ?(mut : mutability = Mutable)
     ?(share : sharing = Data) () =
   (* references are always projections *)
@@ -36,12 +38,27 @@ let ( <: ) parameter argument =
 let ( >: ) = Util.Combinator.flip ( <: )
 
 let try_project target source =
-  if target <: source then
+  let subtype = target <: source in
+  let project_down = is_projection target && (not @@ is_projection source) in
+
+  let implied_mut = implies (is_mutable target) (is_mutable source) in
+
+  let can_refer =
+    implies (not @@ is_reference target) (not @@ is_reference source)
+  in
+
+  let can_project = subtype || (project_down && implied_mut && can_refer) in
+
+  if can_project then
     let (Mode (_, m, s)) = target in
     Some (Mode (Projection, m, s))
   else None
 
-let project target source = Option.get @@ try_project target source
+let project target source =
+  match try_project target source with
+  | Some m -> m
+  | None -> raise (ProjectionFailure (target, source))
+
 let unproject (Mode (_, m, s)) = Mode (Value, m, s)
 let equal l r = l == r
 

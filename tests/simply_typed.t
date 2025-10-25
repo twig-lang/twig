@@ -130,6 +130,42 @@ This should test type checking and inference on simply typed programs.
 
   $ twig check if.tw
 
+- Typecheck let expressions.
+  $ cat >let.tw <<EOF
+  > const ONE : i32 = 1;
+  > fn f_let -> i32 = (
+  >   let one = ONE;
+  >   one
+  > );
+  > EOF
+
+  $ twig check let.tw
+
+- Typecheck a failing example.
+  $ cat >let_fail.tw <<EOF
+  > fn f_let_fail -> i32 = (
+  >   let float = 1.0;
+  >   float
+  > );
+  > EOF
+
+  $ twig check --failing let_fail.tw
+  type mismatch: {real} != i32
+
+- Let expressions with projections.
+  $ cat >let_project.tw <<EOF
+  > fn f -> i32 = (
+  >   let one = 1;
+  >   let also_one = &one;
+  >   let two = mut 2;
+  >   let also_two = &mut two;
+  >   let again_two = &two;
+  >   one
+  > );
+  > EOF
+
+  $ twig check let_project.tw
+
 - Typecheck a more complex example.
   $ cat >six.tw <<EOF
   > const ONE : i32 = 1;

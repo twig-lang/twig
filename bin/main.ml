@@ -22,6 +22,11 @@ let process_file path (fails : bool) =
             (fmt ~tv:fmt_tv) r);
         Printexc.print_backtrace Out_channel.stderr;
         fails
+    | Frontend.Mode.ProjectionFailure (target, source) ->
+        Format.eprintf "projection failure: %a <- %a\n" Frontend.Mode.pp target
+          Frontend.Mode.pp source;
+        Printexc.print_backtrace Out_channel.stderr;
+        fails
     | Failure message ->
         Printf.eprintf "failwith: %s\n" message;
         Printexc.print_backtrace Out_channel.stderr;

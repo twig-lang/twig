@@ -7,8 +7,8 @@
 let expr_all :=
   ~ = expression ; <>
 | ~ = if_exp     ; <>
-/*
 | ~ = let_exp    ; <>
+/*
 | ~ = set_exp    ; <>
 | ~ = while_exp  ; <>
 | ~ = yield_exp  ; <>
@@ -34,16 +34,17 @@ let expr_all :=
 ; label = "identifier"?
 ; value = preceded("with", expr_all)?
 ; <Ast.ExprBreak>
-
+*/
 let let_exp :=
   "let"
-; ~ = pattern
-; ~ = preceded(":", ty)?
+; name = "identifier"
+; ty = preceded(":", ty)?
 ; "="
-; ~ = mode
-; ~ = expression
-; <Ast.ExprLet>
+; mode = mode
+; value = expression
+; { Expr.Let (name, mode, ty, value) }
 
+/*
 | "let"
 ; ~ = top_definition
 ; <Ast.ExprTop>

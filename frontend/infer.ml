@@ -162,6 +162,13 @@ and infer (env : env) expr : env * Mode.t * variable Ty.t =
       let env, _, tf = infer env f in
       check ~context:(context_of env) (Ty.Primitive Ty.Bool) tc;
       literal_ty @@ unify ~context:(context_of env) tt tf
+  | Expr.Let (name, mode, ty, value) ->
+      let ty = Option.value ~default:(Ty.Variable (fresh ())) ty in
+      let _, m, tv = infer env value in
+      ignore @@ Mode.project mode m;
+      check ~context:(context_of env) ty tv;
+      let env = add_var env name mode tv in
+      (env, m, Ty.Primitive Ty.Unit)
   | _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
