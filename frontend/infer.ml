@@ -13,7 +13,7 @@ type expect = { return : variable Ty.t option; yield : variable Ty.t option }
 type env =
   | Root of { context : variable Tree.t; expect : expect }
   | Var of { super : env; name : string; mode : Mode.t; ty : variable Ty.t }
-  | Vars of { super : env; binds : (Mode.t * variable Ty.t) Env.t }
+  | Vars of { super : env; binds : (Mode.t * variable Ty.t) Map.t }
 
 let create_env ?return ?yield context =
   let expect = { return; yield } in
@@ -31,7 +31,7 @@ let rec find_variable ctx vname =
       if String.equal name vname then Some (mode, ty)
       else find_variable super vname
   | Vars { super; binds } -> (
-      match Env.read_opt vname binds with
+      match Map.read_opt vname binds with
       | Some p -> Some p
       | None -> find_variable super vname)
 
@@ -214,13 +214,13 @@ let resolve_tree ?parent m =
 (*( Apply inference and resolution to the whole module )*)
 
 let infer_add_arguments (pos, named) =
-  let env = Env.empty in
+  let env = Map.empty in
 
   let env =
     List.fold_left
       (fun a param ->
         match param with
-        | Expr.PPValue (mode, name, ty) -> Env.create name (mode, ty) a
+        | Expr.PPValue (mode, name, ty) -> Map.create name (mode, ty) a
         | Expr.PPLabel (_name, _ty) ->
             failwith "label parameters not yet supported")
       env pos
@@ -229,8 +229,8 @@ let infer_add_arguments (pos, named) =
   List.fold_left
     (fun a param ->
       match param with
-      | Expr.PNValue (mode, name, ty) -> Env.create name (mode, ty) a
-      | Expr.PNKey (mode, name, ty, _) -> Env.create name (mode, ty) a
+      | Expr.PNValue (mode, name, ty) -> Map.create name (mode, ty) a
+      | Expr.PNKey (mode, name, ty, _) -> Map.create name (mode, ty) a
       | Expr.PNLabel (_name, _ty) ->
           failwith "label parameters not yet supported")
     env named
@@ -281,13 +281,13 @@ let infer_mod (m : variable Tree.t) =
     List.fold_left
       (fun (m : variable Tree.t) (k, v) ->
         let def : variable Tree.ty_definition = { ty = v } in
-        let types = Env.create k def m.types in
+        let types = Map.create k def m.types in
         { m with types })
       m primitive_types
   in
 
-  Env.iter (infer_fn_definition context) context.fn_definitions;
-  Env.iter (infer_const_definition context) context.const_definitions
+  Map.iter (infer_fn_definition context) context.fn_definitions;
+  Map.iter (infer_const_definition context) context.const_definitions
 
 let f ?parent m =
   infer_mod m;

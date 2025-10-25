@@ -12,16 +12,16 @@ type 'tv definition =
 
 type 'tv t = {
   parent : 'tv t option;
-  fn_definitions : 'tv fn_definition Env.t;
-  const_definitions : 'tv const_definition Env.t;
-  types : 'tv ty_definition Env.t;
-  modules : 'tv t Env.t;
-  fn_signatures : 'tv fn_signature Env.t;
-  const_signatures : 'tv const_signature Env.t;
+  fn_definitions : 'tv fn_definition Map.t;
+  const_definitions : 'tv const_definition Map.t;
+  types : 'tv ty_definition Map.t;
+  modules : 'tv t Map.t;
+  fn_signatures : 'tv fn_signature Map.t;
+  const_signatures : 'tv const_signature Map.t;
 }
 
 let empty =
-  Env.
+  Map.
     {
       parent = None;
       fn_definitions = empty;
@@ -35,20 +35,20 @@ let empty =
 let rec add m def =
   match def with
   | FnDeclaration (name, s) ->
-      let fn_signatures = Env.create name s m.fn_signatures in
+      let fn_signatures = Map.create name s m.fn_signatures in
       { m with fn_signatures }
   | FnDefinition (name, d) ->
       let m = add m (FnDeclaration (name, d.s)) in
       (* TODO: Check and maybe populate the function signature? *)
-      let fn_definitions = Env.create name d m.fn_definitions in
+      let fn_definitions = Map.create name d m.fn_definitions in
       { m with fn_definitions }
   | ConstDefinition (name, d) ->
       let m = add m (ConstDeclaration (name, d.s)) in
       (* Also the signature here? *)
-      let const_definitions = Env.create name d m.const_definitions in
+      let const_definitions = Map.create name d m.const_definitions in
       { m with const_definitions }
   | ConstDeclaration (name, s) ->
-      let const_signatures = Env.create name s m.const_signatures in
+      let const_signatures = Map.create name s m.const_signatures in
       { m with const_signatures }
 
 let rec get_rec_module p m =
@@ -56,18 +56,18 @@ let rec get_rec_module p m =
   | Path.Atom a -> (a, m)
   | Path.Member (p, a) ->
       let a', m = get_rec_module p m in
-      let m = Env.read a' m.modules in
+      let m = Map.read a' m.modules in
       (a, m)
   | _ -> failwith "unsupported path!"
 
 let get_fnsig p m =
   let a, m = get_rec_module p m in
-  Env.read a m.fn_signatures
+  Map.read a m.fn_signatures
 
 let get_ksig p m =
   let a, m = get_rec_module p m in
-  Env.read a m.const_signatures
+  Map.read a m.const_signatures
 
 let get_ty p m =
   let a, m = get_rec_module p m in
-  Env.read a m.types
+  Map.read a m.types

@@ -1,5 +1,5 @@
 open Util
-module M = Map.Make (String)
+module M = Stdlib.Map.Make (String)
 
 exception Not_found of string
 
