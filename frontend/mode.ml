@@ -3,7 +3,8 @@ type sharing = Data | Reference
 type projection = Value | Projection
 type t = Mode of projection * mutability * sharing
 
-let create ~(project : projection) ~(mut : mutability) ~(share : sharing) () =
+let create ?(project : projection = Value) ?(mut : mutability = Mutable)
+    ?(share : sharing = Data) () =
   (* references are always projections *)
   let project = if share == Reference then Projection else project in
   Mode (project, mut, share)

@@ -8,36 +8,41 @@ let get (Variable var) = !var
 let set (Variable var) x = var := Some x
 
 type 'tv expect = { return : 'tv Ty.t option; yield : 'tv Ty.t option }
+type expect2 = { return : variable Ty.t option; yield : variable Ty.t option }
 
 (* this environment's "local context"*)
-type 'tv env =
-  | Root of {
-      context : variable Tree.t;
-      expect : 'tv expect;
-      variables : ('tv Ty.t * Mode.t) Env.t;
-    }
-  | Child of { super : 'tv env; bound : ('tv Ty.t * Mode.t) Env.t }
+type env =
+  | Root of { context : variable Tree.t; expect : expect2 }
+  | Var of { super : env; name : string; mode : Mode.t; ty : variable Ty.t }
+  | Vars of { super : env; binds : (Mode.t * variable Ty.t) Env.t }
 
-let create_env ?return ?yield ?(variables = Env.empty) context =
+let create_env ?return ?yield context =
   let expect = { return; yield } in
-  Root { context; expect; variables }
-
-let create_subenv ~super = Child { super; bound = Env.empty }
-
-let rec lookup_variable env binding =
-  match env with
-  | Root { variables; _ } -> Env.read_opt binding variables
-  | Child { bound; super; _ } -> (
-      try Some (Env.read binding bound)
-      with _ -> lookup_variable super binding)
+  Root { context; expect }
 
 let rec context_of = function
   | Root { context; _ } -> context
-  | Child { super; _ } -> context_of super
+  | Var { super; _ } -> context_of super
+  | Vars { super; _ } -> context_of super
+
+let rec find_variable ctx vname =
+  match ctx with
+  | Root _ -> None
+  | Var { super; name; ty; mode } ->
+      if String.equal name vname then Some (mode, ty)
+      else find_variable super vname
+  | Vars { super; binds } -> (
+      match Env.read_opt vname binds with
+      | Some p -> Some p
+      | None -> find_variable super vname)
+
+let add_var ctx name mode ty = Var { super = ctx; name; mode; ty }
+let add_vars ctx binds = Vars { super = ctx; binds }
 
 let rec expect_of = function
   | Root { expect; _ } -> expect
-  | Child { super; _ } -> expect_of super
+  | Var { super; _ } -> expect_of super
+  | Vars { super; _ } -> expect_of super
 
 (* Create a Tree from a list of toplevel statements *)
 let tree_of_toplevels tops = List.fold_left Tree.add Tree.empty tops
@@ -94,9 +99,9 @@ let rec unify ~context (l : variable Ty.t) (r : variable Ty.t) =
 (* only perform the type check *)
 let check ~context l r = ignore @@ unify ~context l r
 
-let rec infer_block (env : variable env) valued = function
+let rec infer_block (env : env) valued = function
   | x :: xs ->
-      let tx = infer env x in
+      let env, _, tx = infer env x in
       check ~context:(context_of env) (Ty.Primitive Ty.Unit) tx;
 
       infer_block env valued xs
@@ -109,7 +114,7 @@ and check_arguments env (p, n) positional named =
     (fun param (Expr.AValue (am, av)) ->
       match param with
       | Expr.PPValue (m, _, t) ->
-          let at = infer env av in
+          let env, _, at = infer env av in
           ignore @@ Mode.project m am;
           check ~context:(context_of env) t at
       | Expr.PPLabel _ -> failwith "label parameters not supported yet")
@@ -122,42 +127,47 @@ and check_arguments env (p, n) positional named =
   ()
 
 (* infer the type of an expression *)
-and infer (env : variable env) (expr : variable Expr.t) : variable Ty.t =
+and infer (env : env) expr : env * Mode.t * variable Ty.t =
+  let literal_mode = Mode.create ~mut:Mode.Mutable () in
+
+  let literal_ty ty = (env, literal_mode, ty) in
+
   match expr with
-  | Expr.Unit -> Ty.Primitive Ty.Unit
-  | Expr.Int _ -> Ty.Integer
-  | Expr.Real _ -> Ty.Real
+  | Expr.Unit -> literal_ty (Ty.Primitive Ty.Unit)
+  | Expr.Int _ -> literal_ty Ty.Integer
+  | Expr.Real _ -> literal_ty Ty.Real
   | Expr.Block (units, valued) -> infer_block env valued units
   | Expr.Call (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
       let fn = Tree.get_fnsig name (context_of env) in
       check_arguments env fn.arguments positional named;
-      fn.return
+      literal_ty fn.return
   | Expr.Variable (Path.Atom name) -> (
-      match lookup_variable env name with
-      | Some (ty, _) -> ty
+      match find_variable env name with
+      | Some (m, ty) -> (env, m, ty)
       | None ->
           let s = Tree.get_ksig (Path.Atom name) (context_of env) in
-          s.ty)
+          literal_ty s.ty)
   | Expr.Return value -> (
       let exp = expect_of env in
-      let tv = infer env value in
+      let env, _, tv = infer env value in
       match exp.return with
       | Some ty ->
           check ~context:(context_of env) ty tv;
-          Ty.Bottom
+          literal_ty Ty.Bottom
       | None -> failwith "unexpected return expression")
   | Expr.If (condition, t, f) ->
-      let tc = infer env condition in
-      let tt = infer env t in
-      let tf = infer env f in
+      let env, _, tc = infer env condition in
+      let env, _, tt = infer env t in
+      let env, _, tf = infer env f in
       check ~context:(context_of env) (Ty.Primitive Ty.Bool) tc;
-      unify ~context:(context_of env) tt tf
+      literal_ty @@ unify ~context:(context_of env) tt tf
   | _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
 
-let rec decay ?(resolve_variables = true) ?(resolve_literals = false) = function
+let rec decay ?(resolve_variables = true) ?(resolve_literals = false) :
+    variable Ty.t -> variable Ty.t = function
   | Ty.Integer when resolve_literals -> Ty.Primitive Ty.I32
   | Ty.Real when resolve_literals -> Ty.Primitive Ty.F32
   | Ty.Variable (Variable var) when resolve_variables -> (
@@ -186,7 +196,7 @@ let infer_add_arguments (pos, named) =
     List.fold_left
       (fun a param ->
         match param with
-        | Expr.PPValue (mode, name, ty) -> Env.create name (ty, mode) a
+        | Expr.PPValue (mode, name, ty) -> Env.create name (mode, ty) a
         | Expr.PPLabel (_name, _ty) ->
             failwith "label parameters not yet supported")
       env pos
@@ -195,8 +205,8 @@ let infer_add_arguments (pos, named) =
   List.fold_left
     (fun a param ->
       match param with
-      | Expr.PNValue (mode, name, ty) -> Env.create name (ty, mode) a
-      | Expr.PNKey (mode, name, ty, _) -> Env.create name (ty, mode) a
+      | Expr.PNValue (mode, name, ty) -> Env.create name (mode, ty) a
+      | Expr.PNKey (mode, name, ty, _) -> Env.create name (mode, ty) a
       | Expr.PNLabel (_name, _ty) ->
           failwith "label parameters not yet supported")
     env named
@@ -207,16 +217,19 @@ let infer_fn_definition (context : variable Tree.t) (_name : string)
 
   let variables = infer_add_arguments def.s.arguments in
 
-  let env = create_env ~return ~variables context in
+  let env = create_env ~return context in
+  let env = add_vars env variables in
 
-  let inferred = def.value |> infer env |> decay ~resolve_variables:false in
-  check ~context inferred return
+  let _, _, inferred = infer env def.value in
+  let decayed = decay ~resolve_variables:false inferred in
+  check ~context decayed return
 
 let infer_const_definition (context : variable Tree.t) (_name : string)
     (def : variable Tree.const_definition) =
   let env = create_env context in
-  let inferred = def.value |> infer env |> decay ~resolve_variables:false in
-  check ~context inferred def.s.ty
+  let _, _, inferred = infer env def.value in
+  let decayed = decay ~resolve_variables:false inferred in
+  check ~context decayed def.s.ty
 
 let infer_mod (m : variable Tree.t) =
   let primitive_types =
