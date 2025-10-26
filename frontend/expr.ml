@@ -25,7 +25,7 @@ and 'tv t =
   (* returned type, non-returned values (of type ()) and returned value *)
   | Block of 'tv t list * 'tv t
   (* returned type, function, positional, named *)
-  | Call of 'tv t * 'tv positional_argument list * 'tv named_argument list
+  | FnCall of 'tv t * 'tv positional_argument list * 'tv named_argument list
   (* name, mode, declared type, value *)
   | Let of string * Mode.t * 'tv Ty.t option * 'tv t
   | While of 'tv t * 'tv t

@@ -6,6 +6,8 @@ exception Not_found of string
 type 'a t = { bindings : 'a M.t }
 
 let empty = { bindings = M.empty }
+let of_list l = { bindings = M.of_list l }
+let of_seq s = { bindings = M.of_seq s }
 
 let create name item env =
   let bindings = M.add name item env.bindings in
