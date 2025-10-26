@@ -1,6 +1,3 @@
-type variable = Env.variable
-type resolved = Env.resolved
-
 open Env
 
 exception TypeMismatch of variable Ty.t * variable Ty.t
@@ -19,16 +16,16 @@ let unify_primitive l r =
   if Ty.equal_prim l r then Ty.Primitive l
   else mismatch (Ty.Primitive l) (Ty.Primitive r)
 
-let resolve_named ~context = function
+let resolve_named context = function
   | Ty.Named name ->
       let def = Tree.get_ty name context in
       def.ty
   | x -> x
 
 (* "unify" two types, and return the unified version *)
-let rec unify ~context (l : variable Ty.t) (r : variable Ty.t) =
-  let l = resolve_named ~context l in
-  let r = resolve_named ~context r in
+let rec unify context (l : variable Ty.t) (r : variable Ty.t) =
+  let l = resolve_named context l in
+  let r = resolve_named context r in
 
   match (l, r) with
   (* Unify two primitives iff they are equal *)
@@ -47,13 +44,13 @@ let rec unify ~context (l : variable Ty.t) (r : variable Ty.t) =
   (* Variables get populated if empty, unified if not *)
   | Ty.Variable l, _ -> (
       match get l with
-      | Some t -> unify ~context t r
+      | Some t -> unify context t r
       | None ->
           set l r;
           r)
   | _, Ty.Variable r -> (
       match get r with
-      | Some t -> unify ~context l t
+      | Some t -> unify context l t
       | None ->
           set r l;
           l)
@@ -62,12 +59,12 @@ let rec unify ~context (l : variable Ty.t) (r : variable Ty.t) =
   | _ -> mismatch l r
 
 (* only perform the type check *)
-let check ~context l r = ignore @@ unify ~context l r
+let check context l r = ignore @@ unify context l r
 
 let rec infer_block (env : Env.t) valued = function
   | x :: xs ->
       let env, _, tx = infer env x in
-      check ~context:(context_of env) (Ty.Primitive Ty.Unit) tx;
+      check (context_of env) (Ty.Primitive Ty.Unit) tx;
 
       infer_block env valued xs
   | [] -> infer env valued
@@ -81,7 +78,7 @@ and check_arguments env (p, n) positional named =
       | Expr.PPValue (m, _, t) ->
           let env, _, at = infer env av in
           ignore @@ Mode.project m am;
-          check ~context:(context_of env) t at
+          check (context_of env) t at
       | Expr.PPLabel _ -> failwith "label parameters not supported yet")
     p positional;
 
@@ -126,31 +123,31 @@ and infer (env : Env.t) expr : Env.t * Mode.t * variable Ty.t =
 
       match exp.return with
       | Some ty ->
-          check ~context:(context_of env) ty tv;
+          check (context_of env) ty tv;
           literal_ty Ty.Bottom
       | None -> failwith "unexpected return expression")
   | Expr.If (condition, t, f) ->
       let env, _, tc = infer env condition in
       let env, _, tt = infer env t in
       let env, _, tf = infer env f in
-      check ~context:(context_of env) (Ty.Primitive Ty.Bool) tc;
-      literal_ty @@ unify ~context:(context_of env) tt tf
+      check (context_of env) (Ty.Primitive Ty.Bool) tc;
+      literal_ty @@ unify (context_of env) tt tf
   | Expr.Let (name, mode, ty, value) ->
       let ty = Option.value ~default:(Ty.Variable (fresh ())) ty in
       let _, m, tv = infer env value in
       ignore @@ Mode.project mode m;
-      check ~context:(context_of env) ty tv;
+      check (context_of env) ty tv;
       let env = add_var env name mode tv in
       (env, Mode.create (), Ty.Primitive Ty.Unit)
   | Expr.Loop body ->
       let _, _, tb = infer env body in
-      check ~context:(context_of env) (Ty.Primitive Ty.Unit) tb;
+      check (context_of env) (Ty.Primitive Ty.Unit) tb;
       literal_ty Ty.Bottom
   | Expr.While (condition, body) ->
       let _, _, tc = infer env condition in
       let _, _, tb = infer env body in
-      check ~context:(context_of env) (Ty.Primitive Ty.Bool) tc;
-      check ~context:(context_of env) (Ty.Primitive Ty.Unit) tb;
+      check (context_of env) (Ty.Primitive Ty.Bool) tc;
+      check (context_of env) (Ty.Primitive Ty.Unit) tb;
       literal_ty (Ty.Primitive Ty.Unit)
   | _ -> failwith "expression not yet supported"
 
@@ -217,14 +214,14 @@ let infer_fn_definition (context : variable Tree.t) (_name : string)
     raise @@ Mode.ProjectionFailure (Mode.unproject m, m);
 
   let decayed = decay ~resolve_variables:false inferred in
-  check ~context decayed return
+  check context decayed return
 
 let infer_const_definition (context : variable Tree.t) (_name : string)
     (def : variable Tree.const_definition) =
   let env = create_env context in
   let _, _, inferred = infer env def.value in
   let decayed = decay ~resolve_variables:false inferred in
-  check ~context decayed def.s.ty
+  check context decayed def.s.ty
 
 let infer_mod (m : variable Tree.t) =
   let primitive_types =
