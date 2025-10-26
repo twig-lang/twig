@@ -69,7 +69,7 @@ let rec infer_block (env : Env.t) valued = function
       infer_block env valued xs
   | [] -> infer env valued
 
-and check_arguments env (p, n) positional named =
+and check_arguments env (p, _n) positional named =
   (* TODO: handle labels later on *)
   (* TODO: at least type check this *)
   List.iter2
@@ -84,7 +84,7 @@ and check_arguments env (p, n) positional named =
 
   (* TODO: named arguments are not checked in order,
     maybe turn them from a list into an Env.t? *)
-  List.iter2 (fun _param _arg -> ()) n named;
+  List.iter (fun _arg -> ()) named;
 
   ()
 
@@ -206,13 +206,12 @@ let infer_add_arguments (pos, named) =
   in
 
   List.fold_left
-    (fun a param ->
+    (fun a (name, param) ->
       match param with
-      | Expr.PNValue (mode, name, ty) -> Map.create name (mode, ty) a
-      | Expr.PNKey (mode, name, ty, _) -> Map.create name (mode, ty) a
-      | Expr.PNLabel (_name, _ty) ->
-          failwith "label parameters not yet supported")
-    env named
+      | Expr.PNValue (mode, ty) -> Map.create name (mode, ty) a
+      | Expr.PNKey (mode, ty, _) -> Map.create name (mode, ty) a
+      | Expr.PNLabel _ty -> failwith "label parameters not yet supported")
+    env (Map.to_list named)
 
 let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
     (def : Env.variable Tree.fn_definition) =

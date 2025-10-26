@@ -8,6 +8,8 @@ type 'a t = { bindings : 'a M.t }
 let empty = { bindings = M.empty }
 let of_list l = { bindings = M.of_list l }
 let of_seq s = { bindings = M.of_seq s }
+let to_list s = M.to_list s.bindings
+let to_seq s = M.to_seq s.bindings
 
 let create name item env =
   let bindings = M.add name item env.bindings in

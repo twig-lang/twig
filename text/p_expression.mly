@@ -238,7 +238,7 @@ let expression_nomsg :=
     | None -> positional
     in
 
-    Expr.Call (recv, positional, named)}
+    Expr.FnCall (recv, positional, named)}
 
 /*
 | r = expression_nomsg

@@ -3,9 +3,9 @@ type 'tv positional_parameter =
   | PPLabel of string * 'tv Ty.t
 
 type 'tv named_parameter =
-  | PNValue of Mode.t * string * 'tv Ty.t
-  | PNLabel of string * 'tv Ty.t
-  | PNKey of Mode.t * string * 'tv Ty.t * 'tv t
+  | PNValue of Mode.t * 'tv Ty.t
+  | PNLabel of 'tv Ty.t
+  | PNKey of Mode.t * 'tv Ty.t * 'tv t
 
 and 'tv positional_argument = AValue of Mode.t * 'tv t
 and 'tv named_argument = ANamedValue of string * Mode.t * 'tv t
@@ -36,4 +36,4 @@ and 'tv t =
   | Break of string option * 'tv t
 (* Expressions *)
 
-type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter list
+type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter Map.t

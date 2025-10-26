@@ -27,13 +27,13 @@ let key_fn_par :=
 ; value = preceded("=", primary)?
 ; ty = preceded(":", ty)
 ; { match value with
-    | Some value -> Expr.PNKey (mode, name, ty, value)
-    | None -> Expr.PNValue (mode, name, ty) }
+    | Some value -> name, Expr.PNKey (mode, ty, value)
+    | None -> name, Expr.PNValue (mode, ty) }
 
 | "label"
-; ~ = parameter_name
+; name = parameter_name
 ; ty = preceded(":", ty)
-; <Expr.PNLabel>
+; { name, Expr.PNLabel ty }
 
 /* A path... */
 %public
@@ -74,13 +74,13 @@ let parameter_list(left, par, right) :=
    named parameters. */
 %public
 let parameter_list2(left, par, key_par, right) :=
-  { ([], []) }
+  { ([], Map.of_list []) }
 
 | left
 ; positional = separated_list(",", par)
 ; keys = preceded(";", separated_list(",", key_par))?
 ; right
-; { (positional , Option.value ~default:[] keys) }
+; { (positional , Map.of_list @@ Option.value ~default:[] keys) }
 
 /* The pointer mutability annotation (*const | *mut) */
 %public
