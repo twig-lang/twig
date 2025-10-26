@@ -1,10 +1,10 @@
-open Env
+type ty = Env.variable Ty.t
 
-exception TypeMismatch of variable Ty.t * variable Ty.t
+exception TypeMismatch of ty * ty
 
-let fresh () = Variable (ref None)
-let get (Variable var) = !var
-let set (Variable var) x = var := Some x
+let fresh () = Env.Variable (ref None)
+let get (Env.Variable var) = !var
+let set (Env.Variable var) x = var := Some x
 
 (* Create a Tree from a list of toplevel statements *)
 let tree_of_toplevels tops = List.fold_left Tree.add Tree.empty tops
@@ -23,7 +23,7 @@ let resolve_named context = function
   | x -> x
 
 (* "unify" two types, and return the unified version *)
-let rec unify context (l : variable Ty.t) (r : variable Ty.t) =
+let rec unify context (l : ty) (r : ty) =
   let l = resolve_named context l in
   let r = resolve_named context r in
 
@@ -64,7 +64,7 @@ let check context l r = ignore @@ unify context l r
 let rec infer_block (env : Env.t) valued = function
   | x :: xs ->
       let env, _, tx = infer env x in
-      check (context_of env) (Ty.Primitive Ty.Unit) tx;
+      check (Env.context env) (Ty.Primitive Ty.Unit) tx;
 
       infer_block env valued xs
   | [] -> infer env valued
@@ -78,7 +78,7 @@ and check_arguments env (p, n) positional named =
       | Expr.PPValue (m, _, t) ->
           let env, _, at = infer env av in
           ignore @@ Mode.project m am;
-          check (context_of env) t at
+          check (Env.context env) t at
       | Expr.PPLabel _ -> failwith "label parameters not supported yet")
     p positional;
 
@@ -89,7 +89,7 @@ and check_arguments env (p, n) positional named =
   ()
 
 (* infer the type of an expression *)
-and infer (env : Env.t) expr : Env.t * Mode.t * variable Ty.t =
+and infer (env : Env.t) expr : Env.t * Mode.t * ty =
   let literal_mode = Mode.create ~mut:Mode.Mutable () in
 
   let literal_ty ty = (env, literal_mode, ty) in
@@ -102,19 +102,19 @@ and infer (env : Env.t) expr : Env.t * Mode.t * variable Ty.t =
   | Expr.Block (units, valued) -> infer_block env valued units
   | Expr.Call (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
-      let fn = Tree.get_fnsig name (context_of env) in
+      let fn = Tree.get_fnsig name (Env.context env) in
       check_arguments env fn.arguments positional named;
       literal_ty fn.return
   | Expr.Call _ -> failwith "unsupported callee"
   | Expr.Variable (Path.Atom name) -> (
-      match find_variable env name with
+      match Env.find_variable env name with
       | Some (m, ty) -> (env, m, ty)
       | None ->
-          let s = Tree.get_ksig (Path.Atom name) (context_of env) in
+          let s = Tree.get_ksig (Path.Atom name) (Env.context env) in
           literal_ty s.ty)
   | Expr.Variable _ -> failwith "unsupported variable path"
   | Expr.Return value -> (
-      let exp = expect_of env in
+      let exp = Env.expect env in
       let env, m, tv = infer env value in
 
       (* forbid returning projected values *)
@@ -123,38 +123,38 @@ and infer (env : Env.t) expr : Env.t * Mode.t * variable Ty.t =
 
       match exp.return with
       | Some ty ->
-          check (context_of env) ty tv;
+          check (Env.context env) ty tv;
           literal_ty Ty.Bottom
       | None -> failwith "unexpected return expression")
   | Expr.If (condition, t, f) ->
       let env, _, tc = infer env condition in
       let env, _, tt = infer env t in
       let env, _, tf = infer env f in
-      check (context_of env) (Ty.Primitive Ty.Bool) tc;
-      literal_ty @@ unify (context_of env) tt tf
+      check (Env.context env) (Ty.Primitive Ty.Bool) tc;
+      literal_ty @@ unify (Env.context env) tt tf
   | Expr.Let (name, mode, ty, value) ->
       let ty = Option.value ~default:(Ty.Variable (fresh ())) ty in
       let _, m, tv = infer env value in
       ignore @@ Mode.project mode m;
-      check (context_of env) ty tv;
-      let env = add_var env name mode tv in
+      check (Env.context env) ty tv;
+      let env = Env.add_var env name mode tv in
       (env, Mode.create (), Ty.Primitive Ty.Unit)
   | Expr.Loop body ->
       let _, _, tb = infer env body in
-      check (context_of env) (Ty.Primitive Ty.Unit) tb;
+      check (Env.context env) (Ty.Primitive Ty.Unit) tb;
       literal_ty Ty.Bottom
   | Expr.While (condition, body) ->
       let _, _, tc = infer env condition in
       let _, _, tb = infer env body in
-      check (context_of env) (Ty.Primitive Ty.Bool) tc;
-      check (context_of env) (Ty.Primitive Ty.Unit) tb;
+      check (Env.context env) (Ty.Primitive Ty.Bool) tc;
+      check (Env.context env) (Ty.Primitive Ty.Unit) tb;
       literal_ty (Ty.Primitive Ty.Unit)
   | _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
 
-let rec decay ?(resolve_variables = true) ?(resolve_literals = false) :
-    variable Ty.t -> variable Ty.t = function
+let rec decay ?(resolve_variables = true) ?(resolve_literals = false) : ty -> ty
+    = function
   | Ty.Integer when resolve_literals -> Ty.Primitive Ty.I32
   | Ty.Real when resolve_literals -> Ty.Primitive Ty.F32
   | Ty.Variable (Variable var) when resolve_variables -> (
@@ -163,8 +163,8 @@ let rec decay ?(resolve_variables = true) ?(resolve_literals = false) :
       | None -> failwith "cannot decay unresolved type variable")
   | x -> x
 
-let rec resolve (tv : variable Ty.t) : resolved Ty.t =
-  Ty.map_tv (fun (Variable var) -> resolve @@ Option.get !var)
+let rec resolve (tv : ty) : Env.resolved Ty.t =
+  Ty.map_tv (fun (Env.Variable var) -> resolve @@ Option.get !var)
   @@ decay ~resolve_literals:true tv
 
 let resolve_tree ?parent m =
@@ -198,14 +198,14 @@ let infer_add_arguments (pos, named) =
           failwith "label parameters not yet supported")
     env named
 
-let infer_fn_definition (context : variable Tree.t) (_name : string)
-    (def : variable Tree.fn_definition) =
+let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
+    (def : Env.variable Tree.fn_definition) =
   let return = def.s.return in
 
   let variables = infer_add_arguments def.s.arguments in
 
-  let env = create_env ~return context in
-  let env = add_vars env variables in
+  let env = Env.create ~return context in
+  let env = Env.add_vars env variables in
 
   let _, m, inferred = infer env def.value in
 
@@ -216,14 +216,14 @@ let infer_fn_definition (context : variable Tree.t) (_name : string)
   let decayed = decay ~resolve_variables:false inferred in
   check context decayed return
 
-let infer_const_definition (context : variable Tree.t) (_name : string)
-    (def : variable Tree.const_definition) =
-  let env = create_env context in
+let infer_const_definition (context : Env.variable Tree.t) (_name : string)
+    (def : Env.variable Tree.const_definition) =
+  let env = Env.create context in
   let _, _, inferred = infer env def.value in
   let decayed = decay ~resolve_variables:false inferred in
   check context decayed def.s.ty
 
-let infer_mod (m : variable Tree.t) =
+let infer_mod (m : Env.variable Tree.t) =
   let primitive_types =
     [
       ("bool", Ty.Primitive Bool);
@@ -242,8 +242,8 @@ let infer_mod (m : variable Tree.t) =
 
   let context =
     List.fold_left
-      (fun (m : variable Tree.t) (k, v) ->
-        let def : variable Tree.ty_definition = { ty = v } in
+      (fun (m : Env.variable Tree.t) (k, v) ->
+        let def : Env.variable Tree.ty_definition = { ty = v } in
         let types = Map.create k def m.types in
         { m with types })
       m primitive_types

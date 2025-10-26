@@ -33,7 +33,7 @@ let fn_definition :=
 ; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
-    let s : Infer.variable Tree.fn_signature = {
+    let s : Env.variable Tree.fn_signature = {
       return;
       arguments
     } in
@@ -68,7 +68,7 @@ let const_definition :=
 ; name = "identifier"
 ; ty = preceded(":", ty)
 ; value = preceded("=", expression)
-; { let s : Infer.variable Tree.const_signature = {
+; { let s : Env.variable Tree.const_signature = {
       ty
     } in Tree.ConstDefinition (name, { s; value }) }
 /*

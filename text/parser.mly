@@ -65,7 +65,7 @@ open Frontend
 %token Label "label"
 
 %start main
-%type<Infer.variable Tree.definition list> main
+%type<Env.variable Tree.definition list> main
 
 %%
 
