@@ -90,15 +90,16 @@ and check_arguments env (p, n) positional named =
 
 (* infer the type of an expression *)
 and infer (env : Env.t) expr : Env.t * Mode.t * ty =
-  let literal_mode = Mode.create ~mut:Mode.Mutable () in
-
-  let literal_ty ty = (env, literal_mode, ty) in
+  let literal_ty ty = (env, Mode.create (), ty) in
+  let literal_ty' ty = (env, Mode.create ~mut:Mode.Immutable (), ty) in
 
   match expr with
   | Expr.Unit -> literal_ty (Ty.Primitive Ty.Unit)
   | Expr.Int _ -> literal_ty Ty.Integer
   | Expr.Real _ -> literal_ty Ty.Real
   | Expr.Bool _ -> literal_ty (Ty.Primitive Ty.Bool)
+  | Expr.Char _ -> literal_ty (Ty.Primitive Ty.Char)
+  | Expr.String _ -> literal_ty' (Ty.Primitive Ty.Str)
   | Expr.Block (units, valued) -> infer_block env valued units
   | Expr.Call (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
@@ -149,7 +150,22 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       check (Env.context env) (Ty.Primitive Ty.Bool) tc;
       check (Env.context env) (Ty.Primitive Ty.Unit) tb;
       literal_ty (Ty.Primitive Ty.Unit)
-  | _ -> failwith "expression not yet supported"
+  | Expr.Label (name, ty, body) ->
+      let env = Env.add_label env name ty in
+      let _, _, tb = infer env body in
+      check (Env.context env) ty tb;
+      (env, Mode.create (), ty)
+  | Expr.Break (name, value) ->
+      let _, _, tv = infer env value in
+
+      let t_label = Env.find_label env name in
+      (* TODO: maybe an exception here? *)
+      let t_label = Option.get t_label in
+
+      check (Env.context env) tv t_label;
+
+      literal_ty Ty.Bottom
+  | Expr.List _ | Expr.Tuple _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
 
@@ -237,6 +253,8 @@ let infer_mod (m : Env.variable Tree.t) =
       ("u64", Ty.Primitive U64);
       ("f32", Ty.Primitive F32);
       ("f64", Ty.Primitive F64);
+      ("char", Ty.Primitive Char);
+      ("str", Ty.Primitive Str);
     ]
   in
 

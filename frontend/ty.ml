@@ -11,6 +11,8 @@ type primitive =
   | I64
   | F32
   | F64
+  | Char
+  | Str
 (* Built-in, base types *)
 
 let is_primitive_integer = function
@@ -131,7 +133,9 @@ let rec fmt ?(tv = fun _ -> "<>") f =
         | I32 -> "i32"
         | I64 -> "i64"
         | F32 -> "f32"
-        | F64 -> "f64")
+        | F64 -> "f64"
+        | Char -> "char"
+        | Str -> "str")
   | Real -> fprintf f "{real}"
   | Integer -> fprintf f "{integer}"
   | Bottom -> fprintf f "!"

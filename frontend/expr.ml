@@ -30,6 +30,10 @@ and 'tv t =
   | Let of string * Mode.t * 'tv Ty.t option * 'tv t
   | While of 'tv t * 'tv t
   | Loop of 'tv t
+  (* name, declared type,  body *)
+  | Label of string option * 'tv Ty.t * 'tv t
+  (* name, value (default the unit literal) *)
+  | Break of string option * 'tv t
 (* Expressions *)
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter list

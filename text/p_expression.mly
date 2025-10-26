@@ -23,18 +23,21 @@ let expr_all :=
 /*
 
 | "continue" ; {Ast.ExprContinue}
+*/
 
 | "label"
-; ~ = "identifier"
-; ~ = preceded("->", ty_sink)?
-; ~ = expr_all
-; <Ast.ExprLabel>
+; name = "identifier"?
+; ty = preceded("->", ty_sink)?
+; body = preceded("do", expr_all)
+; { let ty = Option.value ~default:(Ty.Primitive Ty.Unit) ty in
+    Expr.Label (name, ty, body) }
 
 | "break"
 ; label = "identifier"?
 ; value = preceded("with", expr_all)?
-; <Ast.ExprBreak>
-*/
+; { let value = Option.value ~default:(Expr.Unit) value in
+    Expr.Break (label, value) }
+
 let let_exp :=
   "let"
 ; name = "identifier"

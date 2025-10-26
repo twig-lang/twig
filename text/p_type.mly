@@ -6,7 +6,7 @@
 %public
 let ty_sink :=
   ~ = ty ; <>
-| "_"    ; { Ty.Infer.fresh () }
+| "_"    ; { Ty.Variable ( Infer.fresh ()  )}
 
 /* Regular types, and types appearing on `type` definitions. */
 %public

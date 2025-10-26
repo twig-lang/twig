@@ -178,6 +178,25 @@ This should test type checking and inference on simply typed programs.
 
   $ twig check repeats.tw
 
+- Typecheck break expressions
+  $ cat >breaks.tw <<EOF
+  > fn b_u_u -> i32 =
+  >   label -> _ do
+  >     loop
+  >       break with 0;
+  > { break named with unnamed }
+  > fn b_n_u -> i32 =
+  >   label named -> _ do
+  >     loop
+  >       break with 0;
+  > fn b_n_n -> i32 =
+  >   label named -> _ do
+  >     loop
+  >       break named with 0;
+  > EOF
+
+  $ twig check breaks.tw
+
 - Typecheck a more complex example.
   $ cat >six.tw <<EOF
   > const ONE : i32 = 1;
