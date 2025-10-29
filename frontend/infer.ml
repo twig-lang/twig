@@ -89,8 +89,7 @@ and check_arguments env (p, _n) positional named =
           | Expr.PPValue _ -> failwith "no: value parameter, label argument"))
     p positional;
 
-  (* TODO: named arguments are not checked in order,
-    maybe turn them from a list into an Env.t? *)
+  (* TODO: named arguments are not checked in order *)
   List.iter (fun _arg -> ()) named;
 
   ()
@@ -189,13 +188,6 @@ let rec decay ?(resolve_variables = true) ?(resolve_literals = false) : ty -> ty
 let rec resolve (tv : ty) : Env.resolved Ty.t =
   Ty.map_tv (fun (Env.Variable var) -> resolve @@ Option.get !var)
   @@ decay ~resolve_literals:true tv
-
-let resolve_tree ?parent m =
-  ignore m;
-
-  let solved = Tree.empty in
-
-  { solved with parent }
 
 (*( Apply inference and resolution to the whole module )*)
 

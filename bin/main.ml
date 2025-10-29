@@ -33,7 +33,7 @@ let process_file path (fails : bool) =
         fails
   in
 
-  if not @@ passed then failwith "check failed"
+  if not @@ passed then failwith "twig check : failed"
 
 let check_input =
   let doc = "File to process" in
