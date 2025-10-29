@@ -368,6 +368,10 @@ let fn_arg :=
 ; ~ = expression
 ; <Expr.AValue>
 
+| "label"
+; ~ = "identifier"
+; <Expr.ALabel>
+
 let key_fn_arg :=
   ~ = terminated("identifier", ":")
 ; ~ = mode
@@ -377,3 +381,8 @@ let key_fn_arg :=
 | name = "identifier"
 ; mode = mode
 ; { Expr.ANamedValue (name, mode, (Expr.Variable (Path.Atom name))) }
+
+| "label"
+; name = terminated("identifier", ":")
+; value = "identifier"
+; <Expr.ANamedLabel>

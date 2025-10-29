@@ -73,13 +73,20 @@ and check_arguments env (p, _n) positional named =
   (* TODO: handle labels later on *)
   (* TODO: at least type check this *)
   List.iter2
-    (fun param (Expr.AValue (am, av)) ->
-      match param with
-      | Expr.PPValue (m, _, t) ->
-          let env, _, at = infer env av in
-          ignore @@ Mode.project m am;
-          check (Env.context env) t at
-      | Expr.PPLabel _ -> failwith "label parameters not supported yet")
+    (fun param -> function
+      | Expr.AValue (am, av) -> (
+          match param with
+          | Expr.PPValue (m, _, t) ->
+              let env, _, at = infer env av in
+              ignore @@ Mode.project m am;
+              check (Env.context env) t at
+          | Expr.PPLabel _ -> failwith "no: label parameter, value argument")
+      | Expr.ALabel av -> (
+          match param with
+          | Expr.PPLabel (_, t) ->
+              let at = Option.get @@ Env.find_label env (Some av) in
+              check (Env.context env) t at
+          | Expr.PPValue _ -> failwith "no: value parameter, label argument"))
     p positional;
 
   (* TODO: named arguments are not checked in order,
@@ -192,35 +199,32 @@ let resolve_tree ?parent m =
 
 (*( Apply inference and resolution to the whole module )*)
 
-let infer_add_arguments (pos, named) =
-  let env = Map.empty in
-
+let infer_add_arguments (pos, named) env =
   let env =
     List.fold_left
       (fun a param ->
         match param with
-        | Expr.PPValue (mode, name, ty) -> Map.create name (mode, ty) a
-        | Expr.PPLabel (_name, _ty) ->
-            failwith "label parameters not yet supported")
+        | Expr.PPValue (mode, name, ty) -> Env.add_var a name mode ty
+        | Expr.PPLabel (name, ty) -> Env.add_label a (Some name) ty)
       env pos
   in
 
   List.fold_left
     (fun a (name, param) ->
       match param with
-      | Expr.PNValue (mode, ty) -> Map.create name (mode, ty) a
-      | Expr.PNKey (mode, ty, _) -> Map.create name (mode, ty) a
-      | Expr.PNLabel _ty -> failwith "label parameters not yet supported")
+      | Expr.PNValue (mode, ty) -> Env.add_var a name mode ty
+      | Expr.PNKey (mode, ty, _) -> Env.add_var a name mode ty
+      | Expr.PNLabel ty -> Env.add_label a (Some name) ty)
     env (Map.to_list named)
 
 let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
     (def : Env.variable Tree.fn_definition) =
   let return = def.s.return in
 
-  let variables = infer_add_arguments def.s.arguments in
-
-  let env = Env.create ~return context in
-  let env = Env.add_vars env variables in
+  let env =
+    Env.create_with_context ~return context ()
+    |> infer_add_arguments def.s.arguments
+  in
 
   let _, m, inferred = infer env def.value in
 
@@ -233,7 +237,7 @@ let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
 
 let infer_const_definition (context : Env.variable Tree.t) (_name : string)
     (def : Env.variable Tree.const_definition) =
-  let env = Env.create context in
+  let env = Env.create_with_context context () in
   let _, _, inferred = infer env def.value in
   let decayed = decay ~resolve_variables:false inferred in
   check context decayed def.s.ty

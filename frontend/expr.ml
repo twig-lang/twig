@@ -7,8 +7,11 @@ type 'tv named_parameter =
   | PNLabel of 'tv Ty.t
   | PNKey of Mode.t * 'tv Ty.t * 'tv t
 
-and 'tv positional_argument = AValue of Mode.t * 'tv t
-and 'tv named_argument = ANamedValue of string * Mode.t * 'tv t
+and 'tv positional_argument = AValue of Mode.t * 'tv t | ALabel of string
+
+and 'tv named_argument =
+  | ANamedValue of string * Mode.t * 'tv t
+  | ANamedLabel of string * string
 
 and 'tv t =
   | Unit

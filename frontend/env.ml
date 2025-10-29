@@ -10,7 +10,12 @@ type t =
   | Vars of { super : t; binds : (Mode.t * variable Ty.t) Map.t }
   | Label of { super : t; name : string option; ty : variable Ty.t }
 
-let create ?return ?yield context =
+let create_with_context ?return ?yield context () =
+  let expect = { return; yield } in
+  Root { context; expect }
+
+let create ?return ?yield () =
+  let context = Tree.empty in
   let expect = { return; yield } in
   Root { context; expect }
 
