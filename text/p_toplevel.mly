@@ -18,9 +18,9 @@ let top_all :=
 let top_definition :=
   ~ = fn_definition    ; <>
 | ~ = const_definition ; <>
+| ~ = type_definition  ; <>
 /*
 | ~ = sub_definition   ; <>
-| ~ = type_definition  ; <>
 | ~ = mod_definition   ; <>
 */
 
@@ -71,14 +71,15 @@ let const_definition :=
 ; { let s : Env.variable Tree.const_signature = {
       ty
     } in Tree.ConstDefinition (name, { s; value }) }
-/*
+
 let type_definition :=
   "type"
 ; name = "identifier"
 ; "="
 ; ty = ty_all
-; { Ast.TopTypeDefinition { name ; ty } }
+; { Tree.TypeDefinition ( name , { ty }) }
 
+/*
 | "type"
 ; ~ = "identifier"
 ; <Ast.TopTypeAbstract>

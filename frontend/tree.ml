@@ -5,6 +5,7 @@ type 'tv fn_definition = { s : 'tv fn_signature; value : 'tv Expr.t }
 type 'tv const_definition = { s : 'tv const_signature; value : 'tv Expr.t }
 
 type 'tv definition =
+  | TypeDefinition of string * 'tv ty_definition
   | FnDefinition of string * 'tv fn_definition
   | FnDeclaration of string * 'tv fn_signature
   | ConstDefinition of string * 'tv const_definition
@@ -14,7 +15,7 @@ type 'tv t = {
   parent : 'tv t option;
   fn_definitions : 'tv fn_definition Map.t;
   const_definitions : 'tv const_definition Map.t;
-  types : 'tv ty_definition Map.t;
+  ty_definitions : 'tv ty_definition Map.t;
   modules : 'tv t Map.t;
   fn_signatures : 'tv fn_signature Map.t;
   const_signatures : 'tv const_signature Map.t;
@@ -26,7 +27,7 @@ let empty =
       parent = None;
       fn_definitions = empty;
       const_definitions = empty;
-      types = empty;
+      ty_definitions = empty;
       modules = empty;
       fn_signatures = empty;
       const_signatures = empty;
@@ -34,6 +35,9 @@ let empty =
 
 let rec add m def =
   match def with
+  | TypeDefinition (name, d) ->
+      let ty_definitions = Map.create name d m.ty_definitions in
+      { m with ty_definitions }
   | FnDeclaration (name, s) ->
       let fn_signatures = Map.create name s m.fn_signatures in
       { m with fn_signatures }
@@ -70,4 +74,4 @@ let get_ksig p m =
 
 let get_ty p m =
   let a, m = get_rec_module p m in
-  Map.read a m.types
+  Map.read a m.ty_definitions

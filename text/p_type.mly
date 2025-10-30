@@ -12,9 +12,11 @@ let ty_sink :=
 %public
 let ty_all :=
   ~ = ty         ; <>
+/*
 | ~ = struct_ty  ; <>
 | ~ = enum_ty    ; <>
 | ~ = union_ty   ; <>
+*/
 
 let enum_ty :=
   "enum"
