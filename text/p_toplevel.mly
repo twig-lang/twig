@@ -19,8 +19,8 @@ let top_definition :=
   ~ = fn_definition    ; <>
 | ~ = const_definition ; <>
 | ~ = type_definition  ; <>
-/*
 | ~ = sub_definition   ; <>
+/*
 | ~ = mod_definition   ; <>
 */
 
@@ -42,27 +42,26 @@ let fn_definition :=
     | None -> Tree.FnDeclaration (name, s)
     }
 
-/*
 let sub_definition :=
-  unsafep = boption("unsafe")
-; "sub"
+/* unsafep = boption("unsafe") ; */
+  "sub"
 ; mode = mode
-; ~ = yields
+/* ; ~ = yields */
 ; name = fn_name
-; parameters = parameter_list2("[", fn_par, key_fn_par, "]")
-; ty = preceded("->", ty)?
+; arguments = parameter_list2("[", fn_par, key_fn_par, "]")
+; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
-; { let (pos_parameters, key_parameters) = parameters in
-    Ast.TopSubDefinition {
-      unsafep ;
-      yields ;
-      mode ;
-      name ;
-      pos_parameters ;
-      key_parameters ;
-      ty ;
-      value } }
-*/
+; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
+    let s : Env.variable Tree.sub_signature = {
+      return;
+      mode;
+      arguments
+    } in
+    match value with
+    | Some value -> Tree.SubDefinition (name, { s; value })
+    | None -> Tree.SubDeclaration (name, s)
+    }
+
 let const_definition :=
   "const"
 ; name = "identifier"

@@ -4,12 +4,22 @@ type 'tv const_signature = { ty : 'tv Ty.t }
 type 'tv fn_definition = { s : 'tv fn_signature; value : 'tv Expr.t }
 type 'tv const_definition = { s : 'tv const_signature; value : 'tv Expr.t }
 
+type 'tv sub_signature = {
+  return : 'tv Ty.t;
+  mode : Mode.t;
+  arguments : 'tv Expr.param_list;
+}
+
+type 'tv sub_definition = { s : 'tv sub_signature; value : 'tv Expr.t }
+
 type 'tv definition =
   | TypeDefinition of string * 'tv ty_definition
   | FnDefinition of string * 'tv fn_definition
   | FnDeclaration of string * 'tv fn_signature
   | ConstDefinition of string * 'tv const_definition
   | ConstDeclaration of string * 'tv const_signature
+  | SubDeclaration of string * 'tv sub_signature
+  | SubDefinition of string * 'tv sub_definition
 
 type 'tv t = {
   parent : 'tv t option;
@@ -19,6 +29,8 @@ type 'tv t = {
   modules : 'tv t Map.t;
   fn_signatures : 'tv fn_signature Map.t;
   const_signatures : 'tv const_signature Map.t;
+  sub_signatures : 'tv sub_signature Map.t;
+  sub_definitions : 'tv sub_definition Map.t;
 }
 
 let empty =
@@ -31,6 +43,8 @@ let empty =
       modules = empty;
       fn_signatures = empty;
       const_signatures = empty;
+      sub_signatures = empty;
+      sub_definitions = empty;
     }
 
 let rec add m def =
@@ -54,6 +68,14 @@ let rec add m def =
   | ConstDeclaration (name, s) ->
       let const_signatures = Map.create name s m.const_signatures in
       { m with const_signatures }
+  | SubDeclaration (name, s) ->
+      let sub_signatures = Map.create name s m.sub_signatures in
+      { m with sub_signatures }
+  | SubDefinition (name, d) ->
+      let m = add m (SubDeclaration (name, d.s)) in
+      (* TODO: Check and maybe populate the function signature? *)
+      let sub_definitions = Map.create name d m.sub_definitions in
+      { m with sub_definitions }
 
 let rec get_rec_module p m =
   match p with
