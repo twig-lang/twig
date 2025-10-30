@@ -1,3 +1,5 @@
+# Tests for function definitions.
+
 - Typecheck a function returning unit.
   $ cat >function_unit.tw <<EOF
   > fn unit = ();

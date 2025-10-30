@@ -67,7 +67,7 @@ let const_definition :=
   "const"
 ; name = "identifier"
 ; ty = preceded(":", ty)
-; value = preceded("=", expression)
+; value = preceded("=", expr_all)
 ; { let s : Env.variable Tree.const_signature = {
       ty
     } in Tree.ConstDefinition (name, { s; value }) }
