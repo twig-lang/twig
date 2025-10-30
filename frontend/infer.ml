@@ -16,10 +16,10 @@ let unify_primitive l r =
   if Ty.equal_prim l r then Ty.Primitive l
   else mismatch (Ty.Primitive l) (Ty.Primitive r)
 
-let resolve_named context = function
+let rec resolve_named context = function
   | Ty.Named name ->
       let def = Tree.get_ty name context in
-      def.ty
+      resolve_named context def.ty
   | x -> x
 
 (* "unify" two types, and return the unified version *)
