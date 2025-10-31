@@ -96,8 +96,8 @@ and check_arguments env (p, _n) positional named =
 
 (* infer the type of an expression *)
 and infer (env : Env.t) expr : Env.t * Mode.t * ty =
-  let literal_ty ty = (env, Mode.create (), ty) in
   let literal_ty' ty = (env, Mode.create ~mut:Mode.Immutable (), ty) in
+  let literal_ty ty = literal_ty' ty in
 
   match expr with
   | Expr.Unit -> literal_ty (Ty.Primitive Ty.Unit)
@@ -165,7 +165,7 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       if Mode.is_reference mode then ignore @@ Mode.project mode m;
 
       check (Env.context env) ty tv;
-      let env = Env.add_var env name m tv in
+      let env = Env.add_var env name mode tv in
       (env, Mode.create (), Ty.Primitive Ty.Unit)
   | Expr.Loop body ->
       let _, _, tb = infer env body in
@@ -192,6 +192,15 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       check (Env.context env) tv t_label;
 
       literal_ty Ty.Bottom
+  | Expr.Set (l, r) ->
+      let _, lm, lt = infer env l in
+      let _, _, rt = infer env r in
+
+      if not (Mode.is_mutable lm) then failwith "lvalue is not mutable";
+
+      check (Env.context env) lt rt;
+
+      literal_ty Ty.(Primitive Unit)
   | Expr.List _ | Expr.Tuple _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)

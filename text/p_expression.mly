@@ -11,8 +11,8 @@ let expr_all :=
 | ~ = while_exp  ; <>
 | ~ = preceded("loop", expr_all) ; <Expr.Loop>
 | ~ = yield_exp  ; <>
-/*
 | ~ = set_exp    ; <>
+/*
 | ~ = match_exp  ; <>
 | ~ = when_exp   ; <>
 */
@@ -83,14 +83,12 @@ let yield_exp :=
 ; ~ = expression
 ; <Expr.Yield>
 
-/*
 let set_exp :=
   "set"
 ; l = expression
 ; "="
 ; r = expression
-; <Ast.ExprSet>
-*/
+; <Expr.Set>
 
 let if_exp :=
   "if"

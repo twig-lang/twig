@@ -39,6 +39,7 @@ and 'tv t =
   (* name, value (default the unit literal) *)
   | Break of string option * 'tv t
   | Yield of Mode.t * 'tv t
+  | Set of 'tv t * 'tv t
 (* Expressions *)
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter Map.t
