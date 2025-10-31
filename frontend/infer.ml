@@ -201,6 +201,14 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       check (Env.context env) lt rt;
 
       literal_ty Ty.(Primitive Unit)
+  | Expr.When (c, b) ->
+      let _, _, tc = infer env c in
+      let _, _, tb = infer env b in
+
+      check (Env.context env) Ty.(Primitive Bool) tc;
+      check (Env.context env) Ty.(Primitive Unit) tb;
+
+      literal_ty Ty.(Primitive Unit)
   | Expr.List _ | Expr.Tuple _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)

@@ -27,3 +27,13 @@
 
   $ twig check --failing fail_set_immut.tw
   failwith: lvalue is not mutable
+
+- Typecheck a when expression.
+  $ cat >when.tw <<EOF
+  > fn choice(c: bool, v: i32) -> i32 = (
+  >  when c do return v;
+  >  0
+  > );
+  > EOF
+
+  $ twig check when.tw

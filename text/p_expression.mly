@@ -12,9 +12,9 @@ let expr_all :=
 | ~ = preceded("loop", expr_all) ; <Expr.Loop>
 | ~ = yield_exp  ; <>
 | ~ = set_exp    ; <>
+| ~ = when_exp   ; <>
 /*
 | ~ = match_exp  ; <>
-| ~ = when_exp   ; <>
 */
 
 | value = preceded("return", expr_all?)
@@ -145,14 +145,16 @@ let while_exp :=
 ; "do"
 ; ~ = expr_all
 ; <Ast.ExprWhileMatch>
+*/
 
 let when_exp :=
   "when"
 ; ~ = expression
 ; "do"
 ; ~ = expr_all
-; <Ast.ExprWhen>
+; <Expr.When>
 
+/*
 | "when" ; "let"
 ; ~ = pattern
 ; ~ = preceded(":", ty)?
