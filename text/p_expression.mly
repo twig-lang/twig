@@ -242,19 +242,19 @@ let expression_nomsg :=
 
     Expr.FnCall (recv, positional, named)}
 
-/*
-| r = expression_nomsg
-; pn = delimited("[", arglist ,"]")
-; t = preceded(":", tail_fn_arg)?
-; { let (positional, named) = pn in
+| recv = expression_nomsg
+; arguments = delimited("[", arglist ,"]")
+; tail = preceded(":", tail_fn_arg)?
+; { let (positional, named) = arguments in
 
-    let positional = match t with
+    let positional = match tail with
     | Some a -> positional @ [a]
     | None -> positional
     in
 
-    Ast.ExprSubCall (r, positional, named)}
+    Expr.SubCall (recv, positional, named)}
 
+/*
 | ~ = expression_nomsg
 ; "as"
 ; ~ = ty

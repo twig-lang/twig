@@ -46,3 +46,14 @@
   > EOF
 
   $ twig check sub_yield_ref_arg.tw
+
+- Call a subscript.
+  $ cat >call_sub.tw <<EOF
+  > sub value -> i32 = yield 1;
+  > fn val -> i32 = (
+  >  let one : i32 = value[];
+  >  2
+  > );
+  > EOF
+
+  $ twig check call_sub.tw

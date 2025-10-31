@@ -112,7 +112,13 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       let fn = Tree.get_fnsig name (Env.context env) in
       check_arguments env fn.arguments positional named;
       literal_ty fn.return
+  | Expr.SubCall (Expr.Variable name, positional, named) ->
+      (* TODO: support actual callable values *)
+      let fn = Tree.get_subsig name (Env.context env) in
+      check_arguments env fn.arguments positional named;
+      (env, fn.mode, fn.return)
   | Expr.FnCall _ -> failwith "unsupported callee"
+  | Expr.SubCall _ -> failwith "unsupported callee"
   | Expr.Variable (Path.Atom name) -> (
       match Env.find_variable env name with
       | Some (m, ty) -> (env, m, ty)

@@ -90,6 +90,10 @@ let get_fnsig p m =
   let a, m = get_rec_module p m in
   Map.read a m.fn_signatures
 
+let get_subsig p m =
+  let a, m = get_rec_module p m in
+  Map.read a m.sub_signatures
+
 let get_ksig p m =
   let a, m = get_rec_module p m in
   Map.read a m.const_signatures
