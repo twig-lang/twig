@@ -1,7 +1,12 @@
 (* inference environments *)
 type variable = Variable of variable Ty.t option ref
 type resolved = |
-type expected = { return : variable Ty.t option; yield : variable Ty.t option }
+
+type expected = {
+  mode : Mode.t;
+  return : variable Ty.t option;
+  yield : variable Ty.t option;
+}
 
 (* this environment's "local context"*)
 type t =
@@ -10,13 +15,15 @@ type t =
   | Vars of { super : t; binds : (Mode.t * variable Ty.t) Map.t }
   | Label of { super : t; name : string option; ty : variable Ty.t }
 
-let create_with_context ?return ?yield context () =
-  let expect = { return; yield } in
+let create_with_context ?mode ?return ?yield context () =
+  let mode = Option.value ~default:(Mode.create ()) mode in
+  let expect = { mode; return; yield } in
   Root { context; expect }
 
-let create ?return ?yield () =
+let create ?mode ?return ?yield () =
   let context = Tree.empty in
-  let expect = { return; yield } in
+  let mode = Option.value ~default:(Mode.create ()) mode in
+  let expect = { mode; return; yield } in
   Root { context; expect }
 
 let rec context = function

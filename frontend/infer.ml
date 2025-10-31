@@ -133,6 +133,18 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
           check (Env.context env) ty tv;
           literal_ty Ty.Bottom
       | None -> failwith "unexpected return expression")
+  | Expr.Yield (mode, value) -> (
+      let exp = Env.expect env in
+      let env, m, tv = infer env value in
+
+      ignore @@ Mode.project exp.mode mode;
+      ignore @@ Mode.project mode m;
+
+      match exp.yield with
+      | Some ty ->
+          check (Env.context env) ty tv;
+          literal_ty Ty.(Primitive Unit)
+      | None -> failwith "unexpected yield expression")
   | Expr.If (condition, t, f) ->
       let env, _, tc = infer env condition in
       let env, _, tt = infer env t in
@@ -234,6 +246,32 @@ let infer_const_definition (context : Env.variable Tree.t) (_name : string)
   let decayed = decay ~resolve_variables:false inferred in
   check context decayed def.s.ty
 
+let count_yields value =
+  let count = function Expr.Yield _ -> 1 | _ -> 0 in
+  Expr.reduce ( + ) count 0 value
+
+let infer_sub_definition context (_name : string)
+    (def : Env.variable Tree.sub_definition) =
+  let yield = def.s.return in
+
+  let env =
+    Env.create_with_context ~mode:def.s.mode ~yield context ()
+    |> infer_add_arguments def.s.arguments
+  in
+
+  let _, m, inferred = infer env def.value in
+
+  (* forbid returning projected values *)
+  if not Mode.(equal (unproject m) m) then
+    raise @@ Mode.ProjectionFailure (Mode.unproject m, m);
+
+  let n_yields = count_yields def.value in
+
+  if n_yields <> 1 then failwith "!= 1 yields in subscript";
+
+  let decayed = decay ~resolve_variables:false inferred in
+  check context Ty.(Primitive Unit) decayed
+
 let infer_mod (m : Env.variable Tree.t) =
   let primitive_types =
     [
@@ -263,7 +301,8 @@ let infer_mod (m : Env.variable Tree.t) =
   in
 
   Map.iter (infer_fn_definition context) context.fn_definitions;
-  Map.iter (infer_const_definition context) context.const_definitions
+  Map.iter (infer_const_definition context) context.const_definitions;
+  Map.iter (infer_sub_definition context) context.sub_definitions
 
 let f ?parent m =
   infer_mod m;

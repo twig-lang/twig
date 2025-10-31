@@ -10,9 +10,9 @@ let expr_all :=
 | ~ = let_exp    ; <>
 | ~ = while_exp  ; <>
 | ~ = preceded("loop", expr_all) ; <Expr.Loop>
+| ~ = yield_exp  ; <>
 /*
 | ~ = set_exp    ; <>
-| ~ = yield_exp  ; <>
 | ~ = match_exp  ; <>
 | ~ = when_exp   ; <>
 */
@@ -75,13 +75,15 @@ let pattern :=
     | Some args -> Ast.PatArgs (name, args) }
 
 | "_" ; {Ast.PatSink}
+*/
 
 let yield_exp :=
   "yield"
 ; ~ = mode
 ; ~ = expression
-; <Ast.ExprYield>
+; <Expr.Yield>
 
+/*
 let set_exp :=
   "set"
 ; l = expression

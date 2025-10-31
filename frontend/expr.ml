@@ -37,6 +37,23 @@ and 'tv t =
   | Label of string option * 'tv Ty.t * 'tv t
   (* name, value (default the unit literal) *)
   | Break of string option * 'tv t
+  | Yield of Mode.t * 'tv t
 (* Expressions *)
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter Map.t
+
+let rec reduce (f : 'a -> 'a -> 'a) m init x =
+  let red = reduce f m init in
+  let red' a f x =
+    match x with
+    | Unit | Int _ | Real _ | Bool _ | String _ | Char _ | Variable _ -> init
+    | Tuple is | List is -> List.fold_left f init @@ List.map red is |> f a
+    | If (vc, vt, vf) -> red vc |> f a |> f (red vt) |> f (red vf)
+    | Block (us, v) ->
+        List.fold_left f init @@ List.map red us |> f (red v) |> f a
+    | While (c, v) -> red c |> f a |> f (red v)
+    | Return v | Loop v | Label (_, _, v) | Break (_, v) | Yield (_, v) ->
+        f a (red v)
+    | _ -> failwith "not supported yet"
+  in
+  red' init f x |> f (m x)

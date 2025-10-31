@@ -74,3 +74,11 @@
         Failure("twig check : failed")
         
   [125]
+
+- Cannot yield in a function.
+  $ cat >fail_cannot_yield.tw <<EOF
+  > fn fail = yield 0;
+  > EOF
+
+  $ twig check --failing fail_cannot_yield.tw
+  failwith: unexpected yield expression
