@@ -57,3 +57,12 @@
   > EOF
 
   $ twig check call_sub.tw
+
+- Can't return a projected value from a function.
+  $ cat >cant_ret_proj.tw <<EOF
+  > sub value -> i32 = yield 1;
+  > fn val -> i32 = value[];
+  > EOF
+
+  $ twig check --failing cant_ret_proj.tw
+  projection failure: Mode(value, immutable, data) <- Mode(projection, immutable, data)

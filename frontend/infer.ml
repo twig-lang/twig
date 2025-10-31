@@ -160,9 +160,12 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
   | Expr.Let (name, mode, ty, value) ->
       let ty = Option.value ~default:(Ty.Variable (fresh ())) ty in
       let _, m, tv = infer env value in
-      ignore @@ Mode.project mode m;
+
+      (* We only care about projection checks if we're using a reference. *)
+      if Mode.is_reference mode then ignore @@ Mode.project mode m;
+
       check (Env.context env) ty tv;
-      let env = Env.add_var env name mode tv in
+      let env = Env.add_var env name m tv in
       (env, Mode.create (), Ty.Primitive Ty.Unit)
   | Expr.Loop body ->
       let _, _, tb = infer env body in

@@ -52,6 +52,7 @@ let sub_definition :=
 ; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
+    let mode = Mode.project mode mode in
     let s : Env.variable Tree.sub_signature = {
       return;
       mode;
