@@ -131,7 +131,7 @@ and lexer' lexbuf =
       failwith @@ "unknown character `" ^ Sedlexing.Utf8.lexeme lexbuf ^ "`"
 
 let lexer lexbuf =
-  let pre = Sedlexing.lexing_bytes_position_curr lexbuf in
   let tok = lexer' lexbuf in
+  let pre = Sedlexing.lexing_bytes_position_start lexbuf in
   let post = Sedlexing.lexing_bytes_position_curr lexbuf in
   (tok, pre, post)
