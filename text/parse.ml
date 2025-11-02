@@ -1,3 +1,4 @@
+open Frontend
 module I = Parser.MenhirInterpreter
 module E = MenhirLib.ErrorReports
 module L = MenhirLib.LexerUtil
@@ -68,10 +69,13 @@ let parse input lexbuf =
     failwith message
 
 let parse_string ?(fname = "*string*") str =
+  ignore @@ Files.add' fname str;
   let lb = Sedlexing.Utf8.from_string str in
   Sedlexing.set_filename lb fname;
   parse str lb
 
-let parse_chan ?(fname = "*channel*") chan =
-  let data = In_channel.input_all chan in
-  parse_string ~fname data
+let parse_file path =
+  let data = Files.add path in
+  let lb = Sedlexing.Utf8.from_string data in
+  Sedlexing.set_filename lb path;
+  parse data lb

@@ -1,10 +1,9 @@
 open Cmdliner
 
 let process_file path (fails : bool) =
-  let input = In_channel.open_text path in
   let passed =
     try
-      let definitions = Text.Parse.parse_chan ~fname:path input in
+      let definitions = Text.Parse.parse_file path in
 
       if not fails then Printexc.record_backtrace true;
 
