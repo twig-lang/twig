@@ -45,6 +45,8 @@ and 'tv t =
 (* Expressions *)
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter Map.t
+type 'tv located = 'tv t Loc.t
+type 'tv annotated = (Mode.t * 'tv Ty.t) * 'tv t Loc.t
 
 let rec reduce (f : 'a -> 'a -> 'a) m init x =
   let red = reduce f m init in
