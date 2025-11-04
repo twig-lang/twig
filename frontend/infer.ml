@@ -109,23 +109,22 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
   | Expr.Block (units, valued) -> infer_block env valued units
   | Expr.FnCall (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
-      let fn = Tree.get_fnsig name (Env.context env) in
+      let fn = Tree.get_fnsig (Path.Atom name) (Env.context env) in
       check_arguments env fn.arguments positional named;
       literal_ty fn.return
   | Expr.SubCall (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
-      let fn = Tree.get_subsig name (Env.context env) in
+      let fn = Tree.get_subsig (Path.Atom name) (Env.context env) in
       check_arguments env fn.arguments positional named;
       (env, fn.mode, fn.return)
   | Expr.FnCall _ -> failwith "unsupported callee"
   | Expr.SubCall _ -> failwith "unsupported callee"
-  | Expr.Variable (Path.Atom name) -> (
+  | Expr.Variable name -> (
       match Env.find_variable env name with
       | Some (m, ty) -> (env, m, ty)
       | None ->
           let s = Tree.get_ksig (Path.Atom name) (Env.context env) in
           literal_ty s.ty)
-  | Expr.Variable _ -> failwith "unsupported variable path"
   | Expr.Return value -> (
       let exp = Env.expect env in
       let env, m, tv = infer env value in
@@ -209,6 +208,7 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       check (Env.context env) Ty.(Primitive Unit) tb;
 
       literal_ty Ty.(Primitive Unit)
+  | Expr.PathMember (_path, _value) -> failwith "expression not yet supported"
   | Expr.List _ | Expr.Tuple _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)

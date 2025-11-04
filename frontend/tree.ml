@@ -77,27 +77,21 @@ let rec add m def =
       let sub_definitions = Map.create name d m.sub_definitions in
       { m with sub_definitions }
 
-let rec get_rec_module p m =
-  match p with
-  | Path.Atom a -> (a, m)
-  | Path.Member (p, a) ->
-      let a', m = get_rec_module p m in
-      let m = Map.read a' m.modules in
-      (a, m)
-  | _ -> failwith "unsupported path!"
+let get_module p m =
+  match p with Path.Atom a -> (a, m) | _ -> failwith "unsupported path!"
 
 let get_fnsig p m =
-  let a, m = get_rec_module p m in
+  let a, m = get_module p m in
   Map.read a m.fn_signatures
 
 let get_subsig p m =
-  let a, m = get_rec_module p m in
+  let a, m = get_module p m in
   Map.read a m.sub_signatures
 
 let get_ksig p m =
-  let a, m = get_rec_module p m in
+  let a, m = get_module p m in
   Map.read a m.const_signatures
 
 let get_ty p m =
-  let a, m = get_rec_module p m in
+  let a, m = get_module p m in
   Map.read a m.ty_definitions

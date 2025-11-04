@@ -22,7 +22,7 @@ and 'tv t =
   | Char of Uchar.t
   | Tuple of 'tv t list
   | List of 'tv t list
-  | Variable of Path.t
+  | Variable of string
   | If of 'tv t * 'tv t * 'tv t
   | Return of 'tv t
   (* returned type, non-returned values (of type ()) and returned value *)
@@ -41,6 +41,7 @@ and 'tv t =
   | Yield of Mode.t * 'tv t
   | Set of 'tv t * 'tv t
   | When of 'tv t * 'tv t
+  | PathMember of Path.t * 'tv t
 (* Expressions *)
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter Map.t

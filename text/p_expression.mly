@@ -194,6 +194,10 @@ let expression :=
 let expression_nw :=
   ~ = msg_exp ; <>
 
+| ~ = path
+; ~ = preceded("::", expression)
+; <Expr.PathMember>
+
 /*
 | "unsafe"
 ; ~ = expression_nw
@@ -273,8 +277,8 @@ let arglist :=
 /* A "primitive" expression. */
 %public
 let primary :=
-  ~ = path      ; <Expr.Variable>
-| ~ = block     ; <>
+  ~ = "identifier" ; <Expr.Variable>
+| ~ = block        ; <>
 /*
 | ~ = anon_fn   ; <>
 */
@@ -382,7 +386,7 @@ let key_fn_arg :=
 
 | name = "identifier"
 ; mode = mode
-; { Expr.ANamedValue (name, mode, (Expr.Variable (Path.Atom name))) }
+; { Expr.ANamedValue (name, mode, (Expr.Variable name)) }
 
 | "label"
 ; name = terminated("identifier", ":")

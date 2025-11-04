@@ -49,10 +49,6 @@ let path :=
   )
 ; { Path.Call (path, arguments) }
 
-| ~ = path
-; ~ = preceded("::", "identifier")
-; <Path.Member>
-
 /* A parameter-passing mode. */
 %public
 let mode :=
