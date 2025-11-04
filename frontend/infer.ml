@@ -66,6 +66,7 @@ let rec unify context (l : ty) (r : ty) =
 
 (* only perform the type check *)
 let check context l r = ignore @@ unify context l r
+let find_toplevel predicate path = Env.find_toplevel (predicate path)
 
 let rec infer_block (env : Env.t) valued = function
   | x :: xs ->
@@ -115,12 +116,12 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
   | Expr.Block (units, valued) -> infer_block env valued units
   | Expr.FnCall (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
-      let fn = Env.find_toplevel (Tree.get_fnsig @@ Path.Atom name) env in
+      let fn = find_toplevel Tree.get_fnsig (Path.Atom name) env in
       check_arguments env fn.arguments positional named;
       literal_ty fn.return
   | Expr.SubCall (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
-      let fn = Env.find_toplevel (Tree.get_subsig @@ Path.Atom name) env in
+      let fn = find_toplevel Tree.get_subsig (Path.Atom name) env in
       check_arguments env fn.arguments positional named;
       (env, fn.mode, fn.return)
   | Expr.FnCall _ -> failwith "unsupported callee"
@@ -129,7 +130,7 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       match Env.find_variable env name with
       | Some (m, ty) -> (env, m, ty)
       | None ->
-          let s = Env.find_toplevel (Tree.get_ksig @@ Path.Atom name) env in
+          let s = find_toplevel Tree.get_ksig (Path.Atom name) env in
           literal_ty s.ty)
   | Expr.Return value -> (
       let exp = Env.expect env in
@@ -215,7 +216,7 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
 
       literal_ty Ty.(Primitive Unit)
   | Expr.PathMember (path, value) ->
-      let m = Env.find_toplevel (Tree.get_mod path) env in
+      let m = find_toplevel Tree.get_mod path env in
       let env = Env.add_context m env in
       infer env value
   | Expr.Tuple items ->
