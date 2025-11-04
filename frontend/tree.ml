@@ -1,3 +1,20 @@
+module type STAGE = sig
+  type ty
+  type expr
+end
+
+module M (S : STAGE) = struct
+  type ty_definition = { defined : S.ty }
+
+  (* TODO: Port Expr.param_list *)
+  type fn_signature = { return : S.ty; arguments : unit }
+  type sub_signature = { yield : S.ty; mode : Mode.t; arguments : unit }
+  type const_signature = { ty : S.ty }
+  type fn_definition = { s : fn_signature; value : S.expr }
+  type sub_definition = { s : sub_signature; value : S.expr }
+  type const_definition = { s : const_signature; value : S.expr }
+end
+
 type 'tv ty_definition = { ty : 'tv Ty.t }
 type 'tv fn_signature = { return : 'tv Ty.t; arguments : 'tv Expr.param_list }
 type 'tv const_signature = { ty : 'tv Ty.t }
