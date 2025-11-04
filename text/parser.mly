@@ -21,6 +21,7 @@ open Frontend
 %token RBrac "]"
 
 %token Dot "."
+%token Member "::"
 %token Colon ":"
 %token Comma ","
 %token Semicolon ";"

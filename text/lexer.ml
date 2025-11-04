@@ -44,6 +44,7 @@ let operators =
       ("&", Amp);
       ("@", At);
       (".", Dot);
+      ("::", Member);
       (":", Colon);
       (",", Comma);
       (";", Semicolon);

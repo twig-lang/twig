@@ -50,7 +50,7 @@ let path :=
 ; { Path.Call (path, arguments) }
 
 | ~ = path
-; ~ = preceded(".", "identifier")
+; ~ = preceded("::", "identifier")
 ; <Path.Member>
 
 /* A parameter-passing mode. */
