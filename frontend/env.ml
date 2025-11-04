@@ -10,34 +10,32 @@ type expected = {
 
 (* this environment's "local context"*)
 type t =
-  | Root of { context : variable Tree.t; expect : expected }
+  | Root of { expect : expected }
+  | Context of { super : t; context : variable Tree.t }
   | Var of { super : t; name : string; mode : Mode.t; ty : variable Ty.t }
   | Vars of { super : t; binds : (Mode.t * variable Ty.t) Map.t }
   | Label of { super : t; name : string option; ty : variable Ty.t }
 
-let create_with_context ?mode ?return ?yield context () =
-  let mode = Option.value ~default:(Mode.create ()) mode in
-  let expect = { mode; return; yield } in
-  Root { context; expect }
-
 let create ?mode ?return ?yield () =
-  let context = Tree.empty in
   let mode = Option.value ~default:(Mode.create ()) mode in
   let expect = { mode; return; yield } in
-  Root { context; expect }
+  Root { expect }
 
 let rec context = function
-  | Root { context; _ } -> context
+  | Root _ -> None
+  | Context { context; super } -> Some (super, context)
   | Var { super; _ } -> context super
   | Vars { super; _ } -> context super
   | Label { super; _ } -> context super
 
 let rec expect = function
   | Root { expect; _ } -> expect
+  | Context { super; _ } -> expect super
   | Var { super; _ } -> expect super
   | Vars { super; _ } -> expect super
   | Label { super; _ } -> expect super
 
+let add_context from ctx = Context { super = ctx; context = from }
 let add_var ctx name mode ty = Var { super = ctx; name; mode; ty }
 let add_vars ctx binds = Vars { super = ctx; binds }
 let add_label ctx name ty = Label { super = ctx; name; ty }
@@ -45,6 +43,7 @@ let add_label ctx name ty = Label { super = ctx; name; ty }
 let rec find_variable ctx vname =
   match ctx with
   | Root _ -> None
+  | Context { super; _ } -> find_variable super vname
   | Var { super; name; ty; mode } ->
       if String.equal name vname then Some (mode, ty)
       else find_variable super vname
@@ -57,6 +56,7 @@ let rec find_variable ctx vname =
 let rec find_label ctx vname =
   match ctx with
   | Root _ -> None
+  | Context { super; _ } -> find_label super vname
   | Var { super; _ } -> find_label super vname
   | Vars { super; _ } -> find_label super vname
   | Label { super; name; ty } -> (
@@ -68,3 +68,11 @@ let rec find_label ctx vname =
       | None, _ -> Some ty
       (* explicit name, unnamed label *)
       | Some _, None -> find_label super vname)
+
+let rec find_toplevel predicate = function
+  | Root _ -> failwith "could not find a toplevel"
+  | Context { super; context } -> (
+      try predicate context with _ -> find_toplevel predicate super)
+  | Var { super; _ } -> find_toplevel predicate super
+  | Vars { super; _ } -> find_toplevel predicate super
+  | Label { super; _ } -> find_toplevel predicate super

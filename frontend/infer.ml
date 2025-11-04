@@ -16,10 +16,16 @@ let unify_primitive l r =
   if Ty.equal_prim l r then Ty.Primitive l
   else mismatch (Ty.Primitive l) (Ty.Primitive r)
 
-let rec resolve_named context = function
-  | Ty.Named name ->
-      let def = Tree.get_ty name context in
-      resolve_named context def.ty
+let rec resolve_named context t =
+  match t with
+  | Ty.Named name -> (
+      match context with
+      | Some (cs, c) -> (
+          try
+            let def = Tree.get_ty name c in
+            resolve_named context def.ty
+          with Not_found -> resolve_named (Env.context cs) t)
+      | None -> failwith "uh oh")
   | x -> x
 
 (* "unify" two types, and return the unified version *)
@@ -109,12 +115,12 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
   | Expr.Block (units, valued) -> infer_block env valued units
   | Expr.FnCall (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
-      let fn = Tree.get_fnsig (Path.Atom name) (Env.context env) in
+      let fn = Env.find_toplevel (Tree.get_fnsig @@ Path.Atom name) env in
       check_arguments env fn.arguments positional named;
       literal_ty fn.return
   | Expr.SubCall (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
-      let fn = Tree.get_subsig (Path.Atom name) (Env.context env) in
+      let fn = Env.find_toplevel (Tree.get_subsig @@ Path.Atom name) env in
       check_arguments env fn.arguments positional named;
       (env, fn.mode, fn.return)
   | Expr.FnCall _ -> failwith "unsupported callee"
@@ -123,7 +129,7 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       match Env.find_variable env name with
       | Some (m, ty) -> (env, m, ty)
       | None ->
-          let s = Tree.get_ksig (Path.Atom name) (Env.context env) in
+          let s = Env.find_toplevel (Tree.get_ksig @@ Path.Atom name) env in
           literal_ty s.ty)
   | Expr.Return value -> (
       let exp = Env.expect env in
@@ -208,8 +214,24 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
       check (Env.context env) Ty.(Primitive Unit) tb;
 
       literal_ty Ty.(Primitive Unit)
-  | Expr.PathMember (_path, _value) -> failwith "expression not yet supported"
-  | Expr.List _ | Expr.Tuple _ -> failwith "expression not yet supported"
+  | Expr.PathMember (path, value) ->
+      let m = Env.find_toplevel (Tree.get_mod path) env in
+      let env = Env.add_context m env in
+      infer env value
+  | Expr.Tuple items ->
+      let types =
+        List.map
+          (* TODO: check the mode of the whole tuple?
+            ( 1, 2, a_value(), 3, 4, a_projection[] )
+            a_projection[] means the whole tuple is projected, right?
+          *)
+          (fun x ->
+            let _, _, t = infer env x in
+            t)
+          items
+      in
+      literal_ty @@ Ty.Tuple types
+  | Expr.List _ -> failwith "expression not yet supported"
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
 
@@ -252,7 +274,7 @@ let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
   let return = def.s.return in
 
   let env =
-    Env.create_with_context ~return context ()
+    Env.create ~return () |> Env.add_context context
     |> infer_add_arguments def.s.arguments
   in
 
@@ -263,14 +285,14 @@ let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
     raise @@ Mode.ProjectionFailure (Mode.unproject m, m);
 
   let decayed = decay ~resolve_variables:false inferred in
-  check context decayed return
+  check (Env.context env) decayed return
 
 let infer_const_definition (context : Env.variable Tree.t) (_name : string)
     (def : Env.variable Tree.const_definition) =
-  let env = Env.create_with_context context () in
+  let env = Env.create () |> Env.add_context context in
   let _, _, inferred = infer env def.value in
   let decayed = decay ~resolve_variables:false inferred in
-  check context decayed def.s.ty
+  check (Env.context env) decayed def.s.ty
 
 let count_yields value =
   let count = function Expr.Yield _ -> 1 | _ -> 0 in
@@ -281,7 +303,8 @@ let infer_sub_definition context (_name : string)
   let yield = def.s.return in
 
   let env =
-    Env.create_with_context ~mode:def.s.mode ~yield context ()
+    Env.create ~mode:def.s.mode ~yield ()
+    |> Env.add_context context
     |> infer_add_arguments def.s.arguments
   in
 
@@ -296,7 +319,7 @@ let infer_sub_definition context (_name : string)
   if n_yields <> 1 then failwith "!= 1 yields in subscript";
 
   let decayed = decay ~resolve_variables:false inferred in
-  check context Ty.(Primitive Unit) decayed
+  check (Env.context env) Ty.(Primitive Unit) decayed
 
 let infer_mod (m : Env.variable Tree.t) =
   let primitive_types =

@@ -95,3 +95,8 @@ let get_ksig p m =
 let get_ty p m =
   let a, m = get_module p m in
   Map.read a m.ty_definitions
+
+let get_mod p m =
+  match p with
+  | Path.Atom a -> Map.read a m.modules
+  | _ -> failwith "unsupported path!"
