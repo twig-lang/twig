@@ -5,7 +5,7 @@
 
 (library
  (name text)
- (libraries menhirLib cmdliner frontend)
+ (libraries menhirLib cmdliner frontend reporting)
  (preprocess
   (pps sedlex.ppx)))
 
