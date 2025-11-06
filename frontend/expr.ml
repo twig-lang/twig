@@ -96,7 +96,7 @@ and 'tv t =
 (* Expressions *)
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter Map.t
-type 'tv located = 'tv t Reporting.Loc.t
+type 'tv located = 'tv t Reporting.Location.t
 type 'tv annotated = (Mode.t * 'tv Ty.t) * 'tv located
 
 let rec reduce (f : 'a -> 'a -> 'a) m init x =

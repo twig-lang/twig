@@ -7,7 +7,7 @@ let pp_kind f =
   | Warning -> "WARNING"
   | Error -> "ERROR"
 
-type mark = Mark of { span : Loc.span; text : string }
+type mark = Mark of { span : Location.span; text : string }
 
 type t =
   | Report of { path : string; kind : kind; text : string; marks : mark list }
