@@ -1,50 +1,55 @@
 module M (S : Stage.S) = struct
   type positional_parameter =
-    | Parameter_value of Mode.t * string * S.ty
-    | Parameter_label of string * S.ty
+    | Parameter_value of { name : string; ty : S.ty; mode : Mode.t }
+    | Parameter_label of { name : string; ty : S.ty }
 
   and named_parameter =
-    | Parameter_value of Mode.t * S.ty
-    | Parameter_label of S.ty
-    | Parameter_key of Mode.t * S.ty * t
+    | Parameter_value of { mode : Mode.t; ty : S.ty }
+    | Parameter_label of { ty : S.ty }
+    | Parameter_key of { mode : Mode.t; ty : S.ty; default : t }
 
   and positional_argument =
-    | Argument_value of Mode.t * t
-    | Argument_label of string
+    | Argument_value of { mode : Mode.t; value : t }
+    | Argument_label of { label : string }
 
   and named_argument =
-    | Argument_value of string * Mode.t * t
-    | Argument_lavel of string * string
+    | Argument_value of { name : string; mode : Mode.t; value : t }
+    | Argument_label of { name : string; label : string }
 
   and t =
     | Unit
-    | Int of int
-    | Real of float
-    | Bool of bool
-    | String of string
-    | Char of Uchar.t
-    | Tuple of t list
-    | List of t list
-    | Variable of string
-    | If of t * t * t
-    | Return of t
-    (* returned type, non-returned values (of type ()) and returned value *)
-    | Block of t list * t
-    (* returned type, function, positional, named *)
-    | Call_fn of t * positional_argument list * named_argument list
-    | Call_sub of t * positional_argument list * named_argument list
-    (* name, mode, declared type, value *)
-    | Let of string * Mode.t * S.ty option * t
-    | While of t * t
-    | Loop of t
-    (* name, declared type,  body *)
-    | Label of string option * S.ty * t
-    (* name, value (default the unit literal) *)
-    | Break of string option * t
-    | Yield of Mode.t * t
-    | Set of t * t
-    | When of t * t
-    | Path_member of Path.t * t
+    | Int of { value : int }
+    | Real of { value : float }
+    | Bool of { value : bool }
+    | String of { value : string }
+    | Char of { value : Uchar.t }
+    (* (* TODO: Uncomment later*)
+    | Tuple of { members : t list }
+    | List of { items : t list }
+    *)
+    | Variable of { name : string }
+    | If of { condition : t; on_true : t; on_false : t }
+    | Return of { value : t }
+    | Block of { units : t list; return : t }
+    | Call_fn of {
+        callee : t;
+        positional_arguments : positional_argument list;
+        named_arguments : named_argument list;
+      }
+    | Call_sub of {
+        callee : t;
+        positional_arguments : positional_argument list;
+        named_arguments : named_argument list;
+      }
+    | Let of { name : string; mode : Mode.t; ty : S.ty option; value : t }
+    | While of { condition : t; body : t }
+    | Loop of { body : t }
+    | Label of { name : string option; ty : S.ty; body : t }
+    | Break of { name : string option; value : t }
+    | Yield of { mode : Mode.t; value : t }
+    | Set of { target : t; source : t }
+    | When of { condition : t; body : t }
+    | Path_member of { path : Path.t; body : t }
 
   type parameter_list = positional_parameter list * named_parameter Map.t
 end
