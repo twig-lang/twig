@@ -1,3 +1,54 @@
+module M (S : Stage.S) = struct
+  type positional_parameter =
+    | Parameter_value of Mode.t * string * S.ty
+    | Parameter_label of string * S.ty
+
+  and named_parameter =
+    | Parameter_value of Mode.t * S.ty
+    | Parameter_label of S.ty
+    | Parameter_key of Mode.t * S.ty * t
+
+  and positional_argument =
+    | Argument_value of Mode.t * t
+    | Argument_label of string
+
+  and named_argument =
+    | Argument_value of string * Mode.t * t
+    | Argument_lavel of string * string
+
+  and t =
+    | Unit
+    | Int of int
+    | Real of float
+    | Bool of bool
+    | String of string
+    | Char of Uchar.t
+    | Tuple of t list
+    | List of t list
+    | Variable of string
+    | If of t * t * t
+    | Return of t
+    (* returned type, non-returned values (of type ()) and returned value *)
+    | Block of t list * t
+    (* returned type, function, positional, named *)
+    | Call_fn of t * positional_argument list * named_argument list
+    | Call_sub of t * positional_argument list * named_argument list
+    (* name, mode, declared type, value *)
+    | Let of string * Mode.t * S.ty option * t
+    | While of t * t
+    | Loop of t
+    (* name, declared type,  body *)
+    | Label of string option * S.ty * t
+    (* name, value (default the unit literal) *)
+    | Break of string option * t
+    | Yield of Mode.t * t
+    | Set of t * t
+    | When of t * t
+    | Path_member of Path.t * t
+
+  type parameter_list = positional_parameter list * named_parameter Map.t
+end
+
 type 'tv positional_parameter =
   | PPValue of Mode.t * string * 'tv Ty.t
   | PPLabel of string * 'tv Ty.t
