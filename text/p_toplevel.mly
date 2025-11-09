@@ -13,6 +13,24 @@ let top_all :=
 | ~ = extern         ; <>
 | ~ = top_with       ; <>
 */
+| ~ = import         ; <>
+
+let import :=
+  "import"
+; ~ = import_path
+; <Tree.Import>
+
+let import_path :=
+  top = "identifier"
+; sub = preceded(".", import_path)?
+; { match sub with
+    | Some sub -> Tree.Import_member (top ,sub)
+    | None -> Tree.Import_atom top }
+
+| "("
+; ~ = separated_list(",", import_path)
+; ")"
+; <Tree.Import_multiple>
 
 %public
 let top_definition :=
@@ -116,18 +134,6 @@ let mod_definition :=
 ; value = mod_expr
 ; { let args = Option.value ~default:[] args in
     Ast.TopSigDefinition { name ; args ; value }}
-
-let import_path :=
-  top = "identifier"
-; sub = preceded(".", import_path)?
-; { match sub with
-    | Some sub -> Ast.ImportMember (top ,sub)
-    | None -> Ast.ImportAtom top }
-
-| "("
-; ~ = separated_list(",", import_path)
-; ")"
-; <Ast.ImportMultiple>
 */
 
 let fn_name :=

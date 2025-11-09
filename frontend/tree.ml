@@ -79,6 +79,13 @@ module M (S : Stage.S) = struct
         { m with sub_definitions }
 end
 
+type import_path =
+  | Import_atom of string
+  | Import_member of string * import_path
+  | Import_multiple of import_path list
+
+(* NOTE: one item on the list for each "atom" *)
+type full_import_path = string list
 type 'tv ty_definition = { ty : 'tv Ty.t }
 type 'tv fn_signature = { return : 'tv Ty.t; arguments : 'tv Expr.param_list }
 type 'tv const_signature = { ty : 'tv Ty.t }
@@ -101,9 +108,11 @@ type 'tv definition =
   | ConstDeclaration of string * 'tv const_signature
   | SubDeclaration of string * 'tv sub_signature
   | SubDefinition of string * 'tv sub_definition
+  | Import of import_path
 
 type 'tv t = {
   parent : 'tv t option;
+  imports : full_import_path list;
   fn_definitions : 'tv fn_definition Map.t;
   const_definitions : 'tv const_definition Map.t;
   ty_definitions : 'tv ty_definition Map.t;
@@ -118,6 +127,7 @@ let empty =
   Map.
     {
       parent = None;
+      imports = [];
       fn_definitions = empty;
       const_definitions = empty;
       ty_definitions = empty;
@@ -127,6 +137,20 @@ let empty =
       sub_signatures = empty;
       sub_definitions = empty;
     }
+
+let resolve_import_path path =
+  let rec resolve' c (a : full_import_path list) = function
+    | Import_atom atom ->
+        let solved = List.rev @@ c @ [ atom ] in
+        solved :: a
+    | Import_member (parent, child) ->
+        let c = c @ [ parent ] in
+        resolve' c a child
+    | Import_multiple children ->
+        let cs = List.concat @@ List.map (resolve' c a) children in
+        a @ cs
+  in
+  resolve' [] [] path
 
 let rec add m def =
   match def with
@@ -157,6 +181,9 @@ let rec add m def =
       (* TODO: Check and maybe populate the function signature? *)
       let sub_definitions = Map.add name d m.sub_definitions in
       { m with sub_definitions }
+  | Import path ->
+      let imports = resolve_import_path path @ m.imports in
+      { m with imports }
 
 let get_module p m =
   match p with Path.Atom a -> (a, m) | _ -> failwith "unsupported path!"
