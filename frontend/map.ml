@@ -17,5 +17,8 @@ let read name env =
   try M.find name env with Stdlib.Not_found -> raise (Not_found name)
 
 let update name up env = M.update name (Combinator.const (Some up)) env
-let delete name env = M.update name (Combinator.const None) env
+let delete = M.remove
 let iter f env = M.iter f env
+let find_opt = read_opt
+let find = read
+let add = create
