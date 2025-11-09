@@ -13,3 +13,6 @@ val find : string -> 'a t -> 'a
 val update : string -> 'a -> 'a t -> 'a t
 val remove : string -> 'a t -> 'a t
 val iter : (string -> 'a -> unit) -> 'a t -> unit
+val filter : (string -> 'a -> bool) -> 'a t -> 'a t
+val map : ('a -> 'b) -> 'a t -> 'b t
+val mapi : (string -> 'a -> 'b) -> 'a t -> 'b t

@@ -19,3 +19,6 @@ let find name env =
 let update name up env = M.update name (Combinator.const (Some up)) env
 let remove = M.remove
 let iter f env = M.iter f env
+let filter = M.filter
+let map = M.map
+let mapi = M.mapi
