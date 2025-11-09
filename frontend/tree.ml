@@ -54,28 +54,28 @@ module M (S : Stage.S) = struct
   let rec add m def =
     match def with
     | Type_definition (name, d) ->
-        let ty_definitions = Map.create name d m.ty_definitions in
+        let ty_definitions = Map.add name d m.ty_definitions in
         { m with ty_definitions }
     | Fn_declaration (name, s) ->
-        let fn_signatures = Map.create name s m.fn_signatures in
+        let fn_signatures = Map.add name s m.fn_signatures in
         { m with fn_signatures }
     | Fn_definition (name, d) ->
         let m = add m (Fn_declaration (name, d.s)) in
-        let fn_definitions = Map.create name d m.fn_definitions in
+        let fn_definitions = Map.add name d m.fn_definitions in
         { m with fn_definitions }
     | Const_declaration (name, s) ->
-        let const_signatures = Map.create name s m.const_signatures in
+        let const_signatures = Map.add name s m.const_signatures in
         { m with const_signatures }
     | Const_definition (name, d) ->
         let m = add m (Const_declaration (name, d.s)) in
-        let const_definitions = Map.create name d m.const_definitions in
+        let const_definitions = Map.add name d m.const_definitions in
         { m with const_definitions }
     | Sub_declaration (name, s) ->
-        let sub_signatures = Map.create name s m.sub_signatures in
+        let sub_signatures = Map.add name s m.sub_signatures in
         { m with sub_signatures }
     | Sub_definition (name, d) ->
         let m = add m (Sub_declaration (name, d.s)) in
-        let sub_definitions = Map.create name d m.sub_definitions in
+        let sub_definitions = Map.add name d m.sub_definitions in
         { m with sub_definitions }
 end
 
@@ -131,31 +131,31 @@ let empty =
 let rec add m def =
   match def with
   | TypeDefinition (name, d) ->
-      let ty_definitions = Map.create name d m.ty_definitions in
+      let ty_definitions = Map.add name d m.ty_definitions in
       { m with ty_definitions }
   | FnDeclaration (name, s) ->
-      let fn_signatures = Map.create name s m.fn_signatures in
+      let fn_signatures = Map.add name s m.fn_signatures in
       { m with fn_signatures }
   | FnDefinition (name, d) ->
       let m = add m (FnDeclaration (name, d.s)) in
       (* TODO: Check and maybe populate the function signature? *)
-      let fn_definitions = Map.create name d m.fn_definitions in
+      let fn_definitions = Map.add name d m.fn_definitions in
       { m with fn_definitions }
   | ConstDefinition (name, d) ->
       let m = add m (ConstDeclaration (name, d.s)) in
       (* Also the signature here? *)
-      let const_definitions = Map.create name d m.const_definitions in
+      let const_definitions = Map.add name d m.const_definitions in
       { m with const_definitions }
   | ConstDeclaration (name, s) ->
-      let const_signatures = Map.create name s m.const_signatures in
+      let const_signatures = Map.add name s m.const_signatures in
       { m with const_signatures }
   | SubDeclaration (name, s) ->
-      let sub_signatures = Map.create name s m.sub_signatures in
+      let sub_signatures = Map.add name s m.sub_signatures in
       { m with sub_signatures }
   | SubDefinition (name, d) ->
       let m = add m (SubDeclaration (name, d.s)) in
       (* TODO: Check and maybe populate the function signature? *)
-      let sub_definitions = Map.create name d m.sub_definitions in
+      let sub_definitions = Map.add name d m.sub_definitions in
       { m with sub_definitions }
 
 let get_module p m =
@@ -163,21 +163,21 @@ let get_module p m =
 
 let get_fnsig p m =
   let a, m = get_module p m in
-  Map.read a m.fn_signatures
+  Map.find a m.fn_signatures
 
 let get_subsig p m =
   let a, m = get_module p m in
-  Map.read a m.sub_signatures
+  Map.find a m.sub_signatures
 
 let get_ksig p m =
   let a, m = get_module p m in
-  Map.read a m.const_signatures
+  Map.find a m.const_signatures
 
 let get_ty p m =
   let a, m = get_module p m in
-  Map.read a m.ty_definitions
+  Map.find a m.ty_definitions
 
 let get_mod p m =
   match p with
-  | Path.Atom a -> Map.read a m.modules
+  | Path.Atom a -> Map.find a m.modules
   | _ -> failwith "unsupported path!"

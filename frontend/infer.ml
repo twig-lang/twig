@@ -345,7 +345,7 @@ let infer_mod (m : Env.variable Tree.t) =
     List.fold_left
       (fun (m : Env.variable Tree.t) (k, v) ->
         let def : Env.variable Tree.ty_definition = { ty = v } in
-        let ty_definitions = Map.create k def m.ty_definitions in
+        let ty_definitions = Map.add k def m.ty_definitions in
         { m with ty_definitions })
       m primitive_types
   in

@@ -10,15 +10,12 @@ let of_list = M.of_list
 let of_seq = M.of_seq
 let to_list = M.to_list
 let to_seq = M.to_seq
-let create = M.add
-let read_opt = M.find_opt
+let add = M.add
+let find_opt = M.find_opt
 
-let read name env =
+let find name env =
   try M.find name env with Stdlib.Not_found -> raise (Not_found name)
 
 let update name up env = M.update name (Combinator.const (Some up)) env
-let delete = M.remove
+let remove = M.remove
 let iter f env = M.iter f env
-let find_opt = read_opt
-let find = read
-let add = create

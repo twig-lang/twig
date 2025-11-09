@@ -48,9 +48,8 @@ let rec find_variable ctx vname =
       if String.equal name vname then Some (mode, ty)
       else find_variable super vname
   | Vars { super; binds } -> (
-      match Map.read_opt vname binds with
-      | Some p -> Some p
-      | None -> find_variable super vname)
+      try Some (Map.find vname binds)
+      with Map.Not_found _ -> find_variable super vname)
   | Label { super; _ } -> find_variable super vname
 
 let rec find_label ctx vname =
