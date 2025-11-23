@@ -154,3 +154,5 @@ let rec fmt ?(tv = fun _ -> "<>") f =
       in
       fprintf f "(%a)" f' is
   | Extension _e -> fprintf f "<extension>"
+
+type variable = Variable of variable t option ref

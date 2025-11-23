@@ -1,84 +1,3 @@
-module M (S : Stage.S) = struct
-  module Expression = Expr.M (S)
-
-  type ty_definition = { defined : S.ty }
-  type fn_signature = { return : S.ty; arguments : Expression.parameter_list }
-  type fn_definition = { s : fn_signature; value : Expression.t }
-
-  type sub_signature = {
-    yield : S.ty;
-    mode : Mode.t;
-    arguments : Expression.parameter_list;
-  }
-
-  type sub_definition = { s : sub_signature; value : Expression.t }
-  type const_signature = { ty : S.ty }
-  type const_definition = { s : const_signature; value : Expression.t }
-
-  type t = {
-    parent : t option;
-    children : t Map.t;
-    ty_definitions : ty_definition Map.t;
-    fn_signatures : fn_signature Map.t;
-    fn_definitions : fn_definition Map.t;
-    const_signatures : const_signature Map.t;
-    const_definitions : const_definition Map.t;
-    sub_signatures : sub_signature Map.t;
-    sub_definitions : sub_definition Map.t;
-  }
-
-  let empty =
-    Map.
-      {
-        parent = None;
-        children = empty;
-        ty_definitions = empty;
-        fn_signatures = empty;
-        fn_definitions = empty;
-        const_signatures = empty;
-        const_definitions = empty;
-        sub_signatures = empty;
-        sub_definitions = empty;
-      }
-
-  type toplevel =
-    | Type_definition of string * ty_definition
-    | Fn_definition of string * fn_definition
-    | Fn_declaration of string * fn_signature
-    | Const_definition of string * const_definition
-    | Const_declaration of string * const_signature
-    | Sub_declaration of string * sub_signature
-    | Sub_definition of string * sub_definition
-
-  (* TODO: for every definition check and add their signature *)
-  let rec add m def =
-    match def with
-    | Type_definition (name, d) ->
-        let ty_definitions = Map.add name d m.ty_definitions in
-        { m with ty_definitions }
-    | Fn_declaration (name, s) ->
-        let fn_signatures = Map.add name s m.fn_signatures in
-        { m with fn_signatures }
-    | Fn_definition (name, d) ->
-        let m = add m (Fn_declaration (name, d.s)) in
-        let fn_definitions = Map.add name d m.fn_definitions in
-        { m with fn_definitions }
-    | Const_declaration (name, s) ->
-        let const_signatures = Map.add name s m.const_signatures in
-        { m with const_signatures }
-    | Const_definition (name, d) ->
-        let m = add m (Const_declaration (name, d.s)) in
-        let const_definitions = Map.add name d m.const_definitions in
-        { m with const_definitions }
-    | Sub_declaration (name, s) ->
-        let sub_signatures = Map.add name s m.sub_signatures in
-        { m with sub_signatures }
-    | Sub_definition (name, d) ->
-        let m = add m (Sub_declaration (name, d.s)) in
-        let sub_definitions = Map.add name d m.sub_definitions in
-        { m with sub_definitions }
-end
-
 type import_path =
   | Import_atom of string
   | Import_member of string * import_path
@@ -112,7 +31,7 @@ type 'tv definition =
 
 type 'tv t = {
   parent : 'tv t option;
-  imports : full_import_path list;
+  imports : import_path list;
   fn_definitions : 'tv fn_definition Map.t;
   const_definitions : 'tv const_definition Map.t;
   ty_definitions : 'tv ty_definition Map.t;
@@ -137,20 +56,6 @@ let empty =
       sub_signatures = empty;
       sub_definitions = empty;
     }
-
-let resolve_import_path path =
-  let rec resolve' c (a : full_import_path list) = function
-    | Import_atom atom ->
-        let solved = List.rev @@ c @ [ atom ] in
-        solved :: a
-    | Import_member (parent, child) ->
-        let c = c @ [ parent ] in
-        resolve' c a child
-    | Import_multiple children ->
-        let cs = List.concat @@ List.map (resolve' c a) children in
-        a @ cs
-  in
-  resolve' [] [] path
 
 let rec add m def =
   match def with
@@ -182,7 +87,7 @@ let rec add m def =
       let sub_definitions = Map.add name d m.sub_definitions in
       { m with sub_definitions }
   | Import path ->
-      let imports = resolve_import_path path @ m.imports in
+      let imports = path :: m.imports in
       { m with imports }
 
 let get_module p m =
