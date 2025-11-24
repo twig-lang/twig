@@ -244,7 +244,7 @@ let expression_nomsg :=
     | None -> positional
     in
 
-    Expr.FnCall (recv, positional, named)}
+    Expr.CallFn (recv, positional, named)}
 
 | recv = expression_nomsg
 ; arguments = delimited("[", arglist ,"]")
@@ -256,7 +256,7 @@ let expression_nomsg :=
     | None -> positional
     in
 
-    Expr.SubCall (recv, positional, named)}
+    Expr.CallSub (recv, positional, named)}
 
 /*
 | ~ = expression_nomsg
@@ -367,28 +367,28 @@ let call_message :=
 let tail_fn_arg :=
   ~ = mode
 ; ~ = primary
-; <Expr.AValue>
+; <Expr.Argument_value>
 
 let fn_arg :=
   ~ = mode
 ; ~ = expression
-; <Expr.AValue>
+; <Expr.Argument_value>
 
 | "label"
 ; ~ = "identifier"
-; <Expr.ALabel>
+; <Expr.Argument_label>
 
 let key_fn_arg :=
   ~ = terminated("identifier", ":")
 ; ~ = mode
 ; ~ = expression
-; <Expr.ANamedValue>
+; <Expr.Argument_named_value>
 
 | name = "identifier"
 ; mode = mode
-; { Expr.ANamedValue (name, mode, (Expr.Variable name)) }
+; { Expr.Argument_named_value (name, mode, (Expr.Variable name)) }
 
 | "label"
 ; name = terminated("identifier", ":")
 ; value = "identifier"
-; <Expr.ANamedLabel>
+; <Expr.Argument_named_label>

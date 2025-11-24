@@ -1,17 +1,19 @@
 type 'tv positional_parameter =
-  | PPValue of Mode.t * string * 'tv Ty.t
-  | PPLabel of string * 'tv Ty.t
+  | Positional_value of Mode.t * string * 'tv Ty.t
+  | Positional_label of string * 'tv Ty.t
 
 type 'tv named_parameter =
-  | PNValue of Mode.t * 'tv Ty.t
-  | PNLabel of 'tv Ty.t
-  | PNKey of Mode.t * 'tv Ty.t * 'tv t
+  | Named_value of Mode.t * 'tv Ty.t
+  | Named_label of 'tv Ty.t
+  | Named_key of Mode.t * 'tv Ty.t * 'tv t
 
-and 'tv positional_argument = AValue of Mode.t * 'tv t | ALabel of string
+and 'tv positional_argument =
+  | Argument_value of Mode.t * 'tv t
+  | Argument_label of string
 
 and 'tv named_argument =
-  | ANamedValue of string * Mode.t * 'tv t
-  | ANamedLabel of string * string
+  | Argument_named_value of string * Mode.t * 'tv t
+  | Argument_named_label of string * string
 
 and 'tv t =
   | Unit
@@ -28,8 +30,8 @@ and 'tv t =
   (* returned type, non-returned values (of type ()) and returned value *)
   | Block of 'tv t list * 'tv t
   (* returned type, function, positional, named *)
-  | FnCall of 'tv t * 'tv positional_argument list * 'tv named_argument list
-  | SubCall of 'tv t * 'tv positional_argument list * 'tv named_argument list
+  | CallFn of 'tv t * 'tv positional_argument list * 'tv named_argument list
+  | CallSub of 'tv t * 'tv positional_argument list * 'tv named_argument list
   (* name, mode, declared type, value *)
   | Let of string * Mode.t * 'tv Ty.t option * 'tv t
   | While of 'tv t * 'tv t

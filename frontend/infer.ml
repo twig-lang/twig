@@ -80,20 +80,24 @@ and check_arguments env (p, _n) positional named =
   (* TODO: handle labels later on *)
   (* TODO: at least type check this *)
   List.iter2
-    (fun param -> function
-      | Expr.AValue (am, av) -> (
+    (fun (param : Env.variable Expr.positional_parameter)
+         (arg : Env.variable Expr.positional_argument) ->
+      match arg with
+      | Expr.Argument_value (am, av) -> (
           match param with
-          | Expr.PPValue (m, _, t) ->
+          | Expr.Positional_value (m, _, t) ->
               let env, _, at = infer env av in
               ignore @@ Mode.project m am;
               check (Env.context env) t at
-          | Expr.PPLabel _ -> failwith "no: label parameter, value argument")
-      | Expr.ALabel av -> (
+          | Expr.Positional_label _ ->
+              failwith "no: label parameter, value argument")
+      | Expr.Argument_label av -> (
           match param with
-          | Expr.PPLabel (_, t) ->
+          | Expr.Positional_label (_, t) ->
               let at = Option.get @@ Env.find_label env (Some av) in
               check (Env.context env) t at
-          | Expr.PPValue _ -> failwith "no: value parameter, label argument"))
+          | Expr.Positional_value _ ->
+              failwith "no: value parameter, label argument"))
     p positional;
 
   (* TODO: named arguments are not checked in order *)
@@ -102,7 +106,7 @@ and check_arguments env (p, _n) positional named =
   ()
 
 (* infer the type of an expression *)
-and infer (env : Env.t) expr : Env.t * Mode.t * ty =
+and infer (env : Env.t) (expr : Env.variable Expr.t) : Env.t * Mode.t * ty =
   let literal_ty' ty = (env, Mode.create ~mut:Mode.Immutable (), ty) in
   let literal_ty ty = literal_ty' ty in
 
@@ -114,18 +118,18 @@ and infer (env : Env.t) expr : Env.t * Mode.t * ty =
   | Expr.Char _ -> literal_ty (Ty.Primitive Ty.Char)
   | Expr.String _ -> literal_ty' (Ty.Primitive Ty.Str)
   | Expr.Block (units, valued) -> infer_block env valued units
-  | Expr.FnCall (Expr.Variable name, positional, named) ->
+  | Expr.CallFn (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
       let fn = find_toplevel Tree.get_fnsig (Path.Atom name) env in
       check_arguments env fn.arguments positional named;
       literal_ty fn.return
-  | Expr.SubCall (Expr.Variable name, positional, named) ->
+  | Expr.CallSub (Expr.Variable name, positional, named) ->
       (* TODO: support actual callable values *)
       let fn = find_toplevel Tree.get_subsig (Path.Atom name) env in
       check_arguments env fn.arguments positional named;
       (env, fn.mode, fn.return)
-  | Expr.FnCall _ -> failwith "unsupported callee"
-  | Expr.SubCall _ -> failwith "unsupported callee"
+  | Expr.CallFn _ -> failwith "unsupported callee"
+  | Expr.CallSub _ -> failwith "unsupported callee"
   | Expr.Variable name -> (
       match Env.find_variable env name with
       | Some (m, ty) -> (env, m, ty)
@@ -257,17 +261,17 @@ let infer_add_arguments (pos, named) env =
     List.fold_left
       (fun a param ->
         match param with
-        | Expr.PPValue (mode, name, ty) -> Env.add_var a name mode ty
-        | Expr.PPLabel (name, ty) -> Env.add_label a (Some name) ty)
+        | Expr.Positional_value (mode, name, ty) -> Env.add_var a name mode ty
+        | Expr.Positional_label (name, ty) -> Env.add_label a (Some name) ty)
       env pos
   in
 
   List.fold_left
     (fun a (name, param) ->
       match param with
-      | Expr.PNValue (mode, ty) -> Env.add_var a name mode ty
-      | Expr.PNKey (mode, ty, _) -> Env.add_var a name mode ty
-      | Expr.PNLabel ty -> Env.add_label a (Some name) ty)
+      | Expr.Named_value (mode, ty) -> Env.add_var a name mode ty
+      | Expr.Named_key (mode, ty, _) -> Env.add_var a name mode ty
+      | Expr.Named_label ty -> Env.add_label a (Some name) ty)
     env (Map.to_list named)
 
 let infer_fn_definition (context : Env.variable Tree.t) (_name : string)

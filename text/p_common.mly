@@ -12,12 +12,12 @@ let fn_par :=
   ~ = mode
 ; ~ = parameter_name
 ; ~ = preceded(":", ty)
-; <Expr.PPValue>
+; <Expr.Positional_value>
 
 | "label"
 ; ~ = parameter_name
 ; ~ = preceded(":", ty)
-; <Expr.PPLabel>
+; <Expr.Positional_label>
 
 /* Key function parameters. Note the optional default value. */
 %public
@@ -27,13 +27,13 @@ let key_fn_par :=
 ; value = preceded("=", primary)?
 ; ty = preceded(":", ty)
 ; { match value with
-    | Some value -> name, Expr.PNKey (mode, ty, value)
-    | None -> name, Expr.PNValue (mode, ty) }
+    | Some value -> name, Expr.Named_key (mode, ty, value)
+    | None -> name, Expr.Named_value (mode, ty) }
 
 | "label"
 ; name = parameter_name
 ; ty = preceded(":", ty)
-; { name, Expr.PNLabel ty }
+; { name, Expr.Named_label ty }
 
 /* A path... */
 %public
