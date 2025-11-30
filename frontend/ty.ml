@@ -25,22 +25,6 @@ let is_primitive_signed = function
 
 let is_primitive_real = function F32 | F64 -> true | _ -> false
 let equal_prim l r = l == r
-(*
-  match (l, r) with
-  | Unit, Unit
-  | Bool, Bool
-  | U8, U8
-  | U16, U16
-  | U32, U32
-  | U64, U64
-  | I8, I8
-  | I16, I16
-  | I32, I32
-  | I64, I64
-  | F32, F32
-  | F64, F64 ->
-      true
-  | _ -> false*)
 
 type 'v ext =
   | Enumeration of (string * 'v t list) list
