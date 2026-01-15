@@ -3,7 +3,6 @@ pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
     dune_3
     gnumake
-    wabt
   ] ++ (with pkgs.ocamlPackages; [
     ocaml
     ocp-indent
@@ -18,6 +17,5 @@ pkgs.mkShell {
 
     cmdliner
     alcotest
-    wasm
   ]);
 }

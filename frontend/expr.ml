@@ -48,7 +48,7 @@ and 'tv t =
 
 type 'tv param_list = 'tv positional_parameter list * 'tv named_parameter Map.t
 type 'tv located = 'tv t Reporting.Location.t
-type 'tv annotated = (Mode.t * 'tv Ty.t) * 'tv located
+type 'tv annotated = (Mode.t * 'tv Ty.t * 'tv t) Reporting.Location.t
 
 let rec reduce (f : 'a -> 'a -> 'a) m init x =
   let red = reduce f m init in

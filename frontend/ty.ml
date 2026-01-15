@@ -26,7 +26,9 @@ let is_primitive_signed = function
 let is_primitive_real = function F32 | F64 -> true | _ -> false
 let equal_prim l r = l == r
 
-type 'v ext =
+type 'tv record = { members : (string * 'tv t list) list }
+
+and 'v ext =
   | Enumeration of (string * 'v t list) list
   | Structure of (string * 'v t) list
   | Union of (string * 'v t) list
