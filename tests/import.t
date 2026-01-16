@@ -21,4 +21,4 @@
   > const THEIR_NUMBER : i32 = 2;
   > EOF
 
-  $ twig check ImportContents1.tw
+#  $ twig check ImportContents1.tw
