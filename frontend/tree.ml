@@ -5,41 +5,41 @@ type import_path =
 
 (* NOTE: one item on the list for each "atom" *)
 type full_import_path = string list
-type 'tv ty_definition = { ty : 'tv Ty.t }
-type 'tv fn_signature = { return : 'tv Ty.t; arguments : 'tv Expr.param_list }
-type 'tv const_signature = { ty : 'tv Ty.t }
-type 'tv fn_definition = { s : 'tv fn_signature; value : 'tv Expr.t }
-type 'tv const_definition = { s : 'tv const_signature; value : 'tv Expr.t }
+type ty_definition = { ty : Ty.t }
+type fn_signature = { return : Ty.t; arguments : Expr.param_list }
+type const_signature = { ty : Ty.t }
+type fn_definition = { s : fn_signature; value : Expr.t }
+type const_definition = { s : const_signature; value : Expr.t }
 
-type 'tv sub_signature = {
-  return : 'tv Ty.t;
+type sub_signature = {
+  return : Ty.t;
   mode : Mode.t;
-  arguments : 'tv Expr.param_list;
+  arguments : Expr.param_list;
 }
 
-type 'tv sub_definition = { s : 'tv sub_signature; value : 'tv Expr.t }
+type sub_definition = { s : sub_signature; value : Expr.t }
 
-type 'tv definition =
-  | TypeDefinition of string * 'tv ty_definition
-  | FnDefinition of string * 'tv fn_definition
-  | FnDeclaration of string * 'tv fn_signature
-  | ConstDefinition of string * 'tv const_definition
-  | ConstDeclaration of string * 'tv const_signature
-  | SubDeclaration of string * 'tv sub_signature
-  | SubDefinition of string * 'tv sub_definition
+type definition =
+  | TypeDefinition of string * ty_definition
+  | FnDefinition of string * fn_definition
+  | FnDeclaration of string * fn_signature
+  | ConstDefinition of string * const_definition
+  | ConstDeclaration of string * const_signature
+  | SubDeclaration of string * sub_signature
+  | SubDefinition of string * sub_definition
   | Import of import_path
 
-type 'tv t = {
-  parent : 'tv t option;
+type t = {
+  parent : t option;
   imports : import_path list;
-  fn_definitions : 'tv fn_definition Map.t;
-  const_definitions : 'tv const_definition Map.t;
-  ty_definitions : 'tv ty_definition Map.t;
-  modules : 'tv t Map.t;
-  fn_signatures : 'tv fn_signature Map.t;
-  const_signatures : 'tv const_signature Map.t;
-  sub_signatures : 'tv sub_signature Map.t;
-  sub_definitions : 'tv sub_definition Map.t;
+  fn_definitions : fn_definition Map.t;
+  const_definitions : const_definition Map.t;
+  ty_definitions : ty_definition Map.t;
+  modules : t Map.t;
+  fn_signatures : fn_signature Map.t;
+  const_signatures : const_signature Map.t;
+  sub_signatures : sub_signature Map.t;
+  sub_definitions : sub_definition Map.t;
 }
 
 let empty =

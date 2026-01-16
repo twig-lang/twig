@@ -26,27 +26,31 @@ let is_primitive_signed = function
 let is_primitive_real = function F32 | F64 -> true | _ -> false
 let equal_prim l r = l == r
 
-type 'tv record = { members : (string * 'tv t list) list }
+type member = Member of { name : string; ty : t }
+and record = Record of { name : string; members : member list }
+and union = Union of { name : string; members : member list }
+and constructor = Constructor of { name : string; parameters : t list }
+and enum = Enum of { name : string; constructors : constructor list }
 
-and 'v ext =
-  | Enumeration of (string * 'v t list) list
-  | Structure of (string * 'v t) list
-  | Union of (string * 'v t) list
+and ext =
+  | Enumeration of (string * t list) list
+  | Structure of (string * t) list
+  | Union of (string * t) list
 
-and 'variable t =
+and t =
   | Primitive of primitive
   | Integer
   | Real
   | Bottom
   | Named of Path.t
-  | Pointer of Mode.mutability * 'variable t
-  | Array of int * 'variable t
-  | Slice of 'variable t
-  | Tuple of 'variable t list
+  | Pointer of Mode.mutability * t
+  | Array of int * t
+  | Slice of t
+  | Tuple of t list
   (* as defined by type definitions *)
-  | Extension of 'variable ext
+  | Extension of ext
   (* the type variable itself *)
-  | Variable of 'variable
+  | Variable of t option ref
 (* Types *)
 
 let rec equal_ext ~resolve l r =
@@ -140,5 +144,3 @@ let rec fmt ?(tv = fun _ -> "<>") f =
       in
       fprintf f "(%a)" f' is
   | Extension _e -> fprintf f "<extension>"
-
-type variable = Variable of variable t option ref

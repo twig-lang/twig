@@ -51,7 +51,7 @@ let fn_definition :=
 ; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
-    let s : Env.variable Tree.fn_signature = {
+    let s : Tree.fn_signature = {
       return;
       arguments
     } in
@@ -71,7 +71,7 @@ let sub_definition :=
 ; value = preceded("=", expr_all)?
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
     let mode = Mode.project mode mode in
-    let s : Env.variable Tree.sub_signature = {
+    let s : Tree.sub_signature = {
       return;
       mode;
       arguments
@@ -86,7 +86,7 @@ let const_definition :=
 ; name = "identifier"
 ; ty = preceded(":", ty)
 ; value = preceded("=", expr_all)
-; { let s : Env.variable Tree.const_signature = {
+; { let s : Tree.const_signature = {
       ty
     } in Tree.ConstDefinition (name, { s; value }) }
 

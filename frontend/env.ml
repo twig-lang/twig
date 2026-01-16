@@ -1,20 +1,13 @@
 (* inference environments *)
-type variable = Variable of variable Ty.t option ref
-type resolved = |
-
-type expected = {
-  mode : Mode.t;
-  return : variable Ty.t option;
-  yield : variable Ty.t option;
-}
+type expected = { mode : Mode.t; return : Ty.t option; yield : Ty.t option }
 
 (* this environment's "local context"*)
 type t =
   | Root of { expect : expected }
-  | Context of { super : t; context : variable Tree.t }
-  | Var of { super : t; name : string; mode : Mode.t; ty : variable Ty.t }
-  | Vars of { super : t; binds : (Mode.t * variable Ty.t) Map.t }
-  | Label of { super : t; name : string option; ty : variable Ty.t }
+  | Context of { super : t; context : Tree.t }
+  | Var of { super : t; name : string; mode : Mode.t; ty : Ty.t }
+  | Vars of { super : t; binds : (Mode.t * Ty.t) Map.t }
+  | Label of { super : t; name : string option; ty : Ty.t }
 
 let create ?mode ?return ?yield () =
   let mode = Option.value ~default:(Mode.create ()) mode in

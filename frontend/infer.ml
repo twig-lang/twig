@@ -1,10 +1,10 @@
-type ty = Env.variable Ty.t
+open Ty
 
-exception TypeMismatch of ty * ty
+exception TypeMismatch of t * t
 
-let fresh () = Env.Variable (ref None)
-let get (Env.Variable var) = !var
-let set (Env.Variable var) x = var := Some x
+let fresh () = Variable (ref None)
+let get var = !var
+let set var x = var := Some x
 
 (* Create a Tree from a list of toplevel statements *)
 let tree_of_toplevels tops = List.fold_left Tree.add Tree.empty tops
@@ -29,7 +29,7 @@ let rec resolve_named context t =
   | x -> x
 
 (* "unify" two types, and return the unified version *)
-let rec unify context (l : ty) (r : ty) =
+let rec unify context (l : t) (r : t) =
   let l = resolve_named context l in
   let r = resolve_named context r in
 
@@ -80,8 +80,7 @@ and check_arguments env (p, _n) positional named =
   (* TODO: handle labels later on *)
   (* TODO: at least type check this *)
   List.iter2
-    (fun (param : Env.variable Expr.positional_parameter)
-         (arg : Env.variable Expr.positional_argument) ->
+    (fun (param : Expr.positional_parameter) (arg : Expr.positional_argument) ->
       match arg with
       | Expr.Argument_value (am, av) -> (
           match param with
@@ -106,7 +105,7 @@ and check_arguments env (p, _n) positional named =
   ()
 
 (* infer the type of an expression *)
-and infer (env : Env.t) (expr : Env.variable Expr.t) : Env.t * Mode.t * ty =
+and infer (env : Env.t) (expr : Expr.t) : Env.t * Mode.t * t =
   let literal_ty' ty = (env, Mode.create ~mut:Mode.Immutable (), ty) in
   let literal_ty ty = literal_ty' ty in
 
@@ -168,7 +167,7 @@ and infer (env : Env.t) (expr : Env.variable Expr.t) : Env.t * Mode.t * ty =
       check (Env.context env) (Ty.Primitive Ty.Bool) tc;
       literal_ty @@ unify (Env.context env) tt tf
   | Expr.Let (name, mode, ty, value) ->
-      let ty = Option.value ~default:(Ty.Variable (fresh ())) ty in
+      let ty = Option.value ~default:(fresh ()) ty in
       let _, m, tv = infer env value in
 
       (* We only care about projection checks if we're using a reference. *)
@@ -240,18 +239,18 @@ and infer (env : Env.t) (expr : Env.variable Expr.t) : Env.t * Mode.t * ty =
 
 (*( Resolve and remove any type variables: variable Tree.t -> resolved Tree.t )*)
 
-let rec decay ?(resolve_variables = true) ?(resolve_literals = false) : ty -> ty
-    = function
+let rec decay ?(resolve_variables = true) ?(resolve_literals = false) : t -> t =
+  function
   | Ty.Integer when resolve_literals -> Ty.Primitive Ty.I32
   | Ty.Real when resolve_literals -> Ty.Primitive Ty.F32
-  | Ty.Variable (Variable var) when resolve_variables -> (
+  | Ty.Variable var when resolve_variables -> (
       match !var with
       | Some t -> decay t
       | None -> failwith "cannot decay unresolved type variable")
   | x -> x
 
-let rec resolve (tv : ty) : Env.resolved Ty.t =
-  Ty.map_tv (fun (Env.Variable var) -> resolve @@ Option.get !var)
+let rec resolve (tv : t) : t =
+  Ty.map_tv (fun var -> resolve @@ Option.get !var)
   @@ decay ~resolve_literals:true tv
 
 (*( Apply inference and resolution to the whole module )*)
@@ -274,8 +273,8 @@ let infer_add_arguments (pos, named) env =
       | Expr.Named_label ty -> Env.add_label a (Some name) ty)
     env (Map.to_list named)
 
-let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
-    (def : Env.variable Tree.fn_definition) =
+let infer_fn_definition (context : Tree.t) (_name : string)
+    (def : Tree.fn_definition) =
   let return = def.s.return in
 
   let env =
@@ -292,8 +291,8 @@ let infer_fn_definition (context : Env.variable Tree.t) (_name : string)
   let decayed = decay ~resolve_variables:false inferred in
   check (Env.context env) decayed return
 
-let infer_const_definition (context : Env.variable Tree.t) (_name : string)
-    (def : Env.variable Tree.const_definition) =
+let infer_const_definition (context : Tree.t) (_name : string)
+    (def : Tree.const_definition) =
   let env = Env.create () |> Env.add_context context in
   let _, _, inferred = infer env def.value in
   let decayed = decay ~resolve_variables:false inferred in
@@ -303,8 +302,7 @@ let count_yields value =
   let count = function Expr.Yield _ -> 1 | _ -> 0 in
   Expr.reduce ( + ) count 0 value
 
-let infer_sub_definition context (_name : string)
-    (def : Env.variable Tree.sub_definition) =
+let infer_sub_definition context (_name : string) (def : Tree.sub_definition) =
   let yield = def.s.return in
 
   let env =
@@ -326,7 +324,7 @@ let infer_sub_definition context (_name : string)
   let decayed = decay ~resolve_variables:false inferred in
   check (Env.context env) Ty.(Primitive Unit) decayed
 
-let infer_mod (m : Env.variable Tree.t) =
+let infer_mod (m : Tree.t) =
   let primitive_types =
     [
       ("bool", Ty.Primitive Bool);
@@ -347,8 +345,8 @@ let infer_mod (m : Env.variable Tree.t) =
 
   let context =
     List.fold_left
-      (fun (m : Env.variable Tree.t) (k, v) ->
-        let def : Env.variable Tree.ty_definition = { ty = v } in
+      (fun (m : Tree.t) (k, v) ->
+        let def : Tree.ty_definition = { ty = v } in
         let ty_definitions = Map.add k def m.ty_definitions in
         { m with ty_definitions })
       m primitive_types
