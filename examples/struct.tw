@@ -1,20 +1,40 @@
-type Pair = struct
+struct Pair (
  left: i32,
- right: i32;
+ right: i32
+);
 
 fn a_struct -> Pair =
- Pair (;left: 0, right: 1);
+
+ { This constructs an "instance" of a Pair.
+   For parsing reasons, the `struct` is mandatory. }
+
+ struct Pair (left: 0, right: 1);
 
 fn another_struct -> Pair = (
  let left = 0;
  let right = 1;
 
- Pair (;left, right)
+ { As with named arguments, record arguments can
+   also be punned. The code below is equivalent to
+     struct Pair (left: left, right: right)
+
+ struct Pair (left, right)
 );
 
 fn struct_update -> Pair = (
  let left = 1;
  let p = another_struct();
+
+ { <RECORD> with <ARGUMENTS> updates parts of a RECORD.
+   While not obvious here, not all ARGUMENTS need to be passed,
+   as in
+     p with (right: 5)
+     p with (left)
+
+   Also, if there is only one argument, the parentheses can
+   be ignored:
+     p with left: 6
+     p with right }
 
  p with (left, right: 2)
 );
