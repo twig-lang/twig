@@ -1,8 +1,54 @@
-type positional_parameter =
+(* A parameter of the form { MODE NAME : TY  }. *)
+type positional = { name : string; mode : Mode.t; ty : Ty.t }
+
+(* A parameter of the form { MODE *NAME : TY }. Has to be passed by name as a
+     keyword argument. *)
+and named = { name : string; mode : Mode.t; ty : Ty.t }
+
+(* A parameter of the form { NAME : TY = VALUE }. When a function with an
+     optional parameter is called without passing this parameter, a default value
+     is evaluated and passed instead. Since references cannot be "materialized",
+     these parameters have no mode. *)
+and optional = { name : string; mode : Mode.t; ty : Ty.t; default : t }
+
+(* A parameter of the form { label NAME : TY }. It always behaves like a named
+     parameter, but the name is the same as the "key". *)
+and label = { name : string; ty : Ty.t }
+
+and parameter =
+  | Positional of positional
+  | Named of named
+  | Optional of optional
+  | Label of label
+
+(* Rough note on "meaning":
+fn pos (l: i32) -> i32 = i32;
+fn named ( *l: i32) -> i32 = l; {written as {( *} because ocaml}
+fn opt (l: i32 = 0) -> i32 = l;
+fn label (label l: i32) -> () =
+  break l with 0;
+
+pos(0);
+named(l: 0);              {arg must be passed}
+opt(l: 0);    OR   opt(); {arg may not be passed}
+
+pos(l: 0);                {can also be passed by name to positionals}
+
+let l = 0;
+named(l);                 {elided, same as named(l: l)}
+opt(l);                   {same here}
+
+label lab do              {same as in named()}
+  label(label l: lab);
+
+label l do                {as well}
+  label(label l);
+*)
+and positional_parameter =
   | Positional_value of Mode.t * string * Ty.t
   | Positional_label of string * Ty.t
 
-type named_parameter =
+and named_parameter =
   | Named_value of Mode.t * Ty.t
   | Named_label of Ty.t
   | Named_key of Mode.t * Ty.t * t
@@ -49,6 +95,50 @@ and t =
 type param_list = positional_parameter list * named_parameter Map.t
 type located = t Reporting.Location.t
 type annotated = (Mode.t * Ty.t * t) Reporting.Location.t
+
+(* uhhh *)
+type parameter_map = {
+  positional : positional list;
+  positional_names : positional Map.t;
+  named : named Map.t;
+  optionals : optional Map.t;
+  labels : label Map.t;
+}
+
+let empty_parameter_map =
+  {
+    positional = [];
+    positional_names = Map.empty;
+    named = Map.empty;
+    optionals = Map.empty;
+    labels = Map.empty;
+  }
+
+let parameter_map_of_list parameters =
+  let rec work map = function
+    | x :: xs ->
+        let map =
+          match x with
+          | Positional par ->
+              let positional = par :: map.positional in
+              let positional_names =
+                Map.add par.name par map.positional_names
+              in
+              { map with positional; positional_names }
+          | Named par ->
+              let named = Map.add par.name par map.named in
+              { map with named }
+          | Optional par ->
+              let optionals = Map.add par.name par map.optionals in
+              { map with optionals }
+          | Label par ->
+              let labels = Map.add par.name par map.labels in
+              { map with labels }
+        in
+        work map xs
+    | [] -> map
+  in
+  work empty_parameter_map parameters
 
 let rec reduce (f : 'a -> 'a -> 'a) m init x =
   let red = reduce f m init in

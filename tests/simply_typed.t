@@ -178,11 +178,11 @@ This should test type checking and inference on simply typed programs.
 - Typecheck label arguments.
   $ cat >label_arg.tw <<EOF
   > fn brk(label exit : ()) = break exit;
-  > fn brkn(; label exit : ()) = break exit;
+  > fn brkn(label exit : ()) = break exit;
   > fn lab = label l do
   >   brk(label l);
   > fn labn = label l do
-  >   brkn(; label exit: l);
+  >   brkn(;label exit: l);
   > EOF
 
   $ twig check label_arg.tw
