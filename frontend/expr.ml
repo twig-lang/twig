@@ -134,7 +134,6 @@ label l do                {as well}
 (* uhhh *)
 type parameter_map = {
   positional : positional list;
-  positional_names : positional Map.t;
   named : named Map.t;
   optionals : optional Map.t;
   labels : label Map.t;
@@ -143,7 +142,6 @@ type parameter_map = {
 let empty_parameter_map =
   {
     positional = [];
-    positional_names = Map.empty;
     named = Map.empty;
     optionals = Map.empty;
     labels = Map.empty;
@@ -154,12 +152,7 @@ let parameter_map_of_list parameters =
     | x :: xs ->
         let map =
           match x with
-          | Positional par ->
-              let positional = par :: map.positional in
-              let positional_names =
-                Map.add par.name par map.positional_names
-              in
-              { map with positional; positional_names }
+          | Positional _ -> map
           | Named par ->
               let named = Map.add par.name par map.named in
               { map with named }
@@ -173,7 +166,12 @@ let parameter_map_of_list parameters =
         work map xs
     | [] -> map
   in
-  work empty_parameter_map parameters
+  let positional =
+    List.filter_map
+      (function Positional par -> Some par | _ -> None)
+      parameters
+  in
+  work { empty_parameter_map with positional } parameters
 
 let rec reduce (f : 'a -> 'a -> 'a) m init x =
   let red = reduce f m init in
