@@ -274,11 +274,11 @@ let infer_add_arguments (map : Expr.parameter_map) env =
 
 let infer_fn_definition (context : Tree.t) (_name : string)
     (def : Tree.fn_definition) =
-  let return = def.s.return in
+  let return = def.signature.return in
 
   let env =
     Env.create ~return () |> Env.add_context context
-    |> infer_add_arguments def.s.parameters
+    |> infer_add_arguments def.signature.parameters
   in
 
   let _, m, inferred = infer env def.value in
@@ -295,19 +295,19 @@ let infer_const_definition (context : Tree.t) (_name : string)
   let env = Env.create () |> Env.add_context context in
   let _, _, inferred = infer env def.value in
   let decayed = decay ~resolve_variables:false inferred in
-  check (Env.context env) decayed def.s.ty
+  check (Env.context env) decayed def.signature.ty
 
 let count_yields value =
   let count = function Expr.Yield _ -> 1 | _ -> 0 in
   Expr.reduce ( + ) count 0 value
 
 let infer_sub_definition context (_name : string) (def : Tree.sub_definition) =
-  let yield = def.s.return in
+  let yield = def.signature.return in
 
   let env =
-    Env.create ~mode:def.s.mode ~yield ()
+    Env.create ~mode:def.signature.mode ~yield ()
     |> Env.add_context context
-    |> infer_add_arguments def.s.parameters
+    |> infer_add_arguments def.signature.parameters
   in
 
   let _, m, inferred = infer env def.value in
@@ -345,7 +345,7 @@ let infer_mod (m : Tree.t) =
   let context =
     List.fold_left
       (fun (m : Tree.t) (k, v) ->
-        let def : Tree.ty_definition = { ty = v } in
+        let def : Tree.ty_definition = { name = k; ty = v } in
         let ty_definitions = Map.add k def m.ty_definitions in
         { m with ty_definitions })
       m primitive_types

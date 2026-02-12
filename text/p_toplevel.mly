@@ -54,13 +54,14 @@ let fn_definition :=
 ; value = preceded("=", expr_all)?
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
     let parameters = Expr.parameter_map_of_list parameters in
-    let s : Tree.fn_signature = {
+    let signature : Tree.fn_signature = {
+      name;
       return;
       parameters
     } in
     match value with
-    | Some value -> Tree.FnDefinition (name, { s; value })
-    | None -> Tree.FnDeclaration (name, s)
+    | Some value -> Tree.FnDefinition { signature ; name ; value }
+    | None -> Tree.FnDeclaration signature
     }
 
 let sub_definition :=
@@ -75,14 +76,15 @@ let sub_definition :=
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
     let mode = Mode.project mode mode in
     let parameters = Expr.parameter_map_of_list parameters in
-    let s : Tree.sub_signature = {
+    let signature : Tree.sub_signature = {
+      name;
       return;
       mode;
       parameters
     } in
     match value with
-    | Some value -> Tree.SubDefinition (name, { s; value })
-    | None -> Tree.SubDeclaration (name, s)
+    | Some value -> Tree.SubDefinition { signature ; name ; value }
+    | None -> Tree.SubDeclaration signature
     }
 
 let const_definition :=
@@ -90,16 +92,17 @@ let const_definition :=
 ; name = "identifier"
 ; ty = preceded(":", ty)
 ; value = preceded("=", expr_all)
-; { let s : Tree.const_signature = {
+; { let signature : Tree.const_signature = {
+      name ;
       ty
-    } in Tree.ConstDefinition (name, { s; value }) }
+    } in Tree.ConstDefinition { name ; signature ; value } }
 
 let type_definition :=
   "type"
 ; name = "identifier"
 ; "="
 ; ty = ty_all
-; { Tree.TypeDefinition ( name , { ty }) }
+; { Tree.TypeDefinition { name ; ty } }
 
 /*
 | "type"

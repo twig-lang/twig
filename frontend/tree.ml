@@ -1,25 +1,42 @@
-type ty_definition = { ty : Ty.t }
-type fn_signature = { return : Ty.t; parameters : Expr.parameter_map }
-type const_signature = { ty : Ty.t }
-type fn_definition = { s : fn_signature; value : Expr.t }
-type const_definition = { s : const_signature; value : Expr.t }
+type fn_signature = {
+  name : string;
+  return : Ty.t;
+  parameters : Expr.parameter_map;
+}
+
+type const_signature = { name : string; ty : Ty.t }
 
 type sub_signature = {
+  name : string;
   return : Ty.t;
   mode : Mode.t;
   parameters : Expr.parameter_map;
 }
 
-type sub_definition = { s : sub_signature; value : Expr.t }
+type fn_definition = { signature : fn_signature; name : string; value : Expr.t }
+
+type const_definition = {
+  signature : const_signature;
+  name : string;
+  value : Expr.t;
+}
+
+type sub_definition = {
+  signature : sub_signature;
+  name : string;
+  value : Expr.t;
+}
+
+type ty_definition = { name : string; ty : Ty.t }
 
 type definition =
-  | TypeDefinition of string * ty_definition
-  | FnDefinition of string * fn_definition
-  | FnDeclaration of string * fn_signature
-  | ConstDefinition of string * const_definition
-  | ConstDeclaration of string * const_signature
-  | SubDeclaration of string * sub_signature
-  | SubDefinition of string * sub_definition
+  | TypeDefinition of ty_definition
+  | FnDefinition of fn_definition
+  | FnDeclaration of fn_signature
+  | ConstDefinition of const_definition
+  | ConstDeclaration of const_signature
+  | SubDeclaration of sub_signature
+  | SubDefinition of sub_definition
 
 type t = {
   parent : t option;
@@ -49,32 +66,30 @@ let empty =
 
 let rec add m def =
   match def with
-  | TypeDefinition (name, d) ->
-      let ty_definitions = Map.add name d m.ty_definitions in
+  | TypeDefinition d ->
+      let ty_definitions = Map.add d.name d m.ty_definitions in
       { m with ty_definitions }
-  | FnDeclaration (name, s) ->
-      let fn_signatures = Map.add name s m.fn_signatures in
+  | FnDeclaration s ->
+      let fn_signatures = Map.add s.name s m.fn_signatures in
       { m with fn_signatures }
-  | FnDefinition (name, d) ->
-      let m = add m (FnDeclaration (name, d.s)) in
-      (* TODO: Check and maybe populate the function signature? *)
-      let fn_definitions = Map.add name d m.fn_definitions in
+  | FnDefinition d ->
+      let m = add m (FnDeclaration d.signature) in
+      let fn_definitions = Map.add d.name d m.fn_definitions in
       { m with fn_definitions }
-  | ConstDefinition (name, d) ->
-      let m = add m (ConstDeclaration (name, d.s)) in
+  | ConstDefinition d ->
+      let m = add m (ConstDeclaration d.signature) in
       (* Also the signature here? *)
-      let const_definitions = Map.add name d m.const_definitions in
+      let const_definitions = Map.add d.name d m.const_definitions in
       { m with const_definitions }
-  | ConstDeclaration (name, s) ->
-      let const_signatures = Map.add name s m.const_signatures in
+  | ConstDeclaration s ->
+      let const_signatures = Map.add s.name s m.const_signatures in
       { m with const_signatures }
-  | SubDeclaration (name, s) ->
-      let sub_signatures = Map.add name s m.sub_signatures in
+  | SubDeclaration s ->
+      let sub_signatures = Map.add s.name s m.sub_signatures in
       { m with sub_signatures }
-  | SubDefinition (name, d) ->
-      let m = add m (SubDeclaration (name, d.s)) in
-      (* TODO: Check and maybe populate the function signature? *)
-      let sub_definitions = Map.add name d m.sub_definitions in
+  | SubDefinition d ->
+      let m = add m (SubDeclaration d.signature) in
+      let sub_definitions = Map.add d.name d m.sub_definitions in
       { m with sub_definitions }
 
 let get_module p m =
