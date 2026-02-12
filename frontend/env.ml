@@ -7,7 +7,7 @@ type t =
   | Context of { super : t; context : Tree.t }
   | Var of { super : t; name : string; mode : Mode.t; ty : Ty.t }
   | Vars of { super : t; binds : (Mode.t * Ty.t) Map.t }
-  | Label of { super : t; name : string option; ty : Ty.t }
+  | Label of { super : t; name : string; ty : Ty.t }
 
 let create ?mode ?return ?yield () =
   let mode = Option.value ~default:(Mode.create ()) mode in
@@ -51,15 +51,8 @@ let rec find_label ctx vname =
   | Context { super; _ } -> find_label super vname
   | Var { super; _ } -> find_label super vname
   | Vars { super; _ } -> find_label super vname
-  | Label { super; name; ty } -> (
-      match (vname, name) with
-      (* explicit name, named label *)
-      | Some vname', Some name ->
-          if String.equal vname' name then Some ty else find_label super vname
-      (* implicit name, any label *)
-      | None, _ -> Some ty
-      (* explicit name, unnamed label *)
-      | Some _, None -> find_label super vname)
+  | Label { super; name; ty } ->
+      if String.equal vname name then Some ty else find_label super vname
 
 let rec find_toplevel predicate = function
   | Root _ -> failwith "could not find a toplevel"

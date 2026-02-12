@@ -47,13 +47,14 @@ let fn_definition :=
 ; */
 "fn"
 ; name = fn_name
-; arguments = parameter_list2("(", fn_par, key_fn_par, ")")
+; parameters = parameter_list("(", fn_parameter, ")")
 ; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
+    let parameters = Expr.parameter_map_of_list parameters in
     let s : Tree.fn_signature = {
       return;
-      arguments
+      parameters
     } in
     match value with
     | Some value -> Tree.FnDefinition (name, { s; value })
@@ -66,15 +67,16 @@ let sub_definition :=
 ; mode = mode
 /* ; ~ = yields */
 ; name = fn_name
-; arguments = parameter_list2("[", fn_par, key_fn_par, "]")
+; parameters = parameter_list("[", fn_parameter,"]")
 ; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
 ; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
     let mode = Mode.project mode mode in
+    let parameters = Expr.parameter_map_of_list parameters in
     let s : Tree.sub_signature = {
       return;
       mode;
-      arguments
+      parameters
     } in
     match value with
     | Some value -> Tree.SubDefinition (name, { s; value })

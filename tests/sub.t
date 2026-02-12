@@ -42,7 +42,7 @@
 
 - A subscript yielding a referenced argument.
   $ cat >sub_yield_ref_arg.tw <<EOF
-  > sub& ra[&arg: i32] -> i32 = yield& arg;
+  > sub& ra[arg& : i32] -> i32 = yield& arg;
   > EOF
 
   $ twig check sub_yield_ref_arg.tw

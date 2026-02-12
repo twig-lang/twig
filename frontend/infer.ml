@@ -76,31 +76,29 @@ let rec infer_block (env : Env.t) valued = function
       infer_block env valued xs
   | [] -> infer env valued
 
-and check_arguments env (p, _n) positional named =
-  (* TODO: handle labels later on *)
-  (* TODO: at least type check this *)
+and check_arguments env (parameters : Expr.parameter_map)
+    (arguments : Expr.argument_map) =
   List.iter2
-    (fun (param : Expr.positional_parameter) (arg : Expr.positional_argument) ->
-      match arg with
-      | Expr.Argument_value (am, av) -> (
-          match param with
-          | Expr.Positional_value (m, _, t) ->
-              let env, _, at = infer env av in
-              ignore @@ Mode.project m am;
-              check (Env.context env) t at
-          | Expr.Positional_label _ ->
-              failwith "no: label parameter, value argument")
-      | Expr.Argument_label av -> (
-          match param with
-          | Expr.Positional_label (_, t) ->
-              let at = Option.get @@ Env.find_label env (Some av) in
-              check (Env.context env) t at
-          | Expr.Positional_value _ ->
-              failwith "no: value parameter, label argument"))
-    p positional;
+    (fun (parameter : Expr.positional) (mode, value) ->
+      let env, _, got = infer env value in
+      ignore @@ Mode.project parameter.mode mode;
+      check (Env.context env) parameter.ty got)
+    parameters.positional arguments.positional;
 
-  (* TODO: named arguments are not checked in order *)
-  List.iter (fun _arg -> ()) named;
+  Map.iter
+    (fun name (parameter : Expr.named) ->
+      let mode, value = Map.find name arguments.named in
+      let env, _, got = infer env value in
+      ignore @@ Mode.project parameter.mode mode;
+      check (Env.context env) parameter.ty got)
+    parameters.named;
+
+  Map.iter
+    (fun name (parameter : Expr.label) ->
+      let label = Map.find name arguments.labels in
+      let got = Option.get @@ Env.find_label env label in
+      check (Env.context env) parameter.ty got)
+    parameters.labels;
 
   ()
 
@@ -117,16 +115,16 @@ and infer (env : Env.t) (expr : Expr.t) : Env.t * Mode.t * t =
   | Expr.Char _ -> literal_ty (Ty.Primitive Ty.Char)
   | Expr.String _ -> literal_ty' (Ty.Primitive Ty.Str)
   | Expr.Block (units, valued) -> infer_block env valued units
-  | Expr.CallFn (Expr.Variable name, positional, named) ->
+  | Expr.CallFn (Expr.Variable name, arguments) ->
       (* TODO: support actual callable values *)
       let fn = find_toplevel Tree.get_fnsig (Path.Atom name) env in
-      check_arguments env fn.arguments positional named;
+      check_arguments env fn.parameters arguments;
       literal_ty fn.return
-  | Expr.CallSub (Expr.Variable name, positional, named) ->
+  | Expr.CallSub (Expr.Variable name, arguments) ->
       (* TODO: support actual callable values *)
-      let fn = find_toplevel Tree.get_subsig (Path.Atom name) env in
-      check_arguments env fn.arguments positional named;
-      (env, fn.mode, fn.return)
+      let sub = find_toplevel Tree.get_subsig (Path.Atom name) env in
+      check_arguments env sub.parameters arguments;
+      (env, sub.mode, sub.return)
   | Expr.CallFn _ -> failwith "unsupported callee"
   | Expr.CallSub _ -> failwith "unsupported callee"
   | Expr.Variable name -> (
@@ -255,23 +253,24 @@ let rec resolve (tv : t) : t =
 
 (*( Apply inference and resolution to the whole module )*)
 
-let infer_add_arguments (pos, named) env =
+let infer_add_arguments (map : Expr.parameter_map) env =
+  let pos = map.positional in
+
   let env =
     List.fold_left
-      (fun a param ->
-        match param with
-        | Expr.Positional_value (mode, name, ty) -> Env.add_var a name mode ty
-        | Expr.Positional_label (name, ty) -> Env.add_label a (Some name) ty)
+      (fun env (p : Expr.positional) -> Env.add_var env p.name p.mode p.ty)
       env pos
   in
 
-  List.fold_left
-    (fun a (name, param) ->
-      match param with
-      | Expr.Named_value (mode, ty) -> Env.add_var a name mode ty
-      | Expr.Named_key (mode, ty, _) -> Env.add_var a name mode ty
-      | Expr.Named_label ty -> Env.add_label a (Some name) ty)
-    env (Map.to_list named)
+  let env =
+    Map.fold
+      (fun name (label : Expr.label) env -> Env.add_label env name label.ty)
+      map.labels env
+  in
+
+  Map.fold
+    (fun name (p : Expr.named) env -> Env.add_var env name p.mode p.ty)
+    map.named env
 
 let infer_fn_definition (context : Tree.t) (_name : string)
     (def : Tree.fn_definition) =
@@ -279,7 +278,7 @@ let infer_fn_definition (context : Tree.t) (_name : string)
 
   let env =
     Env.create ~return () |> Env.add_context context
-    |> infer_add_arguments def.s.arguments
+    |> infer_add_arguments def.s.parameters
   in
 
   let _, m, inferred = infer env def.value in
@@ -308,7 +307,7 @@ let infer_sub_definition context (_name : string) (def : Tree.sub_definition) =
   let env =
     Env.create ~mode:def.s.mode ~yield ()
     |> Env.add_context context
-    |> infer_add_arguments def.s.arguments
+    |> infer_add_arguments def.s.parameters
   in
 
   let _, m, inferred = infer env def.value in

@@ -16,3 +16,4 @@ val iter : (string -> 'a -> unit) -> 'a t -> unit
 val filter : (string -> 'a -> bool) -> 'a t -> 'a t
 val map : ('a -> 'b) -> 'a t -> 'b t
 val mapi : (string -> 'a -> 'b) -> 'a t -> 'b t
+val fold : (string -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b

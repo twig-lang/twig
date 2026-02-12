@@ -38,7 +38,7 @@
 
 - Have 1 named argument.
   $ cat >1_n_arg.tw <<EOF
-  > fn arg(a a: ()) = a;
+  > fn arg(*a: ()) = a;
   > EOF
 
   $ twig check 1_n_arg.tw

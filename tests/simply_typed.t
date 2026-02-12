@@ -158,15 +158,6 @@ This should test type checking and inference on simply typed programs.
 
 - Typecheck break expressions
   $ cat >breaks.tw <<EOF
-  > fn b_u_u -> i32 =
-  >   label -> _ do
-  >     loop
-  >       break with 0;
-  > { break named with unnamed }
-  > fn b_n_u -> i32 =
-  >   label named -> _ do
-  >     loop
-  >       break with 0;
   > fn b_n_n -> i32 =
   >   label named -> _ do
   >     loop
@@ -178,11 +169,7 @@ This should test type checking and inference on simply typed programs.
 - Typecheck label arguments.
   $ cat >label_arg.tw <<EOF
   > fn brk(label exit : ()) = break exit;
-  > fn brkn(label exit : ()) = break exit;
-  > fn lab = label l do
-  >   brk(label l);
-  > fn labn = label l do
-  >   brkn(;label exit: l);
+  > fn lab = label l do brk(label exit: l);
   > EOF
 
   $ twig check label_arg.tw

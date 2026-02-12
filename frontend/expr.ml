@@ -1,66 +1,21 @@
-(* A parameter of the form { MODE NAME : TY  }. *)
-type positional = { name : string; mode : Mode.t; ty : Ty.t }
+type argument =
+  (* MODE VALUE *)
+  | Positional of { mode : Mode.t; value : t }
+  (* NAME : MODE VALUE *)
+  | Named of { name : string; mode : Mode.t; value : t }
+  (* label NAME : value *)
+  | Label of { name : string; value : string }
 
-(* A parameter of the form { MODE *NAME : TY }. Has to be passed by name as a
-     keyword argument. *)
-and named = { name : string; mode : Mode.t; ty : Ty.t }
-
-(* A parameter of the form { NAME : TY = VALUE }. When a function with an
-   optional parameter is called without passing this parameter, a default value
-   is evaluated and passed instead. Since references cannot be "materialized",
-   these parameters have no mode. *)
-and optional = { name : string; ty : Ty.t; default : t }
-
-(* A parameter of the form { label NAME : TY }. It always behaves like a named
-     parameter, but for labels (note there are no positional labels) *)
-and label = { name : string; ty : Ty.t }
-
-(* A convenience type for parameters. *)
-and parameter =
-  | Positional of positional
-  | Named of named
-  | Optional of optional
-  | Label of label
-
-(* Rough note on "meaning":
-fn pos (l: i32) -> i32 = i32;
-fn named ( *l: i32) -> i32 = l; {written as {( *} because ocaml}
-fn opt (l: i32 = 0) -> i32 = l;
-fn label (label l: i32) -> () =
-  break l with 0;
-
-pos(0);
-named(l: 0);              {arg must be passed}
-opt(l: 0);    OR   opt(); {arg may not be passed}
-
-pos(l: 0);                {can also be passed by name to positionals}
-
-let l = 0;
-named(l);                 {elided, same as named(l: l)}
-opt(l);                   {same here}
-
-label lab do              {same as in named()}
-  label(label l: lab);
-
-label l do                {as well}
-  label(label l);
-*)
-and positional_parameter =
-  | Positional_value of Mode.t * string * Ty.t
-  | Positional_label of string * Ty.t
-
-and named_parameter =
-  | Named_value of Mode.t * Ty.t
-  | Named_label of Ty.t
-  | Named_key of Mode.t * Ty.t * t
-
-and positional_argument =
-  | Argument_value of Mode.t * t
-  | Argument_label of string
-
-and named_argument =
-  | Argument_named_value of string * Mode.t * t
-  | Argument_named_label of string * string
+and argument_map = {
+  (* arguments in order of evaluation *)
+  ordered : argument list;
+  (* positional arguments *)
+  positional : (Mode.t * t) list;
+  (* named arguments *)
+  named : (Mode.t * t) Map.t;
+  (* label arguments *)
+  labels : string Map.t;
+}
 
 and t =
   | Unit
@@ -77,25 +32,104 @@ and t =
   (* returned type, non-returned values (of type ()) and returned value *)
   | Block of t list * t
   (* returned type, function, positional, named *)
-  | CallFn of t * positional_argument list * named_argument list
-  | CallSub of t * positional_argument list * named_argument list
+  | CallFn of t * argument_map
+  | CallSub of t * argument_map
   (* name, mode, declared type, value *)
   | Let of string * Mode.t * Ty.t option * t
   | While of t * t
   | Loop of t
   (* name, declared type,  body *)
-  | Label of string option * Ty.t * t
+  | Label of string * Ty.t * t
   (* name, value (default the unit literal) *)
-  | Break of string option * t
+  | Break of string * t
   | Yield of Mode.t * t
   | Set of t * t
   | When of t * t
   | PathMember of Path.t * t
 (* Expressions *)
 
-type param_list = positional_parameter list * named_parameter Map.t
+let empty_argument_map =
+  { ordered = []; positional = []; named = Map.empty; labels = Map.empty }
+
+let argument_map_of_list arguments =
+  let work map = function
+    | Positional { mode; value } ->
+        let positional = (mode, value) :: map.positional in
+        { map with positional }
+    | Named { name; mode; value } ->
+        let named = Map.add name (mode, value) map.named in
+        { map with named }
+    | Label { name; value } ->
+        let labels = Map.add name value map.labels in
+        { map with labels }
+  in
+
+  let map = List.fold_left work empty_argument_map arguments in
+
+  { map with ordered = arguments; positional = List.rev map.positional }
+
 type located = t Reporting.Location.t
 type annotated = (Mode.t * Ty.t * t) Reporting.Location.t
+
+(* A parameter of the form { MODE NAME : TY  }. *)
+type positional = { name : string; mode : Mode.t; ty : Ty.t }
+
+(* A parameter of the form { * MODE NAME : TY }. Has to be passed by name as a
+     keyword argument. *)
+type named = { name : string; mode : Mode.t; ty : Ty.t }
+
+(* A parameter of the form { @ NAME : TY = VALUE }. When a function with an
+   optional parameter is called without passing this parameter, a default value
+   is evaluated and passed instead. Since references cannot be "materialized",
+   these parameters have no mode. *)
+type optional = { name : string; ty : Ty.t; default : t }
+
+(* A parameter of the form { label NAME : TY }. It always behaves like a named
+     parameter, but for labels (note there are no positional labels) *)
+type label = { name : string; ty : Ty.t }
+
+(* A convenience type for parameters. *)
+type parameter =
+  | Positional of positional
+  | Named of named
+  | Optional of optional
+  | Label of label
+
+let parameter_name = function
+  | Positional { name; _ }
+  | Named { name; _ }
+  | Optional { name; _ }
+  | Label { name; _ } ->
+      name
+
+let parameter_ty = function
+  | Positional { ty; _ }
+  | Named { ty; _ }
+  | Optional { ty; _ }
+  | Label { ty; _ } ->
+      ty
+
+(* Rough note on "meaning":
+fn pos (l: i32) -> i32 = i32;
+fn named ( *l: i32) -> i32 = l; {written as {( *} because ocaml}
+fn opt (l: i32 = 0) -> i32 = l;
+fn label (label l: i32) -> () =
+  break l with 0;
+
+pos(0);
+named(l: 0);              {arg must be passed}
+opt(l: 0);    OR   opt(); {arg may not be passed}
+
+let l = 0;
+named(l);                 {elided, same as named(l: l)}
+opt(l);                   {same here}
+
+label lab do              {same as in named()}
+  label(label l: lab);
+
+label l do                {as well}
+  label(label l);
+*)
 
 (* uhhh *)
 type parameter_map = {

@@ -6,7 +6,7 @@ type import_path =
 (* NOTE: one item on the list for each "atom" *)
 type full_import_path = string list
 type ty_definition = { ty : Ty.t }
-type fn_signature = { return : Ty.t; arguments : Expr.param_list }
+type fn_signature = { return : Ty.t; parameters : Expr.parameter_map }
 type const_signature = { ty : Ty.t }
 type fn_definition = { s : fn_signature; value : Expr.t }
 type const_definition = { s : const_signature; value : Expr.t }
@@ -14,7 +14,7 @@ type const_definition = { s : const_signature; value : Expr.t }
 type sub_signature = {
   return : Ty.t;
   mode : Mode.t;
-  arguments : Expr.param_list;
+  parameters : Expr.parameter_map;
 }
 
 type sub_definition = { s : sub_signature; value : Expr.t }

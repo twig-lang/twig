@@ -1,5 +1,7 @@
 /* Expressions */
 
+%type <Expr.argument> tail_argument
+
 %%
 
 /* Expressions AND statements. */
@@ -26,14 +28,14 @@ let expr_all :=
 */
 
 | "label"
-; name = "identifier"?
+; name = "identifier"
 ; ty = preceded("->", ty_sink)?
 ; body = preceded("do", expr_all)
 ; { let ty = Option.value ~default:(Ty.Primitive Ty.Unit) ty in
     Expr.Label (name, ty, body) }
 
 | "break"
-; label = "identifier"?
+; label = "identifier"
 ; value = preceded("with", expr_all)?
 ; { let value = Option.value ~default:(Expr.Unit) value in
     Expr.Break (label, value) }
@@ -236,27 +238,27 @@ let expression_nomsg :=
 
 | recv = expression_nomsg
 ; arguments = delimited("(", arglist ,")")
-; tail = preceded(":", tail_fn_arg)?
-; { let (positional, named) = arguments in
-
-    let positional = match tail with
-    | Some a -> positional @ [a]
-    | None -> positional
+; tail = preceded(":", tail_argument)?
+; { let arguments = match tail with
+    | Some a -> arguments @ [a]
+    | None -> arguments
     in
 
-    Expr.CallFn (recv, positional, named)}
+    let arguments = Expr.argument_map_of_list arguments in
+
+    Expr.CallFn (recv, arguments)}
 
 | recv = expression_nomsg
 ; arguments = delimited("[", arglist ,"]")
-; tail = preceded(":", tail_fn_arg)?
-; { let (positional, named) = arguments in
-
-    let positional = match tail with
-    | Some a -> positional @ [a]
-    | None -> positional
+; tail = preceded(":", tail_argument)?
+; { let arguments = match tail with
+    | Some a -> arguments @ [a]
+    | None -> arguments
     in
 
-    Expr.CallSub (recv, positional, named)}
+    let arguments = Expr.argument_map_of_list arguments in
+
+    Expr.CallSub (recv, arguments)}
 
 /*
 | ~ = expression_nomsg
@@ -265,7 +267,34 @@ let expression_nomsg :=
 ; <Ast.ExprCast>
 */
 
+let tail_argument :=
+  mode = mode
+; value = primary
+; { Expr.Positional { mode; value } }
+
+let argument :=
+  value = expression
+; mode = mode
+; { Expr.Positional { mode; value } }
+
+| name = terminated("identifier", ":")
+; value = expression
+; mode = mode
+; { Expr.Named {name; mode; value} }
+
+| name = preceded(":", "identifier")
+; mode = mode
+; { Expr.Named { name; mode; value = (Expr.Variable name) } }
+
+| "label"
+; name = "identifier"
+; value = preceded(":", "identifier")?
+; { let value = Option.value ~default:name value in
+    Expr.Label {name ; value} }
+
 let arglist :=
+  ~ = separated_list(",", argument) ; <>
+/*
   positional = separated_list(",", fn_arg)
 ; { (positional, []) }
 
@@ -273,6 +302,7 @@ let arglist :=
 ; ";"
 ; keys = separated_list(",", key_fn_arg)
 ; { (positional, keys) }
+*/
 
 /* A "primitive" expression. */
 %public
@@ -364,31 +394,4 @@ let call_message :=
 | name = path
 ; <Ast.MsgMember>
 */
-let tail_fn_arg :=
-  ~ = mode
-; ~ = primary
-; <Expr.Argument_value>
 
-let fn_arg :=
-  ~ = mode
-; ~ = expression
-; <Expr.Argument_value>
-
-| "label"
-; ~ = "identifier"
-; <Expr.Argument_label>
-
-let key_fn_arg :=
-  ~ = terminated("identifier", ":")
-; ~ = mode
-; ~ = expression
-; <Expr.Argument_named_value>
-
-| name = "identifier"
-; mode = mode
-; { Expr.Argument_named_value (name, mode, (Expr.Variable name)) }
-
-| "label"
-; name = terminated("identifier", ":")
-; value = "identifier"
-; <Expr.Argument_named_label>
