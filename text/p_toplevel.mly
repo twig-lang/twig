@@ -12,9 +12,10 @@ let top_all :=
 /*
 | ~ = extern         ; <>
 | ~ = top_with       ; <>
-*/
 | ~ = import         ; <>
+*/
 
+/*
 let import :=
   "import"
 ; ~ = import_path
@@ -31,6 +32,7 @@ let import_path :=
 ; ~ = separated_list(",", import_path)
 ; ")"
 ; <Tree.Import_multiple>
+*/
 
 %public
 let top_definition :=

@@ -1,10 +1,3 @@
-type import_path =
-  | Import_atom of string
-  | Import_member of string * import_path
-  | Import_multiple of import_path list
-
-(* NOTE: one item on the list for each "atom" *)
-type full_import_path = string list
 type ty_definition = { ty : Ty.t }
 type fn_signature = { return : Ty.t; parameters : Expr.parameter_map }
 type const_signature = { ty : Ty.t }
@@ -27,11 +20,9 @@ type definition =
   | ConstDeclaration of string * const_signature
   | SubDeclaration of string * sub_signature
   | SubDefinition of string * sub_definition
-  | Import of import_path
 
 type t = {
   parent : t option;
-  imports : import_path list;
   fn_definitions : fn_definition Map.t;
   const_definitions : const_definition Map.t;
   ty_definitions : ty_definition Map.t;
@@ -46,7 +37,6 @@ let empty =
   Map.
     {
       parent = None;
-      imports = [];
       fn_definitions = empty;
       const_definitions = empty;
       ty_definitions = empty;
@@ -86,9 +76,6 @@ let rec add m def =
       (* TODO: Check and maybe populate the function signature? *)
       let sub_definitions = Map.add name d m.sub_definitions in
       { m with sub_definitions }
-  | Import path ->
-      let imports = path :: m.imports in
-      { m with imports }
 
 let get_module p m =
   match p with Path.Atom a -> (a, m) | _ -> failwith "unsupported path!"

@@ -1,4 +1,5 @@
 # Tests for imports.
+# Currently doing nothing.
 
 - Can import another (empty) module.
   $ cat >ImportEmpty1.tw <<EOF
@@ -9,7 +10,7 @@
   > {nothing going on here}
   > EOF
 
-  $ twig check ImportEmpty1.tw
+#  $ twig check ImportEmpty1.tw
 
 - Can import contents from another module.
   $ cat >ImportContents1.tw <<EOF
