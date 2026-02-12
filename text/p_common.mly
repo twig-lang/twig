@@ -65,18 +65,6 @@ let parameter_list(left, par, right) :=
   ~ = delimited(left, separated_list(",", par), right)
 ; <>
 
-/* Same as `parameter_list`, but uses ';' to separate between positional and
-   named parameters. */
-%public
-let old_parameter_list2(left, par, key_par, right) :=
-  { ([], Map.of_list []) }
-
-| left
-; positional = separated_list(",", par)
-; keys = separated_list(",", key_par)
-; right
-; { (positional , Map.of_list keys) }
-
 let new_function_parameter :=
   ~ = mode
 ; name = parameter_name
@@ -92,7 +80,7 @@ let new_function_parameter :=
 | name = parameter_name
 ; ty = preceded(":", ty)
 ; default = preceded("=", primary)
-; { Expr.Optional { mode; name; ty; default }}
+; { Expr.Optional { name; ty; default }}
 
 | "label"
 ; name = parameter_name
@@ -117,6 +105,8 @@ let function_parameter :=
   | None -> Either.left @@ (Expr.Positional_value (mode, name, ty))
 }
 
+/* Same as `parameter_list`, but uses ';' to separate between positional and
+   named parameters. */
 %public
 let parameter_list2(left, _par, _key_par, right) :=
   { ([], Map.of_list []) }

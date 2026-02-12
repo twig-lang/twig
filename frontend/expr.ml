@@ -6,15 +6,16 @@ type positional = { name : string; mode : Mode.t; ty : Ty.t }
 and named = { name : string; mode : Mode.t; ty : Ty.t }
 
 (* A parameter of the form { NAME : TY = VALUE }. When a function with an
-     optional parameter is called without passing this parameter, a default value
-     is evaluated and passed instead. Since references cannot be "materialized",
-     these parameters have no mode. *)
-and optional = { name : string; mode : Mode.t; ty : Ty.t; default : t }
+   optional parameter is called without passing this parameter, a default value
+   is evaluated and passed instead. Since references cannot be "materialized",
+   these parameters have no mode. *)
+and optional = { name : string; ty : Ty.t; default : t }
 
 (* A parameter of the form { label NAME : TY }. It always behaves like a named
-     parameter, but the name is the same as the "key". *)
+     parameter, but for labels (note there are no positional labels) *)
 and label = { name : string; ty : Ty.t }
 
+(* A convenience type for parameters. *)
 and parameter =
   | Positional of positional
   | Named of named
