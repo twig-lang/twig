@@ -1,3 +1,95 @@
+module Primitive = struct
+  type t =
+    | Unit
+    | Bool
+    | U8
+    | U16
+    | U32
+    | U64
+    | I8
+    | I16
+    | I32
+    | I64
+    | F32
+    | F64
+    | Char
+    | Str
+  (* Built-in, base types *)
+
+  let is_integer = function
+    | U8 | U16 | U32 | U64 | I8 | I16 | I32 | I64 -> true
+    | _ -> false
+
+  let is_signed = function
+    | I8 | I16 | I32 | I64 | F32 | F64 -> true
+    | _ -> false
+
+  let is_real = function F32 | F64 -> true | _ -> false
+  let equal : t -> t -> bool = ( == )
+end
+
+type 'self fixed =
+  | Primitive of Primitive.t
+  | Integer
+  | Real
+  | Bottom
+  | Named of Path.t
+  | Pointer of Mode.mutability * 'self
+  | Array of int * 'self
+  | Tuple of 'self list
+
+(* NOTE: fmap *)
+let rec map (f : 'a -> 'b) : 'a fixed -> 'b fixed = function
+  | Primitive p -> Primitive p
+  | Integer -> Integer
+  | Real -> Real
+  | Bottom -> Bottom
+  | Named n -> Named n
+  | Pointer (m, s) -> Pointer (m, f s)
+  | Array (l, s) -> Array (l, f s)
+  | Tuple ss -> Tuple (List.map f ss)
+
+type 'variable either =
+  | Fixed of 'variable either fixed
+  | Variable of 'variable
+
+type variable = Type of variable option ref either
+type solved = Type of solved fixed
+
+(* NOTE: a monad *)
+let rec ( >>= ) (m : 'a -> 'b either) : 'a either -> 'b either = function
+  | Fixed f -> Fixed (map (( >>= ) m) f)
+  | Variable v -> m v
+
+(* NOTE: foldMap??? *)
+let rec solve (f : 'a -> solved) : 'a either -> solved = function
+  | Fixed t -> Type (map (solve f) t)
+  | Variable v -> f v
+
+(*let variable_of_fixed (fix : variable fixed) : variable = Type (Fixed fix)*)
+let create_variable () : variable = Type (Variable (ref None))
+
+let unify_variable ~equal (Type var : variable) ty =
+  match var with
+  | Fixed f -> if equal (Fixed f) ty then () else failwith "uh oh"
+  | Variable v -> v := Some ty
+
+(* surely there exists a better way to do this *)
+let rec solve_variable (Type var : variable) : solved =
+  let rec solve_fixed : variable option ref either -> solved = function
+    | Fixed fix ->
+        let fixed = map solve_fixed fix in
+        Type fixed
+    | Variable var ->
+        let inner = Option.get !var in
+        solve_variable inner
+  in
+  match var with
+  | Fixed fixed -> Type (map solve_fixed fixed)
+  | Variable var ->
+      let value = Option.get !var in
+      solve_variable value
+
 type primitive =
   | Unit
   | Bool
