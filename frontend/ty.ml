@@ -1,3 +1,5 @@
+open Util.Combinator
+
 module Primitive = struct
   type t =
     | Unit
@@ -28,67 +30,69 @@ module Primitive = struct
   let equal : t -> t -> bool = ( == )
 end
 
-type 'self fixed =
+type 'variable base =
   | Primitive of Primitive.t
   | Integer
   | Real
   | Bottom
   | Named of Path.t
-  | Pointer of Mode.mutability * 'self
-  | Array of int * 'self
-  | Tuple of 'self list
+  | Pointer of Mode.mutability * 'variable base
+  | Array of int * 'variable base
+  | Tuple of 'variable base list
+  | Variable of 'variable
 
-(* NOTE: fmap *)
-let rec map (f : 'a -> 'b) : 'a fixed -> 'b fixed = function
+type bottom = |
+
+type ty = Ty of ty option ref base [@@unboxed]
+and fixed = bottom base
+
+let unwrap (Ty t) = t
+let wrap t = Ty t
+
+let rec unfix (f : fixed) : ty =
+  let unfix = unwrap <@@> unfix in
+  Ty
+    (match f with
+    | Primitive p -> Primitive p
+    | Integer -> Integer
+    | Real -> Real
+    | Bottom -> Bottom
+    | Named p -> Named p
+    | Pointer (p, s) -> Pointer (p, unfix s)
+    | Array (l, s) -> Array (l, unfix s)
+    | Tuple ts -> Tuple (List.map unfix ts)
+    | Variable _ -> .)
+
+let create_variable () = Ty (Variable (ref None))
+
+let unify_variable ~equal var t : unit =
+  match (!var, !t) with
+  | Some l, Some r ->
+      if not @@ equal l r then failwith "cannot unify incompatible types"
+  | None, Some r -> var := Some r
+  | Some l, None -> t := Some l
+  | None, None -> ()
+
+let rec fix (Ty t) : fixed =
+  let fix_variable x =
+    let inner = Option.get !x in
+    fix inner
+  in
+
+  let fix_recursion (x : ty option ref base) : fixed =
+    match x with Variable v -> fix_variable v | e -> (fix <@@> wrap) e
+  in
+
+  match t with
   | Primitive p -> Primitive p
   | Integer -> Integer
   | Real -> Real
   | Bottom -> Bottom
-  | Named n -> Named n
-  | Pointer (m, s) -> Pointer (m, f s)
-  | Array (l, s) -> Array (l, f s)
-  | Tuple ss -> Tuple (List.map f ss)
-
-type 'variable either =
-  | Fixed of 'variable either fixed
-  | Variable of 'variable
-
-type variable = Type of variable option ref either
-type solved = Type of solved fixed
-
-(* NOTE: a monad *)
-let rec ( >>= ) (m : 'a -> 'b either) : 'a either -> 'b either = function
-  | Fixed f -> Fixed (map (( >>= ) m) f)
-  | Variable v -> m v
-
-(* NOTE: foldMap??? *)
-let rec solve (f : 'a -> solved) : 'a either -> solved = function
-  | Fixed t -> Type (map (solve f) t)
-  | Variable v -> f v
-
-(*let variable_of_fixed (fix : variable fixed) : variable = Type (Fixed fix)*)
-let create_variable () : variable = Type (Variable (ref None))
-
-let unify_variable ~equal (Type var : variable) ty =
-  match var with
-  | Fixed f -> if equal (Fixed f) ty then () else failwith "uh oh"
-  | Variable v -> v := Some ty
-
-(* surely there exists a better way to do this *)
-let rec solve_variable (Type var : variable) : solved =
-  let rec solve_fixed : variable option ref either -> solved = function
-    | Fixed fix ->
-        let fixed = map solve_fixed fix in
-        Type fixed
-    | Variable var ->
-        let inner = Option.get !var in
-        solve_variable inner
-  in
-  match var with
-  | Fixed fixed -> Type (map solve_fixed fixed)
-  | Variable var ->
-      let value = Option.get !var in
-      solve_variable value
+  | Named p -> Named p
+  | Pointer (m, s) -> Pointer (m, fix_recursion s)
+  | Array (l, s) -> Array (l, fix_recursion s)
+  | Tuple ts -> Tuple (List.map fix_recursion ts)
+  | Variable v -> fix_variable v
 
 type primitive =
   | Unit
