@@ -1,5 +1,9 @@
 open Ir
 
+exception TypeMismatch of Ty.t * Ty.t
+exception ExpectedInteger of Ty.t
+exception ExpectedFloat of Ty.t
+
 type block_builder = {
   context : func ref;
   inner : block ref;
@@ -48,19 +52,25 @@ let create_func_builder args ret () =
 
 (* Block instructions *)
 
-let kunit builder =
-  builder.add_value
-  @@ { instruction = Unit; ty = Ty.Primitive Ty.Primitive.Unit }
+let kunit builder = builder.add_value @@ { instruction = Unit; ty = Ty.Unit }
 
-let kint t k builder = builder.add_value @@ { instruction = Int k; ty = t }
-let kfloat t k builder = builder.add_value @@ { instruction = Float k; ty = t }
+let kint t k builder =
+  if not @@ Ty.is_int t then raise @@ ExpectedInteger t;
+  builder.add_value @@ { instruction = Int k; ty = t }
+
+let kfloat t k builder =
+  if not @@ Ty.is_float t then raise @@ ExpectedFloat t;
+  builder.add_value @@ { instruction = Float k; ty = t }
 
 let kbool k builder =
-  builder.add_value
-  @@ { instruction = Bool k; ty = Ty.Primitive Ty.Primitive.Bool }
+  builder.add_value @@ { instruction = Bool k; ty = Ty.Bool }
 
-let add t l r builder =
-  builder.add_value @@ { instruction = Add (t, l, r); ty = t }
+let add l r builder =
+  let (ValueRef (_, lt)) = l in
+  let (ValueRef (_, rt)) = r in
+
+  if lt <> rt then raise @@ TypeMismatch (lt, rt);
+  builder.add_value @@ { instruction = Add (lt, l, r); ty = lt }
 
 (* Block terminators *)
 

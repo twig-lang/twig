@@ -62,7 +62,7 @@ let ty :=
   )
 ; {
   match List.length ts with
-  | 0 -> Ty.Primitive Ty.Primitive.Unit
+  | 0 -> Ty.Unit
   | 1 -> List.hd ts
   | _ -> Ty.Tuple ts }
 
