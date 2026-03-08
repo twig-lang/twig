@@ -5,9 +5,6 @@ pkgs.mkShell {
     gnumake
   ] ++ (with pkgs.ocamlPackages; [
     ocaml
-    ocp-indent
-    ocamlformat
-    ocaml-lsp
     findlib
     odoc
 

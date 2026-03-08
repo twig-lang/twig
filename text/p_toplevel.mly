@@ -52,7 +52,7 @@ let fn_definition :=
 ; parameters = parameter_list("(", fn_parameter, ")")
 ; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
-; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
+; { let return = Option.value ~default:(Ty.Primitive Ty.Primitive.Unit) return in
     let parameters = Expr.parameter_map_of_list parameters in
     let signature : Tree.fn_signature = {
       name;
@@ -73,7 +73,7 @@ let sub_definition :=
 ; parameters = parameter_list("[", fn_parameter,"]")
 ; return = preceded("->", ty)?
 ; value = preceded("=", expr_all)?
-; { let return = Option.value ~default:(Ty.Primitive Ty.Unit) return in
+; { let return = Option.value ~default:(Ty.Primitive Ty.Primitive.Unit) return in
     let mode = Mode.project mode mode in
     let parameters = Expr.parameter_map_of_list parameters in
     let signature : Tree.sub_signature = {

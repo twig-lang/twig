@@ -2,12 +2,6 @@
 
 %%
 
-/* Regular types, and an "inference" annotation with _ */
-%public
-let ty_sink :=
-  ~ = ty ; <>
-| "_"    ; { Infer.fresh () }
-
 /* Regular types, and types appearing on `type` definitions. */
 %public
 let ty_all :=
@@ -68,7 +62,7 @@ let ty :=
   )
 ; {
   match List.length ts with
-  | 0 -> Ty.Primitive Ty.Unit
+  | 0 -> Ty.Primitive Ty.Primitive.Unit
   | 1 -> List.hd ts
   | _ -> Ty.Tuple ts }
 

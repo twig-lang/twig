@@ -29,9 +29,9 @@ let expr_all :=
 
 | "label"
 ; name = "identifier"
-; ty = preceded("->", ty_sink)?
+; ty = preceded("->", ty)?
 ; body = preceded("do", expr_all)
-; { let ty = Option.value ~default:(Ty.Primitive Ty.Unit) ty in
+; { let ty = Option.value ~default:(Ty.Primitive Ty.Primitive.Unit) ty in
     Expr.Label (name, ty, body) }
 
 | "break"
