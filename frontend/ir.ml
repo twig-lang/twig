@@ -26,10 +26,14 @@ type terminator =
 type block = { values : value IMap.t; terminator : terminator }
 
 type func = {
-  arguments : (string * Ty.t) list;
+  parameters : (string * Ty.t) list;
   return : Ty.t;
   blocks : block IMap.t;
+  entry : bref;
 }
 
+type m = { funcs : func Map.t }
+
 let create_block = { values = IMap.empty; terminator = Unreachable }
-let create_func arguments return = { arguments; return; blocks = IMap.empty }
+let create_func parameters return =
+  { parameters; return; blocks = IMap.empty; entry = BlockRef 0 }

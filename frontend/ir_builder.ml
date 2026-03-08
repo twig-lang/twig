@@ -1,16 +1,18 @@
 open Ir
 
 type block_builder = {
+  context : func ref;
   inner : block ref;
   add_terminator : terminator -> unit;
   add_value : value -> vref;
   get : unit -> block;
 }
 
-let create_block_builder () =
+let create_block_builder context () =
   let inner = ref create_block in
 
   {
+    context;
     inner;
     add_value =
       (fun value ->
@@ -24,6 +26,8 @@ let create_block_builder () =
 type func_builder = {
   inner : func ref;
   add_block : block -> bref;
+  build_block : unit -> block_builder;
+  set_entry : bref -> unit;
   get : unit -> func;
 }
 
@@ -37,16 +41,23 @@ let create_func_builder args ret () =
         let index = IMap.cardinal !inner.blocks in
         inner := { !inner with blocks = IMap.add index blk !inner.blocks };
         BlockRef index);
+    build_block = (fun () -> create_block_builder inner ());
+    set_entry = (fun br -> inner := { !inner with entry = br });
     get = (fun () -> !inner);
   }
 
 (* Block instructions *)
+
 let kunit builder =
   builder.add_value
   @@ { instruction = Unit; ty = Ty.Primitive Ty.Primitive.Unit }
 
 let kint t k builder = builder.add_value @@ { instruction = Int k; ty = t }
 let kfloat t k builder = builder.add_value @@ { instruction = Float k; ty = t }
+
+let kbool k builder =
+  builder.add_value
+  @@ { instruction = Bool k; ty = Ty.Primitive Ty.Primitive.Bool }
 
 let add t l r builder =
   builder.add_value @@ { instruction = Add (t, l, r); ty = t }
