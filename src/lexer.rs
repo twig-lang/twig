@@ -2,7 +2,7 @@ use crate::token::*;
 use phf::phf_map;
 use std::{iter::Peekable, num::ParseFloatError, num::ParseIntError, str::Chars};
 
-const PUNCTUATION: &str = "?!+-&/%$^<>*=|,.;:@";
+const PUNCTUATION: &str = "?!+-&/%$^<>*=|@";
 
 static KEYWORDS: phf::Map<&'static str, Tag> = phf_map! {
     "module"  => Tag::Module,
@@ -27,11 +27,7 @@ static KEYWORDS: phf::Map<&'static str, Tag> = phf_map! {
 static OPERATORS: phf::Map<&'static str, Tag> = phf_map! {
     "="  => Tag::Equal,
     "->" => Tag::Arrow,
-    ","  => Tag::Comma,
     "@"  => Tag::At,
-    ";"  => Tag::Semicolon,
-    ":"  => Tag::Colon,
-    "."  => Tag::Dot,
 };
 
 #[derive(Debug)]
@@ -61,6 +57,10 @@ fn maybe_single_char(c: char) -> Option<Tag> {
         ']' => Tag::RBrac,
         '{' => Tag::LCurl,
         '}' => Tag::RCurl,
+        ',' => Tag::Comma,
+        ';' => Tag::Semicolon,
+        ':' => Tag::Colon,
+        '.' => Tag::Dot,
         _ => return None,
     })
 }
@@ -146,10 +146,6 @@ impl<'a> Lexer<'a> {
             self.step_();
         }
 
-        if self.peek_() == Some(':') {
-            tag = Tag::Keyword;
-        }
-
         let slice = &self.text[here..self.position];
         if let Some(t) = KEYWORDS.get(slice) {
             tag = *t;
@@ -178,10 +174,7 @@ impl<'a> Lexer<'a> {
 
         self.step_while(|c| c.is_ascii_digit());
 
-        if self
-            .peek_()
-            .is_some_and(|c| c.eq_ignore_ascii_case(&'r'))
-        {
+        if self.peek_().is_some_and(|c| c.eq_ignore_ascii_case(&'r')) {
             let base = usize::from_str_radix(&self.text[start..self.position], 10)
                 .map_err(|_| Error::InvalidBase)?;
 

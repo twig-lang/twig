@@ -3,7 +3,6 @@ pub enum Tag {
     Error,      // <error>
     Eof,        // <end of file>
     Identifier, // <identifier>
-    Keyword,    // identifier:
     Operator,   // <operator>
     Comment,    // "comment..."
     String,     // 'string...'
