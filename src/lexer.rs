@@ -22,6 +22,8 @@ static KEYWORDS: phf::Map<&'static str, Tag> = phf_map! {
     "fn"      => Tag::Fn,
     "decl"    => Tag::Decl,
     "extends" => Tag::Extends,
+    "self"    => Tag::Slf,
+    "using"   => Tag::Using,
 };
 
 static OPERATORS: phf::Map<&'static str, Tag> = phf_map! {

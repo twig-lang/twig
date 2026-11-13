@@ -39,6 +39,8 @@ pub enum Tag {
     Fn,         // fn
     Decl,       // decl
     Extends,    // extends
+    Slf,        // self
+    Using,      // using
 }
 
 #[derive(Debug)]
