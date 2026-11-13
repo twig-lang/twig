@@ -16,7 +16,6 @@ pub enum Tag {
     LCurl,      // {
     RCurl,      // }
     Equal,      // =
-    Arrow,      // ->
     Hash,       // #
     Comma,      // ,
     At,         // @

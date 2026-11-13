@@ -2,7 +2,7 @@ use crate::token::*;
 use phf::phf_map;
 use std::{iter::Peekable, num::ParseFloatError, num::ParseIntError, str::Chars};
 
-const PUNCTUATION: &str = "?!+-&/%$^<>*=|@";
+const PUNCTUATION: &str = "?!+-&/%$^<>*=|@~";
 
 static KEYWORDS: phf::Map<&'static str, Tag> = phf_map! {
     "module"  => Tag::Module,
@@ -26,7 +26,6 @@ static KEYWORDS: phf::Map<&'static str, Tag> = phf_map! {
 
 static OPERATORS: phf::Map<&'static str, Tag> = phf_map! {
     "="  => Tag::Equal,
-    "->" => Tag::Arrow,
     "@"  => Tag::At,
 };
 
