@@ -23,6 +23,7 @@ pub enum Tag {
     Colon,      // :
     Dot,        // .
     Module,     // module
+    Sig,        // sig
     Import,     // import
     Type,       // type
     Var,        // var
@@ -41,6 +42,7 @@ pub enum Tag {
     Extends,    // extends
     Slf,        // self
     Using,      // using
+    Defer,      // defer
 }
 
 #[derive(Debug)]

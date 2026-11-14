@@ -19,9 +19,9 @@ pub enum Path {
            ^~~~~~~~~~~~~~~~     <- call not allowed
 */
 
-// [:label] value
+// [: label] value
 pub struct Argument {
-    pub label: Option<String>,
+    pub is_label: Option<String>,
     pub value: Box<Expression>,
 }
 
@@ -63,10 +63,25 @@ pub enum Expression {
         arguments: Vec<Argument>,
     },
 
+    // expr [ idx ]
+    Index {
+        value: Box<Self>,
+        index: Box<Self>,
+    },
+
     // match value {case},
     Match {
         value: Box<Self>,
         cases: Vec<Case>,
+    },
+
+    // defer <expr>
+    Defer(Box<Self>),
+
+    // expr ; expr (in a parenexpr)
+    Sequence {
+        before: Box<Self>,
+        after: Box<Self>,
     },
 }
 
@@ -110,4 +125,103 @@ pub enum Type {
 
     // match {pattern},
     Match(Vec<TPattern>),
+}
+
+// <mexpr>
+// type <ty>
+pub enum MArgumentValue {
+    M(MExpression),
+    T(Type),
+}
+
+// [:label] value
+pub struct MArgument {
+    pub label: Option<String>,
+    pub value: Box<MArgumentValue>,
+}
+
+pub enum MExpression {
+    Variable(Path),
+    Mod(Vec<Toplevel>),
+    Call(Box<Self>, Vec<MArgument>),
+    Import(Path),
+}
+
+pub enum MType {
+    Variable(Path),
+    Call(Box<Self>, Vec<MArgument>),
+
+    // mtype + mtype
+    Join(Box<Self>, Box<Self>),
+
+    Sig(Vec<Declaration>),
+}
+
+pub enum MParameterType {
+    Module(Option<MType>),
+    Type,
+}
+
+pub struct MParameter {
+    pub is_label: bool,
+    pub name: String,
+    pub ty: MParameterType,
+}
+
+pub struct Parameter {
+    pub is_label: bool,
+    pub name: String,
+    pub ty: Type,
+}
+
+pub enum Declaration {
+    AbstractType(String),
+
+    Type {
+        name: String,
+        ty: Box<Type>,
+    },
+
+    Value {
+        name: String,
+        params: Vec<Parameter>,
+        ty: Box<Type>,
+    },
+}
+
+pub enum Toplevel {
+    Decl(Declaration),
+
+    ValueDefinition {
+        name: String,
+        params: Vec<Parameter>,
+        ty: Option<Box<Type>>,
+        val: Box<Expression>,
+    },
+
+    // using <path>, a la OCaml open
+    Using(Path),
+
+    // extends <path>, a la OCaml includes
+    Extends(Path),
+
+    // module name [(params...)] = mexpr
+    ModuleDefinition {
+        name: String,
+        parameters: Vec<MParameter>,
+        value: Box<MExpression>,
+    },
+
+    // sig name [(params...)] = mty
+    SigDefinition {
+        name: String,
+        parameters: Vec<MParameter>,
+        value: Box<MType>,
+    },
+
+    // module [(params...)] [: mtype]
+    ModuleParameters {
+        parameters: Vec<MParameter>,
+        ty: Option<MType>,
+    },
 }

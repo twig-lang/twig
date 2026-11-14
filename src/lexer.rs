@@ -6,6 +6,7 @@ const PUNCTUATION: &str = "?!+-&/%$^<>*=|@~";
 
 static KEYWORDS: phf::Map<&'static str, Tag> = phf_map! {
     "module"  => Tag::Module,
+    "sig"     => Tag::Sig,
     "import"  => Tag::Import,
     "type"    => Tag::Type,
     "var"     => Tag::Var,
@@ -24,6 +25,7 @@ static KEYWORDS: phf::Map<&'static str, Tag> = phf_map! {
     "extends" => Tag::Extends,
     "self"    => Tag::Slf,
     "using"   => Tag::Using,
+    "defer"   => Tag::Defer,
 };
 
 static OPERATORS: phf::Map<&'static str, Tag> = phf_map! {
