@@ -7,6 +7,30 @@ pub trait Combinator: Sized {
     type Item;
 
     fn parse<'a>(&self, src: &mut LexerWrapper<'a>) -> Option<Self::Item>;
+
+    fn map<U, F: Fn(Self::Item) -> U>(self, f: F) -> Map<Self::Item, U, F, Self> {
+        Map(self, f)
+    }
+
+    fn star(self) -> Star<Self> {
+        Star(self)
+    }
+
+    fn separated_by<C: Combinator>(self, sep: C) -> Separated<C, Self> {
+        Separated(sep, self)
+    }
+
+    fn then<C: Combinator>(self, other: C) -> (Self, C) {
+        (self, other)
+    }
+}
+
+impl<C: Combinator> Combinator for &C {
+    type Item = C::Item;
+
+    fn parse<'a>(&self, src: &mut LexerWrapper<'a>) -> Option<Self::Item> {
+        (*self).parse(src)
+    }
 }
 
 impl<A: Combinator, B: Combinator> Combinator for (A, B) {
@@ -64,27 +88,36 @@ impl<S: Combinator, T: Combinator> Combinator for Separated<S, T> {
     type Item = Vec<T::Item>;
 
     fn parse<'a>(&self, src: &mut LexerWrapper<'a>) -> Option<Self::Item> {
-        let mut r = Vec::new();
+        // T {S T}
+        let r = (&self.1)
+            .then((&self.0, &self.1).map(|(_, x)| x).star())
+            .parse(src);
 
-        if let Some(i) = self.1.parse(src) {
-            r.push(i);
-
-            while let Some(_) = self.0.parse(src) {
-                r.push(self.1.parse(src)?);
+        match r {
+            None => None,
+            Some((l, mut v)) => {
+                v.insert(0, l);
+                Some(v)
             }
         }
-
-        Some(r)
     }
 }
 
-pub struct Literal(pub Tag);
+pub struct T(pub Tag);
 
-impl Combinator for Literal {
-    type Item = (Tag, Option<Extra>);
+impl Combinator for T {
+    type Item = ();
 
     fn parse<'a>(&self, src: &mut LexerWrapper<'a>) -> Option<Self::Item> {
-        let t = src.expect(self.0).ok()?;
-        Some((t.tag, t.extra))
+        src.expect(self.0).ok().map(|_| ())
+    }
+}
+
+impl Combinator for Tag {
+    type Item = (Tag, String, (usize, usize), Option<Extra>);
+
+    fn parse<'a>(&self, src: &mut LexerWrapper<'a>) -> Option<Self::Item> {
+        let t = src.expect(*self).ok()?;
+        Some((t.tag, t.slice.to_string(), t.span, t.extra))
     }
 }
