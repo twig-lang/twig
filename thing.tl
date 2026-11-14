@@ -1,22 +1,24 @@
 "this is a comment!"
 
-#[extern] decl i32.+(r i32): i32;
+#[extern] i32.+(r i32): i32;
 
-fn add(l, r): i32 =
+add(l, r): i32 =
     l + r;
 
-fn i32.twice: i32 = self + self;
+i32.twice: i32 = self + self;
 
-fn five: i32 = 2 + 3;
+five: i32 = 1 twice + 3;
 
-fn maybe(:left? bool, :right? bool) =
+type bool = match True, False;
+
+maybe(:left? bool, :right? bool) =
     match left?
         True = 1,
         False = (match right?
             True = 2,
             False = 0);
 
-fn five-: i32 =
+five-: i32 =
     maybe(:left? False, :right? True) +
     maybe(:left? True, :right? True);
 
@@ -24,3 +26,8 @@ module Array = import Std.Array;
 module IntArray = Array(:Item type i32);
 
 using IntArray;
+
+large-fnptr = #IntArray.t.twice;
+
+"evil cast syntax"
+i32.as: pass = pass;
