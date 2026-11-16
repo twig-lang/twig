@@ -5,6 +5,8 @@ mod lexer_wrapper;
 mod parse;
 mod token;
 
+lalrpop_util::lalrpop_mod!(grammar);
+
 use std::fs::read_to_string;
 
 fn main() -> std::io::Result<()> {
