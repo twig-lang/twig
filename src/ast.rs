@@ -43,7 +43,7 @@ pub enum Expression {
     String(String),
     Char(char),
 
-    // break [name] [with expr]
+    // break [name] [ ( expr ) ]
     Break {
         label: Option<String>,
         value: Option<Box<Self>>,
@@ -108,7 +108,7 @@ pub enum Type {
         ret: Box<Type>,
     },
 
-    // @ [const] type
+    // @ [var] type
     Pointer {
         mutable: bool,
         item: Box<Type>,
@@ -174,6 +174,38 @@ pub struct Parameter {
     pub ty: Type,
 }
 
+pub enum FunctionName {
+    // name(param...) : ret
+    Function {
+        name: String,
+        parameters: Vec<Parameter>,
+        ret: Box<Type>,
+    },
+
+    // (recv) name(param...) : ret
+    Method {
+        recv: Box<Type>,
+        name: String,
+        parameters: Vec<Parameter>,
+        ret: Box<Type>,
+    },
+
+    // (recv) binop (param) : ret
+    Binary {
+        recv: Box<Type>,
+        name: String,
+        rhs: Parameter,
+        ret: Box<Type>,
+    },
+
+    // (recv) unop : ret
+    Unary {
+        recv: Box<Type>,
+        name: String,
+        ret: Box<Type>,
+    },
+}
+
 pub enum Declaration {
     AbstractType(String),
 
@@ -184,6 +216,11 @@ pub enum Declaration {
 
     Value {
         name: String,
+        ty: Box<Type>,
+    },
+
+    Function {
+        name: String,
         params: Vec<Parameter>,
         ty: Box<Type>,
     },
@@ -192,10 +229,14 @@ pub enum Declaration {
 pub enum Toplevel {
     Decl(Declaration),
 
-    ValueDefinition {
+    Value {
         name: String,
-        params: Vec<Parameter>,
         ty: Option<Box<Type>>,
+        val: Box<Expression>,
+    },
+
+    Function {
+        name: FunctionName,
         val: Box<Expression>,
     },
 
