@@ -57,7 +57,7 @@ impl<'a> LexerWrapper<'a> {
 }
 
 impl<'a> Iterator for LexerWrapper<'a> {
-    type Item = Result<Token<'a>, Error>;
+    type Item = Result<Token<'a>, crate::lexer::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
