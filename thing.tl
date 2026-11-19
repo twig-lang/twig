@@ -45,3 +45,5 @@ module Nor(M: BitOr + BitNot) = (
 
 const st: str = 'example!';
 const c: char = `c`;
+
+const pi: f64 = 3.141592f64;
