@@ -42,3 +42,6 @@ module Nor(M: BitOr + BitNot) = (
     type t = M.t;
     (t) |~ (other: t): t = (self | other) not;
 );
+
+const st: str = 'example!';
+const c: char = `c`;

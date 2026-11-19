@@ -6,17 +6,43 @@ pub enum Error {
     Invalid,
 }
 
-#[derive(Logos)]
+pub enum IntegerHint {
+    U8,
+    U16,
+    U32,
+    U64,
+    I8,
+    I16,
+    I32,
+    I64,
+}
+
+pub enum FloatHint {
+    F32,
+    F64,
+}
+
+#[derive(Debug, Logos)]
 #[logos(error = Error)]
+#[logos(skip r"[ \r\n\t]+")]
 pub enum Token2 {
-    #[regex(r"[_\a][\w_-]*[!?#]?")]
+    #[regex(r#""[^"]*""#)]
+    Comment,
+
+    #[regex(r"[_\w][\w_-]*[!?#]?")]
     Identifier,
 
-    #[regex(r"[@^=<>|&$%*/][@^=<>|&$%*/.]*", priority = 1)]
+    #[regex(r"[+\-@^=<>|&$%*/][+\-@^=<>|&$%*/.~!]*", priority = 1)]
     BinaryOperator,
 
-    #[regex(r"[#!~][@^=<>|&$%*/]*", priority = 1)]
+    #[regex(r"[#!~][+\-@^=<>|&$%*/.~!]*", priority = 1)]
     UnaryOperator,
+
+    #[regex(r"`.`")]
+    Character,
+
+    #[regex(r"'([^'])*'")]
+    String,
 
     #[token(r"(")]
     LParen,
