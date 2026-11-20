@@ -26,8 +26,12 @@ fn main() -> std::io::Result<()> {
                     ariadne::ReportKind::Error,
                     ("thing.tl", token.0..token.2),
                 )
-                .with_message(format!("expected {}, got {}", expected.join(", "), token.1))
-                .with_label(ariadne::Label::new(("thing.tl", token.0..token.2)).with_color(a))
+                .with_message("unexpected token")
+                .with_label(
+                    ariadne::Label::new(("thing.tl", token.0..token.2))
+                        .with_color(a)
+                        .with_message(format!("expected {}, got {}", expected.join(", "), token.1)),
+                )
                 .finish()
                 .print(("thing.tl", ariadne::Source::from(file)))?,
                 ParseError::ExtraToken { token } => todo!(),
