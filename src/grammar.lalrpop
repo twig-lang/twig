@@ -3,8 +3,67 @@ use crate::ast;
 
 grammar;
 
-pub Grammar: () = {
-    "id" => ()
+Type: ast::Type = {
+  <p: Path> => ast::Type::Named(p),
+};
+
+Parameter: ast::Parameter = {
+  <name: "id"> ":" <ty: Type> =>
+    ast::Parameter {
+        is_label: false,
+        name,
+        ty
+    },
+};
+
+Expr: ast::Expression = {
+
+};
+
+FunctionName: ast::FunctionName = {
+  "(" <recv: Type> ")" <name: "binop"> "(" <rhs: Parameter> ")" =>
+    ast::FunctionName::Binary {
+        recv: Box::new(recv),
+        name: name.0,
+        rhs: rhs,
+    },
+};
+
+Path: ast::Path = {
+  "id" => ast::Path::Atom(<>),
+  <s: Path> "." <m:"id"> => ast::Path::Child(Box::new(s), m)
+};
+
+Decl: ast::Declaration = {
+  "fn" <name: FunctionName> ":" <ret: Type> ";" =>
+    ast::Declaration::Function {
+      name,
+      ty: Box::new(ret)
+    },
+};
+
+Top: ast::Toplevel = {
+  <d: Decl> => ast::Toplevel::Decl(d),
+
+  "using" <p: Path> ";" => ast::Toplevel::Using(p),
+
+  "#" "[" <head:"id"> "]" <t: Top> =>
+    ast::Toplevel::Attribute {
+        head,
+        arguments: vec![],
+        child: Box::new(t)
+    },
+
+  "fn" <name: FunctionName> ":" <ty: Type> "=" <val: Expr> ";" =>
+    ast::Toplevel::Function {
+      name,
+      ret: Box::new(ty),
+      val: Box::new(val),
+    },
+};
+
+pub Grammar: Vec<ast::Toplevel> = {
+    Top* => <>
 };
 
 extern {
@@ -13,5 +72,17 @@ extern {
 
     enum Token {
         "id" => Token::Identifier(<String>),
+        "using" => Token::Using,
+        "." => Token::Dot,
+        ";" => Token::Semicolon,
+        "#" => Token::Hash,
+        "[" => Token::LBrac,
+        "]" => Token::RBrac,
+        "(" => Token::LParen,
+        ")" => Token::RParen,
+        "binop" => Token::BinaryOperator(<(String, usize)>),
+        ":" => Token::Colon,
+        "fn" => Token::Fn,
+        "=" => Token::Equal,
     }
 }

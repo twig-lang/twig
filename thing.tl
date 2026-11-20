@@ -1,6 +1,8 @@
+using Std.Prelude;
+
 "this is a comment!"
 
-#[extern] (i32) + i32: i32;
+#[extern] fn (i32) + (_:i32): i32;
 
 fn add(l, r): i32 = l + r;
 

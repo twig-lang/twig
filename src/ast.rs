@@ -100,7 +100,7 @@ pub enum Type {
     Pass,
 
     // <id>
-    Named(String),
+    Named(Path),
 
     // fn (type...) -> type
     Function {
@@ -179,55 +179,44 @@ pub enum FunctionName {
     Function {
         name: String,
         parameters: Vec<Parameter>,
-        ret: Box<Type>,
     },
 
-    // (recv) name(param...) : ret
+    // (recv) name(param...)
     Method {
         recv: Box<Type>,
         name: String,
         parameters: Vec<Parameter>,
-        ret: Box<Type>,
     },
 
-    // (recv) binop (param) : ret
+    // (recv) binop (param)
     Binary {
         recv: Box<Type>,
         name: String,
         rhs: Parameter,
-        ret: Box<Type>,
     },
 
-    // (recv) unop : ret
+    // (recv) unop
     Unary {
         recv: Box<Type>,
         name: String,
-        ret: Box<Type>,
     },
 }
 
 pub enum Declaration {
     AbstractType(String),
-
-    Type {
-        name: String,
-        ty: Box<Type>,
-    },
-
-    Value {
-        name: String,
-        ty: Box<Type>,
-    },
-
-    Function {
-        name: String,
-        params: Vec<Parameter>,
-        ty: Box<Type>,
-    },
+    Type { name: String, ty: Box<Type> },
+    Value { name: String, ty: Box<Type> },
+    Function { name: FunctionName, ty: Box<Type> },
 }
 
 pub enum Toplevel {
     Decl(Declaration),
+
+    Attribute {
+        head: String,
+        arguments: Vec<String>,
+        child: Box<Self>,
+    },
 
     Value {
         name: String,
@@ -238,6 +227,7 @@ pub enum Toplevel {
     Function {
         name: FunctionName,
         val: Box<Expression>,
+        ret: Box<Type>,
     },
 
     // using <path>, a la OCaml open

@@ -85,18 +85,21 @@ fn int_cb(
     Ok((value, got))
 }
 
+fn operator_cb(l: &mut logos::Lexer<Token>) -> Result<(String, usize), Error> {
+    let value = l.slice().to_string();
+    Ok((value, 0))
+}
+
 #[derive(Debug, Clone, Logos)]
 #[logos(error = Error)]
 #[logos(skip r"[ \r\n\t]+")]
+#[logos(skip r#""[^"]*""#)]
 pub enum Token {
-    #[regex(r#""[^"]*""#)]
-    Comment,
-
     #[regex(r"[_\p{letter}][\w_-]*[!?#]?", |l| l.slice().to_string())]
     Identifier(String),
 
-    #[regex(r"[+\-@^=<>|&$%*/][+\-@^=<>|&$%*/.~!]*", priority = 1)]
-    BinaryOperator,
+    #[regex(r"[+\-@^=<>|&$%*/][+\-@^=<>|&$%*/.~!]*", operator_cb)]
+    BinaryOperator((String, usize)),
 
     #[regex(r"[#!~][+\-@^=<>|&$%*/.~!]*", priority = 1)]
     UnaryOperator,
@@ -125,15 +128,15 @@ pub enum Token {
     LCurl,
     #[token(r"}")]
     RCurl,
-    #[token(r"=")]
+    #[token(r"=", priority = 1)]
     Equal,
     #[token(r"#")]
     Hash,
     #[token(r",")]
     Comma,
-    #[token(r"@")]
+    #[token(r"@", priority = 1)]
     At,
-    #[token(r"&")]
+    #[token(r"&", priority = 1)]
     Ref,
     #[token(r";")]
     Semicolon,
@@ -182,9 +185,8 @@ pub enum Token {
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            Self::Comment => "*comment*",
             Self::Identifier(text) => &text,
-            Self::BinaryOperator => "operator",
+            Self::BinaryOperator((n, _)) => return f.write_fmt(format_args!("operator({})", n)),
             Self::UnaryOperator => "operator",
             Self::Integer((n, _)) => return f.write_fmt(format_args!("{n}")),
             Self::Float((n, _)) => return f.write_fmt(format_args!("{n}")),
