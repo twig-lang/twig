@@ -171,7 +171,7 @@ pub struct MParameter {
 pub struct Parameter {
     pub is_label: bool,
     pub name: String,
-    pub ty: Type,
+    pub ty: Option<Type>,
 }
 
 pub enum FunctionName {

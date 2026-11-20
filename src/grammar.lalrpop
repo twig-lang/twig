@@ -3,12 +3,21 @@ use crate::ast;
 
 grammar;
 
+Comma<T,S>: Vec<T> = {
+    => vec![],
+
+    <e: T> <mut v:("," <T>)*> => {
+      v.insert(0, e);
+      v
+    },
+};
+
 Type: ast::Type = {
   <p: Path> => ast::Type::Named(p),
 };
 
 Parameter: ast::Parameter = {
-  <name: "id"> ":" <ty: Type> =>
+  <name: "id"> <ty: (":" <Type>)?> =>
     ast::Parameter {
         is_label: false,
         name,
@@ -26,6 +35,12 @@ FunctionName: ast::FunctionName = {
         recv: Box::new(recv),
         name: name.0,
         rhs: rhs,
+    },
+
+  <name: "id"> "(" <parameters: Comma<Parameter, ",">> ")" =>
+    ast::FunctionName::Function {
+        name,
+        parameters,
     },
 };
 
@@ -84,5 +99,6 @@ extern {
         ":" => Token::Colon,
         "fn" => Token::Fn,
         "=" => Token::Equal,
+        "," => Token::Comma,
     }
 }
